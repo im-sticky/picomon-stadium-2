@@ -59,3 +59,31 @@ describe("HomeForm", () => {
     expect(screen.getByText("Room not found.")).toBeInTheDocument();
   });
 });
+
+import { Activity } from "react";
+
+describe("HomeForm when preserved by Activity", () => {
+  it("re-enables buttons when shown again after a successful submit", async () => {
+    mockFetch(201, { code: "K7PQ" });
+    const ui = (mode: "visible" | "hidden") => (
+      <Activity mode={mode}>
+        <HomeForm />
+      </Activity>
+    );
+    const { rerender } = render(ui("visible"));
+    await userEvent.type(screen.getByLabelText("Your name"), "Ash");
+    await userEvent.click(screen.getByRole("button", { name: "Host a room" }));
+    await vi.waitFor(() => expect(push).toHaveBeenCalled());
+    expect(screen.getByRole("button", { name: "Host a room" })).toBeDisabled();
+    rerender(ui("hidden"));
+    rerender(ui("visible"));
+    expect(screen.getByRole("button", { name: "Host a room" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Join room" })).toBeEnabled();
+  });
+
+  it("shows a changed initialError", () => {
+    const { rerender } = render(<HomeForm />);
+    rerender(<HomeForm initialError="Room not found." />);
+    expect(screen.getByText("Room not found.")).toBeInTheDocument();
+  });
+});

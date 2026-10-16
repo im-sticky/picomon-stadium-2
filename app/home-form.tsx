@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { normalizeCode } from "@/lib/codes";
 import { normalizeName } from "@/lib/names";
@@ -11,6 +11,13 @@ export function HomeForm({ initialError }: { initialError?: string }) {
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | undefined>(initialError);
   const [busy, setBusy] = useState(false);
+
+  // Next keeps earlier routes alive in <Activity>; effects re-run when the form is
+  // shown again, so recover from a stale busy flag and re-apply the latest error.
+  useEffect(() => {
+    setBusy(false);
+    setError(initialError);
+  }, [initialError]);
 
   async function submit(url: string, body: { name: string }) {
     setBusy(true);

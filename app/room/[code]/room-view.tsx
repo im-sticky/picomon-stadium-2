@@ -15,17 +15,24 @@ export function RoomView({ code }: { code: string }) {
     const realtime = new Ably.Realtime({ authUrl: "/api/ably-token" });
     const channel = realtime.channels.get(`room:${code}`);
 
+    let subscribed: Promise<unknown> = Promise.resolve();
+    let closed = false;
+
     const stop = startRoomSync({
       subscribe(onPlayers) {
         const listener = (msg: Ably.Message) => {
           const players = msg.data?.players as PublicPlayer[] | undefined;
           if (Array.isArray(players)) onPlayers(players);
         };
-        void channel.subscribe("player-joined", listener);
+        subscribed = channel.subscribe("player-joined", listener).catch(() => {});
         return () => channel.unsubscribe("player-joined", listener);
       },
       onReconnect(cb) {
         let first = true;
+        // Events before the channel attaches are lost: refetch once it has.
+        void subscribed.then(() => {
+          if (!closed) cb();
+        });
         const handler = () => {
           if (first) {
             first = false;
@@ -55,6 +62,7 @@ export function RoomView({ code }: { code: string }) {
     });
 
     return () => {
+      closed = true;
       stop();
       realtime.close();
     };

@@ -14,7 +14,7 @@ export function RoomScreen({ state }: { state: RoomState }) {
         <p>
           <strong>{code}</strong>
         </p>
-        <button type="button" onClick={() => void navigator.clipboard?.writeText(code)}>
+        <button type="button" onClick={() => void navigator.clipboard?.writeText(code).catch(() => {})}>
           Copy code
         </button>
         <p>Send this to a friend. Waiting for someone to join…</p>
