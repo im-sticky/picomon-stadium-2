@@ -34,8 +34,10 @@ export function RoomView({ code }: { code: string }) {
           if (Array.isArray(players)) onPlayers(players);
         };
         subscribed = channel.subscribe("player-joined", listener).catch((err) => {
+          // Closing the client on unmount rejects a pending attach; that's expected, not a failure.
+          if (closed) return;
           console.error("ably channel attach failed", err);
-          if (!closed) setLiveFailed(true);
+          setLiveFailed(true);
         });
         return () => channel.unsubscribe("player-joined", listener);
       },
