@@ -19,7 +19,8 @@ export function startRoomSync(deps: RoomSyncDeps): () => void {
     let state: RoomState | null;
     try {
       state = await deps.fetchState();
-    } catch {
+    } catch (err) {
+      console.warn("room-sync: fetchState failed", err);
       return; // network error: a later reconnect/visible refetch retries
     }
     if (stopped || id !== latest) return;
@@ -30,7 +31,11 @@ export function startRoomSync(deps: RoomSyncDeps): () => void {
   // Subscribe first so no event is missed between fetch and subscription.
   const unsubs = [
     deps.subscribe((players) => {
-      if (!stopped) deps.onPlayers(players);
+      if (stopped) return;
+      deps.onPlayers(players);
+      // An event means something changed: refetch, which also invalidates any
+      // in-flight fetch that started before the event.
+      void refetch();
     }),
     deps.onReconnect(() => void refetch()),
     deps.onVisible(() => void refetch()),

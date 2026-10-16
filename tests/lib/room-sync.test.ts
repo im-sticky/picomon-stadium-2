@@ -44,7 +44,7 @@ describe("startRoomSync", () => {
   });
 
   it("player-joined event goes to onPlayers", () => {
-    const s = setup([new Promise(() => {})]);
+    const s = setup([new Promise(() => {}), new Promise(() => {})]);
     startRoomSync(s.deps);
     s.cbs.players!([p1, p2]);
     expect(s.deps.onPlayers).toHaveBeenCalledWith([p1, p2]);
@@ -113,5 +113,22 @@ describe("startRoomSync", () => {
     s.cbs.visible!();
     await flush();
     expect(s.deps.onState).toHaveBeenCalledWith(state2);
+  });
+
+  it("a stale fetch does not overwrite a newer player-joined event", async () => {
+    let resolve1!: (v: RoomState | null) => void;
+    let resolve2!: (v: RoomState | null) => void;
+    const s = setup([
+      new Promise((r) => { resolve1 = r; }),
+      new Promise((r) => { resolve2 = r; }),
+    ]);
+    startRoomSync(s.deps);
+    s.cbs.players!([p1, p2]);
+    resolve1(state1);
+    await flush();
+    resolve2(state2);
+    await flush();
+    expect(s.deps.onState).not.toHaveBeenCalledWith(state1);
+    expect(s.deps.onState).toHaveBeenLastCalledWith(state2);
   });
 });
