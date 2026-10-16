@@ -1,6 +1,6 @@
 # Room Join Proof of Concept — Design
 
-*Date: 2026-10-16 · Status: approved by the user*
+*Date: 2026-10-16 · Status: approved by the user · Verified on production 2026-10-16*
 
 ## 1. Intent
 
@@ -191,3 +191,19 @@ Environment variables (set in Vercel and `.env.local`):
 
 - Battle game: clients POST moves, server resolves turns with server-side randomness, stores state in Turso, publishes `turn-resolved`. Events will need a version/turn number.
 - Pokémon Crystal (Gen 2) visual style.
+
+## Verification
+
+*2026-10-16, on https://picomon-stadium-2.vercel.app (Vercel Production), Turso + Ably free tiers.*
+
+Run by the user on a laptop (host) and a phone on mobile data (friend). All five checks passed:
+
+| # | Check (from §14) | Result |
+|---|---|---|
+| 1 | Host's screen switches to the Room view within ~2 s with no click/refresh; both names on both devices | Pass |
+| 2 | Refreshing either device returns to the Room view | Pass |
+| 3 | Host in a messaging app while the friend joins; on return the Room view is showing | Pass |
+| 4 | A third device / private window with the same code sees "Room is full." | Pass |
+| 5 | A made-up code shows "Room not found." | Pass |
+
+Also checked by Claude on the same deployment: hosting returns a code and the waiting view; a scripted second player joining flipped the host's open page to the Room view automatically; third join → 409 "Room is full."; unknown code → 404 "Room not found."; the Ably token route returns 200 for a room member.
