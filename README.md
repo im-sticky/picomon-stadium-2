@@ -2,6 +2,7 @@
 
 A proof of concept for joining a room with a 4-character code. One player creates a room and waits; a second player enters the code and joins. Both screens update live to show each other's names. Built with Next.js 16, Turso (via Drizzle) for storage, and Ably for realtime updates.
 
+- Live: https://picomon-stadium-2.vercel.app
 - Design spec: [docs/superpowers/specs/2026-10-16-room-join-poc-design.md](docs/superpowers/specs/2026-10-16-room-join-poc-design.md)
 - Realtime options research: [docs/research/2026-10-16-realtime-options.md](docs/research/2026-10-16-realtime-options.md)
 
