@@ -933,6 +933,8 @@ The MVP covers the following.
 
 ### 17.3 Open questions (only the user can answer)
 
+> **Update 2026-10-16:** the user decided Q6, using `@pkmn/sim` gen4, and Q7, matching Showdown and trusting the npm data without Bulbapedia verification. The remaining questions are tracked in [battle-brainstorm-open-questions.md](battle-brainstorm-open-questions.md).
+
 1. **Level:** 50, or 100?
 2. **Team size:** 6v6 full, or bring 6 / pick 3, or something else? Is there a team preview?
 3. **Team source:** rental or preset teams only, custom building, or random battles? If custom, do you want full EV/IV/nature control?
