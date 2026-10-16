@@ -4,6 +4,12 @@ import { NextRequest } from 'next/server';
 import { setDbForTests } from '@/db/client';
 import { createTestDb } from '@/tests/helpers/test-db';
 
+// connection() only works inside a Next request scope.
+vi.mock('next/server', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('next/server')>()),
+  connection: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock('@/lib/ably-server', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/ably-server')>();
   return {
@@ -114,6 +120,7 @@ describe('rooms API', () => {
     const { code } = await host();
     const res = await joinRoute(req(`/api/rooms/${code}/join`, 'POST', { name: 'Misty' }), ctx(code));
     expect(res.status).toBe(200);
+    expect(res.headers.get('set-cookie')).toBeTruthy();
     expect(spy).toHaveBeenCalled();
     spy.mockRestore();
   });
@@ -155,5 +162,16 @@ describe('rooms API', () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ keyName: 'k' });
     expect(createTokenRequestFor).toHaveBeenCalledWith(state.you.id, code);
+  });
+
+  it('ably-token returns 500 when token creation fails', async () => {
+    const { cookie } = await host();
+    vi.mocked(createTokenRequestFor).mockRejectedValueOnce(new Error('ably down'));
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const res = await tokenRoute(req('/api/ably-token', 'GET', undefined, cookie));
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: 'Realtime unavailable.' });
+    expect(spy).toHaveBeenCalled();
+    spy.mockRestore();
   });
 });

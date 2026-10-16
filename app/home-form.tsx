@@ -12,12 +12,16 @@ export function HomeForm({ initialError }: { initialError?: string }) {
   const [error, setError] = useState<string | undefined>(initialError);
   const [busy, setBusy] = useState(false);
 
-  // Next keeps earlier routes alive in <Activity>; effects re-run when the form is
-  // shown again, so recover from a stale busy flag and re-apply the latest error.
-  useEffect(() => {
-    setBusy(false);
+  // Show a changed initialError: adjust state during render (not in an effect).
+  const [seenInitialError, setSeenInitialError] = useState(initialError);
+  if (seenInitialError !== initialError) {
+    setSeenInitialError(initialError);
     setError(initialError);
-  }, [initialError]);
+  }
+
+  // Next keeps earlier routes alive in <Activity>; hiding runs effect cleanups, so
+  // clear a stale busy flag then (it would otherwise stay disabled when re-shown).
+  useEffect(() => () => setBusy(false), []);
 
   async function submit(url: string, body: { name: string }) {
     setBusy(true);
@@ -53,13 +57,20 @@ export function HomeForm({ initialError }: { initialError?: string }) {
   function join() {
     const n = normalizeName(name);
     if (!n) return setError("Enter a name (1–12 characters).");
-    const c = normalizeCode(code);
-    if (!c) return setError("Enter a 4-character room code.");
+    const trimmed = code.trim();
+    if (trimmed.length !== 4) return setError("Enter a 4-character room code.");
+    const c = normalizeCode(trimmed);
+    if (!c) return setError("Room not found.");
     void submit(`/api/rooms/${c}/join`, { name: n });
   }
 
   return (
-    <div>
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!busy) join();
+      }}
+    >
       <div>
         <label>
           Your name <input value={name} onChange={(e) => setName(e.target.value)} />
@@ -76,11 +87,11 @@ export function HomeForm({ initialError }: { initialError?: string }) {
         </label>
       </div>
       <div>
-        <button type="button" disabled={busy} onClick={join}>
+        <button type="submit" disabled={busy}>
           Join room
         </button>
       </div>
       {error && <p role="alert">{error}</p>}
-    </div>
+    </form>
   );
 }

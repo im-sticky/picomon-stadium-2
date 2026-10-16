@@ -16,6 +16,13 @@ describe("RoomScreen", () => {
     expect(screen.getByText("Send this to a friend. Waiting for someone to join…")).toBeInTheDocument();
   });
 
+  it("guest alone also sees the waiting view", () => {
+    const state: RoomState = { code: "K7PQ", you: { id: "b", slot: 2 }, players: [guest] };
+    render(<RoomScreen state={state} />);
+    expect(screen.getByText("Your room code")).toBeInTheDocument();
+    expect(screen.queryByText("Both players connected.")).toBeNull();
+  });
+
   it('two players: both names shown, host marked "(host)", "Both players connected."', () => {
     const state: RoomState = { code: "K7PQ", you: { id: "b", slot: 2 }, players: [host, guest] };
     render(<RoomScreen state={state} />);

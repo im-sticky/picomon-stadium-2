@@ -36,6 +36,25 @@ describe("HomeForm", () => {
     expect(fetchFn).not.toHaveBeenCalled();
   });
 
+  it('shows "Room not found." for a 4-character code with excluded characters', async () => {
+    const fetchFn = mockFetch(200, { code: "K7PQ" });
+    render(<HomeForm />);
+    await userEvent.type(screen.getByLabelText("Your name"), "Ash");
+    await userEvent.type(screen.getByLabelText("Room code"), "K0PQ");
+    await userEvent.click(screen.getByRole("button", { name: "Join room" }));
+    expect(screen.getByText("Room not found.")).toBeInTheDocument();
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+
+  it("joins when Enter is pressed in the code field", async () => {
+    const fetchFn = mockFetch(200, { code: "K7PQ" });
+    render(<HomeForm />);
+    await userEvent.type(screen.getByLabelText("Your name"), "Ash");
+    await userEvent.type(screen.getByLabelText("Room code"), "k7pq{Enter}");
+    await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/room/K7PQ"));
+    expect(fetchFn).toHaveBeenCalledWith("/api/rooms/K7PQ/join", expect.anything());
+  });
+
   it('shows "Room is full." from a 409', async () => {
     mockFetch(409, { error: "Room is full." });
     render(<HomeForm />);

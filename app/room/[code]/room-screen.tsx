@@ -3,11 +3,11 @@
 import type { RoomState } from "@/lib/types";
 
 export function RoomScreen({ state }: { state: RoomState }) {
-  const { code, you, players } = state;
+  const { code, players } = state;
   const host = players.find((p) => p.slot === 1);
   const guest = players.find((p) => p.slot === 2);
 
-  if (players.length < 2 && you.slot === 1) {
+  if (players.length < 2) {
     return (
       <div>
         <p>Your room code</p>

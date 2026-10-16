@@ -87,6 +87,7 @@ async function joinOnce(
   existingSecret: string | null,
 ): Promise<JoinResult> {
   try {
+    // libsql's default write transaction is BEGIN IMMEDIATE, so no behavior option is needed.
     return await db.transaction(
       async (tx): Promise<JoinResult> => {
         const [room] = await tx.select().from(rooms).where(eq(rooms.code, code));
@@ -115,7 +116,6 @@ async function joinOnce(
           .where(eq(rooms.code, code));
         return { kind: 'joined', code, secret, players: await listPlayers(tx, code) };
       },
-      { behavior: 'immediate' },
     );
   } catch (err) {
     // Unique (roomCode, slot) violation: someone else took slot 2.

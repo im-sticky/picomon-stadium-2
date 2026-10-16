@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { startRoomSync, type RoomSyncDeps } from "@/lib/room-sync";
 import type { PublicPlayer, RoomState } from "@/lib/types";
 
@@ -7,7 +7,8 @@ const p2: PublicPlayer = { id: "b", name: "Bea", slot: 2 } as PublicPlayer;
 const state1: RoomState = { code: "ABC234", you: { id: "a", slot: 1 }, players: [p1] } as RoomState;
 const state2: RoomState = { ...state1, players: [p1, p2] };
 
-function setup(fetches: Array<Promise<RoomState | null>>) {
+type Fetch = Promise<RoomState | null> | (() => Promise<RoomState | null>);
+function setup(fetches: Fetch[]) {
   const order: string[] = [];
   const cbs: {
     players?: (p: PublicPlayer[]) => void;
@@ -20,7 +21,7 @@ function setup(fetches: Array<Promise<RoomState | null>>) {
     subscribe: (cb) => { order.push("subscribe"); cbs.players = cb; return unsubs.sub; },
     onReconnect: (cb) => { cbs.reconnect = cb; return unsubs.rec; },
     onVisible: (cb) => { cbs.visible = cb; return unsubs.vis; },
-    fetchState: vi.fn(() => { order.push("fetch"); return fetches[i++]; }),
+    fetchState: vi.fn(() => { order.push("fetch"); const f = fetches[i++]; return typeof f === "function" ? f() : f; }),
     onState: vi.fn(),
     onPlayers: vi.fn(),
     onGone: vi.fn(),
@@ -28,6 +29,14 @@ function setup(fetches: Array<Promise<RoomState | null>>) {
   return { deps: deps as RoomSyncDeps & typeof deps, order, cbs, unsubs };
 }
 const flush = () => new Promise((r) => setTimeout(r, 0));
+
+beforeEach(() => {
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+});
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+});
 
 describe("startRoomSync", () => {
   it("subscribes before the first fetch", () => {
@@ -130,5 +139,59 @@ describe("startRoomSync", () => {
     await flush();
     expect(s.deps.onState).not.toHaveBeenCalledWith(state1);
     expect(s.deps.onState).toHaveBeenLastCalledWith(state2);
+  });
+
+  it("retries a rejected fetch with backoff and then applies the state", async () => {
+    vi.useFakeTimers();
+    const s = setup([
+      () => Promise.reject(new Error("net")),
+      () => Promise.reject(new Error("net")),
+      Promise.resolve(state2),
+    ]);
+    startRoomSync(s.deps);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(s.deps.fetchState).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(s.deps.fetchState).toHaveBeenCalledTimes(2);
+    expect(s.deps.onState).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(s.deps.fetchState).toHaveBeenCalledTimes(3);
+    expect(s.deps.onState).toHaveBeenCalledWith(state2);
+  });
+
+  it("gives up after 2 retries", async () => {
+    vi.useFakeTimers();
+    const s = setup([
+      () => Promise.reject(new Error("a")),
+      () => Promise.reject(new Error("b")),
+      () => Promise.reject(new Error("c")),
+      Promise.resolve(state2),
+    ]);
+    startRoomSync(s.deps);
+    await vi.advanceTimersByTimeAsync(10000);
+    expect(s.deps.fetchState).toHaveBeenCalledTimes(3);
+    expect(s.deps.onState).not.toHaveBeenCalled();
+  });
+
+  it("does not retry after stop()", async () => {
+    vi.useFakeTimers();
+    const s = setup([() => Promise.reject(new Error("a")), Promise.resolve(state2)]);
+    const stop = startRoomSync(s.deps);
+    await vi.advanceTimersByTimeAsync(0);
+    stop();
+    await vi.advanceTimersByTimeAsync(10000);
+    expect(s.deps.fetchState).toHaveBeenCalledTimes(1);
+  });
+
+  it("a newer refetch supersedes a pending retry", async () => {
+    vi.useFakeTimers();
+    const s = setup([() => Promise.reject(new Error("a")), Promise.resolve(state2), Promise.resolve(state1)]);
+    startRoomSync(s.deps);
+    await vi.advanceTimersByTimeAsync(0);
+    s.cbs.visible!();
+    await vi.advanceTimersByTimeAsync(10000);
+    expect(s.deps.fetchState).toHaveBeenCalledTimes(2);
+    expect(s.deps.onState).toHaveBeenCalledTimes(1);
+    expect(s.deps.onState).toHaveBeenCalledWith(state2);
   });
 });

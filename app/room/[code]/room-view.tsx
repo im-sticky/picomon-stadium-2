@@ -10,6 +10,7 @@ import { RoomScreen } from "./room-screen";
 export function RoomView({ code }: { code: string }) {
   const router = useRouter();
   const [state, setState] = useState<RoomState | null>(null);
+  const [liveFailed, setLiveFailed] = useState(false);
 
   useEffect(() => {
     const realtime = new Ably.Realtime({ authUrl: "/api/ably-token" });
@@ -18,15 +19,28 @@ export function RoomView({ code }: { code: string }) {
     let subscribed: Promise<unknown> = Promise.resolve();
     let closed = false;
 
+    const onConnectionProblem = (change: Ably.ConnectionStateChange) => {
+      console.error(`ably connection ${change.current}`, change.reason);
+      setLiveFailed(true);
+    };
+    const onConnected = () => setLiveFailed(false);
+    realtime.connection.on(["failed", "suspended"], onConnectionProblem);
+    realtime.connection.on("connected", onConnected);
+
     const stop = startRoomSync({
       subscribe(onPlayers) {
         const listener = (msg: Ably.Message) => {
           const players = msg.data?.players as PublicPlayer[] | undefined;
           if (Array.isArray(players)) onPlayers(players);
         };
-        subscribed = channel.subscribe("player-joined", listener).catch(() => {});
+        subscribed = channel.subscribe("player-joined", listener).catch((err) => {
+          console.error("ably channel attach failed", err);
+          if (!closed) setLiveFailed(true);
+        });
         return () => channel.unsubscribe("player-joined", listener);
       },
+      // Ordering dependency: startRoomSync calls `subscribe` before `onReconnect`,
+      // so `subscribed` is already set when the after-attach refetch below reads it.
       onReconnect(cb) {
         let first = true;
         // Events before the channel attaches are lost: refetch once it has.
@@ -63,11 +77,18 @@ export function RoomView({ code }: { code: string }) {
 
     return () => {
       closed = true;
+      realtime.connection.off(onConnectionProblem);
+      realtime.connection.off("connected", onConnected);
       stop();
       realtime.close();
     };
   }, [code, router]);
 
-  if (!state) return <p>Loading…</p>;
-  return <RoomScreen state={state} />;
+  const notice = liveFailed && <p role="alert">Live updates unavailable — refresh the page.</p>;
+  return (
+    <>
+      {notice}
+      {state ? <RoomScreen state={state} /> : <p>Loading…</p>}
+    </>
+  );
 }

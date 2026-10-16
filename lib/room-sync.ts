@@ -10,18 +10,27 @@ export type RoomSyncDeps = {
   onGone(): void;
 };
 
+// Backoff before each retry of a rejected fetch (so up to 2 retries).
+const RETRY_DELAYS_MS = [500, 1500];
+
 export function startRoomSync(deps: RoomSyncDeps): () => void {
   let stopped = false;
   let latest = 0;
 
   const refetch = async () => {
     const id = ++latest;
-    let state: RoomState | null;
-    try {
-      state = await deps.fetchState();
-    } catch (err) {
-      console.warn("room-sync: fetchState failed", err);
-      return; // network error: a later reconnect/visible refetch retries
+    let state: RoomState | null = null;
+    for (let attempt = 0; ; attempt++) {
+      try {
+        state = await deps.fetchState();
+        break;
+      } catch (err) {
+        console.warn("room-sync: fetchState failed", err);
+        // Out of retries: a later reconnect/visible/event refetch tries again.
+        if (attempt >= RETRY_DELAYS_MS.length) return;
+        await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
+        if (stopped || id !== latest) return;
+      }
     }
     if (stopped || id !== latest) return;
     if (state === null) deps.onGone();
