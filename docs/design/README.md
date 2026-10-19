@@ -75,7 +75,7 @@ Home ──JOIN──▶ Lobby (full)
 | 0d Both players in | `LobbyFull.dc.html` | `Lobby` with `full`: both players, START BATTLE |
 | 1a Type select | `Main.dc.html` | Grass/Water/Fire rock-paper-scissors, VS, message box |
 | 1b Type result | `Result.dc.html` | `Main` with `p1="fire" p2="grass"`: P1 wins, FIRST/SECOND |
-| 2a Draft | `Draft.dc.html` | 10×4 Pokémon grid, team slots, hover info box |
+| 2a Draft | `Draft.dc.html` | Scrolling 9-column Pokémon grid, team slots, hover info box |
 | 2b Pokémon detail | `Detail.dc.html` | Sprite, types, ability, moves, stats, move box, RENT/BACK |
 | 2c Draft after rentals | `DraftRented.dc.html` | `Draft` with P1 and P2 rentals shown as pokéballs |
 
@@ -130,8 +130,22 @@ state, not separate screens.
 - Title: "PLAYER n'S CHOICE" for whoever's turn it is.
 - Team strip: six 64px slots per player (P1 left, P2 right). Picked slots show the
   Pokémon's icon, empty slots a faint pokéball. The centre shows picks left this turn.
-- Grid: 40 Pokémon, 10×4, 108px cells with 96px sprites. Hover gives a light grey
-  background and fills the info box. Click opens Detail.
+- Grid: 9 columns of 108px cells with 96px sprites, spread evenly across the
+  width left of the scrollbar (each cell centred in an equal column), in a
+  432px-tall box (4 rows visible) that scrolls vertically, since the real pool
+  will be much larger. Hover
+  gives a light grey background and fills the info box. Click opens Detail.
+- Scrollbar: a custom, classic-style bar (the browser's own is hidden), aligned to
+  the right edge of the grid area: 36px wide, 12px gap from the grid, 432px tall.
+  - Up/down buttons (36×36) and the thumb are solid `#181818` with no border, and a
+    touch of shading: a 3px `#585858` highlight on the top and left edges only. The
+    buttons have light pixel ▲/▼ arrows.
+  - Track: a 3px checkerboard dither of `#181818` and `#585858`, no border.
+  - Up/down scroll one row (108px). Clicking the track pages up or down, and the
+    thumb can be dragged. Its size follows how much of the list is visible
+    (min 36px).
+  - The scroll box stays keyboard-focusable, and the bar is hidden from screen
+    readers because the box scrolls natively.
 - Rented Pokémon become a 96px pokéball: red for P1, blue for P2. They can be hovered
   ("Rented by PLAYER n.") but not opened.
 - Info box: name with type badges on the right, then four moves in two columns.

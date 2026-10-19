@@ -20,6 +20,14 @@ body{margin:0}
 .cell{width:108px;height:108px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;border:6px solid transparent;border-radius:6px;text-decoration:none;color:inherit}
 a.cell:hover,a.cell:focus-visible,a.cell.on,.taken.on{background:#E8E8E8;outline:none}
 .p2ball{filter:hue-rotate(235deg)}
+.scroller{scrollbar-width:none}
+.scroller::-webkit-scrollbar{display:none}
+.scroller:focus-visible{outline:3px solid #181818;outline-offset:3px}
+.sbar{width:36px;height:432px;display:flex;flex-direction:column;flex:none}
+.sbtn,.sthumb{box-sizing:border-box;background:#181818;border:0;box-shadow:inset 3px 3px 0 #585858}
+.sbtn{width:36px;height:36px;padding:0;display:flex;align-items:center;justify-content:center;cursor:pointer;font:inherit}
+.strack{position:relative;flex:1;background-color:#585858;background-image:conic-gradient(#181818 25%,#585858 0 50%,#181818 0 75%,#585858 0);background-size:6px 6px}
+.sthumb{position:absolute;left:0;width:36px;cursor:grab}
 .slot{width:64px;height:64px;display:flex;align-items:center;justify-content:center}
 .cur{flex:none}
 .tag{display:inline-block;width:148px;height:28px;box-sizing:border-box;text-align:center;font-size:16px;line-height:28px;color:#F8F8F8;clip-path:polygon(4px 0,calc(100% - 4px) 0,calc(100% - 4px) 4px,100% 4px,100% calc(100% - 4px),calc(100% - 4px) calc(100% - 4px),calc(100% - 4px) 100%,4px 100%,4px calc(100% - 4px),0 calc(100% - 4px),0 4px,4px 4px)}
@@ -57,7 +65,9 @@ a.cell:hover,a.cell:focus-visible,a.cell.on,.taken.on{background:#E8E8E8;outline
       </sc-for>
     </div>
   </div>
-  <div role="list" aria-label="Pokémon available to rent" style="display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 0px">
+  <div style="display: flex; gap: 12px; height: 432px">
+  <div class="scroller" tabindex="0" ref="{{setScroller}}" onScroll="{{onScroll}}" aria-label="Pokémon available to rent, scrollable" style="height: 432px; flex: 1; min-width: 0; overflow-y: auto">
+  <div role="list" aria-label="Pokémon available to rent" style="display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); justify-items: center; gap: 0px">
     <sc-for list="{{cells}}" as="c" hint-placeholder-count="40">
       <div role="listitem">
         <sc-if value="{{c.free}}" hint-placeholder-val="{{ true }}">
@@ -72,6 +82,19 @@ a.cell:hover,a.cell:focus-visible,a.cell.on,.taken.on{background:#E8E8E8;outline
         </sc-if>
       </div>
     </sc-for>
+  </div>
+  </div>
+  <div class="sbar" aria-hidden="true">
+    <button type="button" class="sbtn" tabindex="-1" onClick="{{scrollUp}}">
+      <svg width="21" height="12" viewBox="0 0 7 4" shape-rendering="crispEdges"><path d="M3 0h1v1h1v1h1v1h1v1H0V3h1V2h1V1h1z" fill="#F8F8F8"></path></svg>
+    </button>
+    <div class="strack" onPointerDown="{{trackDown}}">
+      <div class="sthumb" onPointerDown="{{thumbDown}}" style="top: {{thumbTop}}; height: {{thumbH}}"></div>
+    </div>
+    <button type="button" class="sbtn" tabindex="-1" onClick="{{scrollDown}}">
+      <svg width="21" height="12" viewBox="0 0 7 4" shape-rendering="crispEdges" style="transform: scaleY(-1)"><path d="M3 0h1v1h1v1h1v1H0V3h1V2h1V1h1z" fill="#F8F8F8"></path></svg>
+    </button>
+  </div>
   </div>
   <p style="font-size: 16px; line-height: 24px; text-align: center; color: #585858">Hover for moves · Click for details</p>
   <div class="frame" style="flex-grow: 1; padding: 18px 36px; display: flex; flex-direction: column">
@@ -106,9 +129,53 @@ a.cell:hover,a.cell:focus-visible,a.cell.on,.taken.on{background:#E8E8E8;outline
 class Component extends DCLogic {
   constructor(props) {
     super(props);
-    this.state = { h: null };
+    this.state = { h: null, st: 0, sh: 1, ch: 1 };
+  }
+  componentDidMount() {
+    this.t = setTimeout(() => this.measure(), 50);
+  }
+  componentWillUnmount() {
+    clearTimeout(this.t);
+    if (this.stopDrag) this.stopDrag();
+  }
+  measure() {
+    const el = this.scroller;
+    if (el) this.setState({ st: el.scrollTop, sh: el.scrollHeight, ch: el.clientHeight });
   }
   renderVals() {
+    // Custom scrollbar: 432px bar = 36px up button + 360px track + 36px down button
+    const TRACK = 360;
+    const ROW = 108;
+    const { st, sh, ch } = this.state;
+    const max = Math.max(1, sh - ch);
+    const thumbPx = sh <= ch ? TRACK : Math.max(36, Math.round(TRACK * ch / sh));
+    const thumbTopPx = sh <= ch ? 0 : Math.round(st / max * (TRACK - thumbPx));
+    const scrollBy = (dy) => this.scroller && this.scroller.scrollBy({ top: dy, behavior: 'smooth' });
+    const trackDown = (e) => {
+      if (e.target !== e.currentTarget) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      const y = (e.clientY - rect.top) * TRACK / rect.height;
+      scrollBy(y < thumbTopPx ? -ch : ch);
+    };
+    const thumbDown = (e) => {
+      const el = this.scroller;
+      if (!el || sh <= ch) return;
+      e.preventDefault();
+      // The canvas may be zoomed: convert screen pixels back to design pixels
+      const scale = e.currentTarget.parentElement.getBoundingClientRect().height / TRACK;
+      const startY = e.clientY;
+      const start = el.scrollTop;
+      const ratio = max / (TRACK - thumbPx);
+      const move = (ev) => { el.scrollTop = start + (ev.clientY - startY) / scale * ratio; };
+      const up = () => this.stopDrag && this.stopDrag();
+      this.stopDrag = () => {
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', up);
+        this.stopDrag = null;
+      };
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', up);
+    };
     // Draft pool: [name, types, icon blob id]
     const POOL = [
       ['VENUSAUR', 'GRASS POISON', '306822b5b874f91ba29da9143239f925'],
@@ -222,6 +289,14 @@ class Component extends DCLogic {
       p1team: team(p1),
       p2team: team(p2),
       cells,
+      setScroller: (el) => { this.scroller = el; },
+      onScroll: () => this.measure(),
+      scrollUp: () => scrollBy(-ROW),
+      scrollDown: () => scrollBy(ROW),
+      trackDown,
+      thumbDown,
+      thumbTop: thumbTopPx + 'px',
+      thumbH: thumbPx + 'px',
       info: info || { types: [], moves: [] },
       hasInfo: !!info,
       noInfo: !info,
