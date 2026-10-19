@@ -11,14 +11,17 @@ import { VisuallyHidden } from "@/app/ui/visually-hidden";
 import styles from "./room.module.css";
 
 const WAITING: Message = ["Send this code to a friend.", "Waiting for PLAYER 2..."];
-const FULL: Message = ["Both players connected!", "Ready to battle?"];
+const FULL_HOST: Message = ["Both players connected!", "Ready to battle?"];
+const FULL_GUEST: Message = ["Both players connected!", "Waiting for PLAYER 1..."];
 
 /** `notice` replaces the message box text (e.g. a realtime failure). */
 export function RoomScreen({ state, notice }: { state: RoomState; notice?: Message }) {
-  const { code, players } = state;
+  const { code, players, you } = state;
   const host = players.find((p) => p.slot === 1);
   const guest = players.find((p) => p.slot === 2);
   const full = players.length >= 2;
+  const isHost = you.slot === 1;
+  const fullMessage = isHost ? FULL_HOST : FULL_GUEST;
 
   const [copied, setCopied] = useState(false);
   const copiedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -71,12 +74,12 @@ export function RoomScreen({ state, notice }: { state: RoomState; notice?: Messa
         </ul>
       </Frame>
 
-      <MessageBox message={notice ?? (full ? FULL : WAITING)} role={notice ? "alert" : "status"} />
+      <MessageBox message={notice ?? (full ? fullMessage : WAITING)} role={notice ? "alert" : "status"} />
 
-      {full && (
+      {full && isHost && (
         <div className={styles.start}>
-          {/* The type battle screen doesn't exist yet. */}
-          <Button primary disabled className={styles.startButton}>
+          {/* No action yet: the type battle screen doesn't exist. */}
+          <Button primary className={styles.startButton}>
             START BATTLE
           </Button>
         </div>

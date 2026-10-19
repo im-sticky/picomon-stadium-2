@@ -51,14 +51,22 @@ describe("RoomScreen", () => {
     expect(screen.getByRole("button", { name: "COPY" })).toBeInTheDocument();
   });
 
-  it("two players: title, both names, host marked HOST, disabled START BATTLE", () => {
-    const state: RoomState = { code: "K7PQ", you: { id: "b", slot: 2 }, players: [host, guest] };
+  it("two players, host: title, both names, host marked HOST, START BATTLE enabled", () => {
+    const state: RoomState = { code: "K7PQ", you: { id: "a", slot: 1 }, players: [host, guest] };
     render(<RoomScreen state={state} />);
     expect(screen.getByRole("heading", { name: "ROOM K7PQ" })).toBeInTheDocument();
     expect(playerRows()).toEqual(["P1AshHOST", "P2Misty"]);
     expect(messageLines()).toEqual(["Both players connected!", "Ready to battle?"]);
     expect(screen.queryByRole("button", { name: /COPY/ })).toBeNull();
-    expect(screen.getByRole("button", { name: "START BATTLE" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "START BATTLE" })).toBeEnabled();
+  });
+
+  it("two players, guest: no START BATTLE, waits for the host", () => {
+    const state: RoomState = { code: "K7PQ", you: { id: "b", slot: 2 }, players: [host, guest] };
+    render(<RoomScreen state={state} />);
+    expect(playerRows()).toEqual(["P1AshHOST", "P2Misty"]);
+    expect(messageLines()).toEqual(["Both players connected!", "Waiting for PLAYER 1..."]);
+    expect(screen.queryByRole("button", { name: "START BATTLE" })).toBeNull();
   });
 
   it("a notice replaces the message", () => {
