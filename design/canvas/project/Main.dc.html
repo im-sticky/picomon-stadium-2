@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Choose a type</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.gb{font-family:'Press Start 2P',monospace;color:#181818;background:#F8F8F8;-webkit-font-smoothing:none}
+.gb p,.gb h1,.gb h2{margin:0;font-weight:400}
+.frame{border:6px solid #181818;border-radius:6px;box-shadow:inset 0 0 0 3px #F8F8F8,inset 0 0 0 6px #181818;background:#F8F8F8}
+.pix{image-rendering:pixelated;display:block}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+a.btn{color:inherit;cursor:pointer;text-decoration:none}
+button:disabled{cursor:default}
+.cur{visibility:hidden;flex:none}
+.opt,.opt2{border:6px solid transparent;border-radius:6px}
+.opt:not(:disabled):hover,.opt:focus-visible{background:#E8E8E8;outline:none}
+.sel{border-color:#181818;box-shadow:inset 0 0 0 3px #F8F8F8,inset 0 0 0 6px #181818}
+.dim{opacity:.3}
+.btn{position:relative;display:flex;align-items:center;justify-content:center;width:240px;box-sizing:border-box;padding:36px 24px;font-size:24px;border:6px solid #181818;border-radius:6px;box-shadow:inset 0 0 0 3px #F8F8F8,inset 0 0 0 6px #181818}
+.btn .cur{position:absolute;left:30px;top:50%;margin-top:-12px}
+.btn:hover .cur,.btn:focus-visible .cur{visibility:visible}
+.btn:focus-visible{outline:none;background:#E8E8E8}
+.btn.primary{background:#181818;color:#F8F8F8;box-shadow:inset 0 0 0 3px #181818,inset 0 0 0 6px #F8F8F8}
+.btn.primary path{fill:#F8F8F8}
+</style>
+</helmet>
+<div class="gb" style="width: 1200px; height: 900px; box-sizing: border-box; padding: 36px 72px; display: flex; flex-direction: column; gap: 24px">
+  <h1 style="font-size: 32px; line-height: 48px; text-align: center">CHOOSE A TYPE</h1>
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-grow: 1">
+    <section aria-label="Player 1" style="display: flex; flex-direction: column; gap: 12px; width: 360px">
+      <h2 style="font-size: 24px; line-height: 48px; padding-left: 24px">PLAYER 1 <span style="font-size: 16px; color: #C03028">YOU</span></h2>
+      <sc-for list="{{p1opts}}" as="o" hint-placeholder-count="3">
+        <button class="{{o.cls}}" onClick="{{o.pick}}" disabled="{{o.disabled}}" aria-label="{{o.aria}}" style="display: flex; align-items: center; gap: 12px; padding: 24px; width: 288px; box-sizing: border-box; text-align: left">
+          <img class="pix" src="{{o.src}}" alt="" style="width: 96px; height: 96px">
+          <span style="font-size: 24px">{{o.label}}</span>
+        </button>
+      </sc-for>
+    </section>
+    <div style="flex: 1; align-self: center; display: flex; flex-direction: column; align-items: center; gap: 24px; text-align: center; padding-top: 48px">
+      <p style="font-size: 32px; line-height: 48px">{{status}}</p>
+    </div>
+    <section aria-label="Player 2" style="display: flex; flex-direction: column; align-items: flex-end; gap: 12px; width: 360px">
+      <h2 style="font-size: 24px; line-height: 48px; padding-right: 24px">PLAYER 2</h2>
+      <sc-for list="{{p2opts}}" as="o" hint-placeholder-count="3">
+        <div class="{{o.cls}}" style="display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding: 24px; width: 288px; box-sizing: border-box">
+          <span style="font-size: 24px">{{o.label}}</span>
+          <img class="pix" src="{{o.src}}" alt="{{o.label}}" style="width: 96px; height: 96px">        </div>
+      </sc-for>
+    </section>
+  </div>
+  <div class="frame" style="padding: 30px; display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 120px">
+    <div style="display: flex; flex-direction: column; flex: 1">
+      <p style="font-size: 24px; line-height: 48px; text-align: center">{{msg1}}</p>
+      <p style="font-size: 24px; line-height: 48px; text-align: center">{{msg2}}</p>
+    </div>
+    <a href="Draft.dc.html" ref="{{setGo}}" hidden aria-hidden="true" tabindex="-1"></a>
+    <sc-if value="{{showRetry}}" hint-placeholder-val="{{ false }}">
+      <button class="btn" onClick="{{reset}}" style="font-size: 24px; flex: none">
+        <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
+        AGAIN
+      </button>
+    </sc-if>
+    <sc-if value="{{showOrder}}" hint-placeholder-val="{{ false }}">
+      <div role="group" aria-label="Draft order" style="display: flex; gap: 12px; flex: none">
+        <a class="btn primary" href="Draft.dc.html" style="width: 216px; padding: 36px 18px">
+          <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
+          FIRST
+        </a>
+        <a class="btn" href="Draft.dc.html" style="width: 216px; padding: 36px 18px">
+          <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
+          SECOND
+        </a>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"p1":{"editor":"enum","options":["","grass","water","fire"],"default":""},"p2":{"editor":"enum","options":["","grass","water","fire"],"default":""},"$preview":{"width":1200,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { p1: null, p2: null };
+  }
+  componentWillUnmount() {
+    clearTimeout(this.t);
+    clearTimeout(this.t2);
+  }
+  renderVals() {
+    const TYPES = [
+      { key: 'grass', label: 'GRASS', src: '/_blob/f56afe274514d342db8ca1be4dab8000' },
+      { key: 'water', label: 'WATER', src: '/_blob/34c9cdb7a33410bb98ae3b85477c9bbb' },
+      { key: 'fire', label: 'FIRE', src: '/_blob/07561f08e88c6b9e56b03480cd904247' }
+    ];
+    const BEATS = { grass: 'water', water: 'fire', fire: 'grass' };
+    const name = (k) => TYPES.find((t) => t.key === k).label;
+    const p1 = this.state.p1 || this.props.p1 || null;
+    const p2 = this.state.p2 || this.props.p2 || null;
+    const done = !!(p1 && p2);
+    const winner = !done ? null : p1 === p2 ? 0 : BEATS[p1] === p2 ? 1 : 2;
+
+    const pick = (k) => {
+      if (p1) return;
+      this.setState({ p1: k });
+      clearTimeout(this.t);
+      this.t = setTimeout(() => {
+        const k2 = TYPES[Math.floor(Math.random() * 3)].key;
+        this.setState({ p2: k2 });
+        // Prototype only: if PLAYER 2 wins, they pick the order after a moment
+        if (BEATS[k2] === k) {
+          this.t2 = setTimeout(() => this.go && this.go.click(), 2500);
+        }
+      }, 1200);
+    };
+    const reset = () => {
+      clearTimeout(this.t);
+      clearTimeout(this.t2);
+      this.setState({ p1: '', p2: '' });
+    };
+
+    const p1opts = TYPES.map((t) => ({
+      ...t,
+      aria: 'Choose ' + t.label,
+      pick: () => pick(t.key),
+      disabled: !!p1,
+      cls: 'opt' + (p1 === t.key ? ' sel' : '') + (p1 && p1 !== t.key ? ' dim' : '')
+    }));
+    const p2opts = TYPES.map((t) => ({
+      ...t,
+      cls: 'opt2' + (done && p2 === t.key ? ' sel' : ' dim')
+    }));
+
+    let status = 'VS';
+    let substatus = 'Pick a type';
+    let msg1 = 'Choose a type.';
+    let msg2 = 'Winner chooses the draft order.';
+    if (p1 && !done) {
+      status = '. . .';
+      substatus = 'Waiting for PLAYER 2';
+    }
+    if (winner === 0) {
+      status = 'DRAW!';
+      substatus = '';
+      msg1 = 'Both chose ' + name(p1) + '!';
+      msg2 = 'Choose again.';
+    } else if (winner) {
+      const w = winner === 1 ? p1 : p2;
+      const l = winner === 1 ? p2 : p1;
+      status = 'P' + winner + ' WINS!';
+      substatus = '';
+      msg1 = name(w) + ' beats ' + name(l) + '!';
+      msg2 = winner === 1 ? 'Pick FIRST or SECOND?' : 'PLAYER 2 is choosing the order...';
+    }
+
+    return {
+      p1opts, p2opts, status, substatus, msg1, msg2, reset,
+      setGo: (el) => { this.go = el; },
+      showRetry: winner === 0,
+      showOrder: winner === 1
+    };
+  }
+}
+</script>
+</body>
+</html>

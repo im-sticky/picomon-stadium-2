@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pokémon detail</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.gb{font-family:'Press Start 2P',monospace;color:#181818;background:#F8F8F8;-webkit-font-smoothing:none}
+.gb p,.gb h1,.gb h2{margin:0;font-weight:400}
+.frame{border:6px solid #181818;border-radius:6px;box-shadow:inset 0 0 0 3px #F8F8F8,inset 0 0 0 6px #181818;background:#F8F8F8}
+.pix{image-rendering:pixelated;display:block}
+.spr{overflow:hidden;flex:none}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+a.btn{color:inherit;cursor:pointer;text-decoration:none}
+.cur{flex:none;visibility:hidden}
+.move{display:flex;flex-direction:column;padding:2px 12px;width:100%;box-sizing:border-box;text-align:left;border-radius:6px}
+.move:focus-visible{outline:3px solid #181818}
+.move.on{background:#E8E8E8}
+.tag{display:inline-block;width:148px;height:28px;box-sizing:border-box;text-align:center;font-size:16px;line-height:28px;color:#F8F8F8;clip-path:polygon(4px 0,calc(100% - 4px) 0,calc(100% - 4px) 4px,100% 4px,100% calc(100% - 4px),calc(100% - 4px) calc(100% - 4px),calc(100% - 4px) 100%,4px 100%,4px calc(100% - 4px),0 calc(100% - 4px),0 4px,4px 4px)}
+.cat-row .tag{margin-bottom:4px}
+.btn{position:relative;display:flex;align-items:center;justify-content:center;width:240px;box-sizing:border-box;padding:36px 24px;font-size:24px;border:6px solid #181818;border-radius:6px;box-shadow:inset 0 0 0 3px #F8F8F8,inset 0 0 0 6px #181818}
+.btn .cur{position:absolute;left:30px;top:50%;margin-top:-12px}
+.btn:hover .cur,.btn:focus-visible .cur{visibility:visible}
+.btn:focus-visible{outline:none;background:#E8E8E8}
+.btn.primary{background:#181818;color:#F8F8F8;box-shadow:inset 0 0 0 3px #181818,inset 0 0 0 6px #F8F8F8}
+.btn.primary path{fill:#F8F8F8}
+.bar{height:12px;background:#F8F8F8;overflow:hidden}
+.seg{height:28px;padding:0 10px;font-size:16px;line-height:28px;background:#E8E8E8;color:#181818;clip-path:polygon(4px 0,calc(100% - 4px) 0,calc(100% - 4px) 4px,100% 4px,100% calc(100% - 4px),calc(100% - 4px) calc(100% - 4px),calc(100% - 4px) 100%,4px 100%,4px calc(100% - 4px),0 calc(100% - 4px),0 4px,4px 4px)}
+.seg.on{background:#181818;color:#F8F8F8}
+.seg:focus-visible{outline:3px solid #181818;outline-offset:2px}
+.hpbar{display:flex;align-items:center;height:18px;box-sizing:border-box;padding:3px 3px 3px 0;background:#181818;clip-path:polygon(3px 0,calc(100% - 3px) 0,calc(100% - 3px) 3px,100% 3px,100% calc(100% - 3px),calc(100% - 3px) calc(100% - 3px),calc(100% - 3px) 100%,3px 100%,3px calc(100% - 3px),0 calc(100% - 3px),0 3px,3px 3px)}
+.hplabel{font-size:12px;line-height:12px;color:#F8B830;padding:0 6px}
+.hptrack{flex:1;height:12px;background:#F8F8F8;overflow:hidden;clip-path:polygon(0 0,calc(100% - 3px) 0,calc(100% - 3px) 3px,100% 3px,100% calc(100% - 3px),calc(100% - 3px) calc(100% - 3px),calc(100% - 3px) 100%,0 100%)}
+.hpfill{height:100%;background:#40C048}</style>
+</helmet>
+<div class="gb" style="width: 1200px; height: 900px; box-sizing: border-box; padding: 24px 48px; display: flex; flex-direction: column; gap: 12px">
+  <h1 style="font-size: 32px; line-height: 48px; text-align: center">PLAYER 1'S CHOICE</h1>
+  <div class="frame" style="flex-grow: 1; padding: 18px 36px; display: flex; flex-direction: column; gap: 18px">
+    <div style="display: flex; align-items: center; gap: 36px">
+      <div class="spr" style="width: 128px; height: 128px"><img class="pix" src="/_blob/306822b5b874f91ba29da9143239f925" alt="Venusaur" style="width: 128px; height: 256px"></div>
+      <div style="display: flex; flex-direction: column; gap: 12px">
+        
+        <h2 style="font-size: 32px; line-height: 48px">VENUSAUR</h2>
+        <div style="display: flex; gap: 12px">
+          <span class="tag" style="background: #2F7D3F">GRASS</span>
+          <span class="tag" style="background: #8A3A8A">POISON</span>
+        </div>
+      </div>
+      <section aria-label="Ability" style="margin-left: auto; width: 480px; display: flex; flex-direction: column; align-items: flex-start">
+        <p style="font-size: 16px; line-height: 32px; color: #585858">ABILITY</p>
+        <div>
+          <p style="font-size: 24px; line-height: 32px">Overgrow</p>
+          <p style="font-size: 16px; line-height: 24px">Powers up Grass-type moves in a pinch.</p>
+        </div>
+      </section>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 60px">
+      <section aria-label="Moves" style="display: flex; flex-direction: column; gap: 4px">
+        <p style="font-size: 16px; line-height: 32px; color: #585858; padding-left: 12px">MOVES</p>
+        <sc-for list="{{moves}}" as="m" hint-placeholder-count="4">
+          <button class="move {{m.on}}" onMouseEnter="{{m.pick}}" onFocus="{{m.pick}}" onClick="{{m.pick}}">
+            <span style="font-size: 24px; line-height: 32px">{{m.name}}</span>
+            <span style="font-size: 16px; line-height: 24px; text-align: right">PP {{m.pp}}/{{m.pp}}</span>
+          </button>
+        </sc-for>
+      </section>
+      <section aria-label="Stats" style="display: flex; flex-direction: column">
+        <div style="display: flex; align-items: center; justify-content: space-between; height: 32px">
+          <p style="font-size: 16px; line-height: 32px; color: #585858">STATS</p>
+          <div role="group" aria-label="Stat view" style="display: flex; gap: 8px">
+            <button class="seg {{segCalc}}" onClick="{{showCalc}}" aria-pressed="{{isCalc}}">LV.50</button>
+            <button class="seg {{segBase}}" onClick="{{showBase}}" aria-pressed="{{isBase}}">BASE</button>
+          </div>
+        </div>
+        <sc-if value="{{isCalc}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; justify-content: space-between; align-items: center; height: 32px">
+            <span style="font-size: 16px">HP</span>
+            <span style="font-size: 16px">{{hp}}/{{hp}}</span>
+          </div>
+          <div style="display: flex; justify-content: flex-end; align-items: center; height: 24px">
+            <div class="hpbar" style="width: 216px">
+              <span class="hplabel">HP</span>
+              <div class="hptrack"><div class="hpfill" style="width: 100%"></div></div>
+            </div>
+          </div>
+          <sc-for list="{{calc}}" as="s" hint-placeholder-count="5">
+            <div style="display: flex; justify-content: space-between; align-items: center; height: 32px">
+              <span style="font-size: 16px">{{s.label}}</span>
+              <span style="font-size: 16px">{{s.value}}</span>
+            </div>
+          </sc-for>
+        </sc-if>
+        <sc-if value="{{isBase}}" hint-placeholder-val="{{ true }}">
+        <sc-for list="{{stats}}" as="s" hint-placeholder-count="6">
+          <div style="display: grid; grid-template-columns: 168px 84px 1fr; align-items: center; height: 32px">
+            <span style="font-size: 16px">{{s.label}}</span>
+            <span style="font-size: 16px; text-align: right; padding-right: 18px">{{s.value}}</span>
+            <div class="bar"><div style="height: 100%; width: {{s.pct}}; background: {{s.color}}"></div></div>
+          </div>
+        </sc-for>
+        <div style="display: grid; grid-template-columns: 168px 84px 1fr; align-items: center; height: 32px">
+          <span style="font-size: 16px; color: #585858">TOTAL</span>
+          <span style="font-size: 16px; text-align: right; padding-right: 18px">{{total}}</span>
+        </div>
+        </sc-if>
+      </section>
+    </div>
+  </div>
+  <div class="frame" aria-live="polite" aria-label="{{sel.name}}" style="padding: 18px 36px; height: 192px; box-sizing: border-box; display: flex; flex-direction: column">
+    <div class="cat-row" style="display: flex; align-items: center; gap: 12px; height: 48px">
+      <img class="pix" src="{{sel.catSrc}}" alt="{{sel.cat}}" style="width: 64px; height: 32px">
+      <span class="tag" style="background: {{sel.typeColor}}">{{sel.type}}</span>
+      <p style="font-size: 24px; margin-left: auto">{{sel.powAcc}}</p>
+    </div>
+    <p style="font-size: 24px; line-height: 48px">{{sel.effect}}</p>
+  </div>
+  <div style="display: flex; justify-content: center; gap: 48px">
+    <a class="btn primary" href="DraftRented.dc.html">
+      <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
+      RENT
+    </a>
+    <a class="btn" href="Draft.dc.html">
+      <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
+      BACK
+    </a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { m: 0, view: 'calc' };
+  }
+  renderVals() {
+    const CAT = {
+      PHYSICAL: '/_blob/5e334b67f3a33e0aef7c6d7e44195045',
+      SPECIAL: '/_blob/3ee4588b90c265212c90acc7ed0ffd95',
+      STATUS: '/_blob/87ab199033fd3769fffdeae0ead39fa6'
+    };
+    const TYPE = { POISON: '#8A3A8A', GRASS: '#2F7D3F' };
+    const MOVES = [
+      { name: 'SLUDGE BOMB', type: 'POISON', cat: 'SPECIAL', power: '90', acc: '100', pp: '10', effect: 'May poison the target (30%).' },
+      { name: 'ENERGY BALL', type: 'GRASS', cat: 'SPECIAL', power: '80', acc: '100', pp: '10', effect: 'May lower target SP.DEF (10%).' },
+      { name: 'SLEEP POWDER', type: 'GRASS', cat: 'STATUS', power: '---', acc: '75', pp: '15', effect: 'Puts the target to sleep.' },
+      { name: 'LEECH SEED', type: 'GRASS', cat: 'STATUS', power: '---', acc: '90', pp: '10', effect: 'Drains 1/8 of target HP each turn.' }
+    ];
+    const BASE = [['HP', 80], ['ATTACK', 82], ['DEFENSE', 83], ['SP.ATK', 100], ['SP.DEF', 100], ['SPEED', 80]];
+    const m = this.state.m;
+    const sel = MOVES[m];
+    // Gen 4 formula at level 50, 31 IVs, 0 EVs, neutral nature
+    const L = 50;
+    const calcStat = (b, isHp) => Math.floor((2 * b + 31) * L / 100) + (isHp ? L + 10 : 5);
+    const isCalc = this.state.view === 'calc';
+    return {
+      isBase: !isCalc,
+      isCalc,
+      segBase: isCalc ? '' : 'on',
+      segCalc: isCalc ? 'on' : '',
+      showBase: () => this.setState({ view: 'base' }),
+      showCalc: () => this.setState({ view: 'calc' }),
+      hp: calcStat(BASE[0][1], true),
+      calc: BASE.slice(1).map(([label, value]) => ({
+        label: label === 'ATTACK' ? 'Attack' : label === 'DEFENSE' ? 'Defense' : label === 'SP.ATK' ? 'Sp.Atk' : label === 'SP.DEF' ? 'Sp.Def' : 'Speed',
+        value: calcStat(value, false)
+      })),
+      moves: MOVES.map((x, i) => ({
+        ...x,
+        catSrc: CAT[x.cat],
+        on: i === m ? 'on' : '',
+        pick: () => this.setState({ m: i })
+      })),
+      sel: {
+        ...sel,
+        typeColor: TYPE[sel.type],
+        catSrc: CAT[sel.cat],
+        powAcc: (sel.power === '---' ? '---' : sel.power + 'P') + '/' + sel.acc + '%'
+      },
+      stats: BASE.map(([label, value]) => ({
+        label,
+        value,
+        pct: Math.min(100, Math.round(value / 160 * 100)) + '%',
+        color: value <= 50 ? '#E04030' : value <= 80 ? '#F08830' : value <= 110 ? '#F0C830' : value <= 135 ? '#40A848' : '#48B8E8'
+      })),
+      total: BASE.reduce((a, [, v]) => a + v, 0)
+    };
+  }
+}
+</script>
+</body>
+</html>

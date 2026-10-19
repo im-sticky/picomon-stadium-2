@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Draft</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.gb{font-family:'Press Start 2P',monospace;color:#181818;background:#F8F8F8;-webkit-font-smoothing:none}
+.gb p,.gb h1,.gb h2{margin:0;font-weight:400}
+.frame{border:6px solid #181818;border-radius:6px;box-shadow:inset 0 0 0 3px #F8F8F8,inset 0 0 0 6px #181818;background:#F8F8F8}
+.pix{image-rendering:pixelated;display:block}
+.spr{overflow:hidden;flex:none}
+.cell{width:108px;height:108px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;border:6px solid transparent;border-radius:6px;text-decoration:none;color:inherit}
+a.cell:hover,a.cell:focus-visible,a.cell.on,.taken.on{background:#E8E8E8;outline:none}
+.p2ball{filter:hue-rotate(235deg)}
+.slot{width:64px;height:64px;display:flex;align-items:center;justify-content:center}
+.cur{flex:none}
+.tag{display:inline-block;width:148px;height:28px;box-sizing:border-box;text-align:center;font-size:16px;line-height:28px;color:#F8F8F8;clip-path:polygon(4px 0,calc(100% - 4px) 0,calc(100% - 4px) 4px,100% 4px,100% calc(100% - 4px),calc(100% - 4px) calc(100% - 4px),calc(100% - 4px) 100%,4px 100%,4px calc(100% - 4px),0 calc(100% - 4px),0 4px,4px 4px)}
+</style>
+</helmet>
+<div class="gb" style="width: 1200px; height: 900px; box-sizing: border-box; padding: 24px 60px; display: flex; flex-direction: column; gap: 12px">
+  <h1 style="font-size: 32px; line-height: 48px; text-align: center">{{title}}</h1>
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 24px; height: 64px; margin-bottom: 12px">
+    <div aria-label="Player 1 team" style="display: flex; align-items: center; gap: 8px">
+      <sc-for list="{{p1team}}" as="s" hint-placeholder-count="6">
+        <div class="slot">
+          <sc-if value="{{s.filled}}" hint-placeholder-val="{{ false }}">
+            <div class="spr" style="width: 64px; height: 64px"><img class="pix" src="{{s.src}}" alt="{{s.name}}" style="width: 64px; height: 128px"></div>
+          </sc-if>
+          <sc-if value="{{s.empty}}" hint-placeholder-val="{{ true }}">
+            <img class="pix" src="/_blob/42adad1d7cf5061d3889e683f8adb86c" alt="Empty slot" style="width: 32px; height: 32px; opacity: .2">
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+    <div style="text-align: center; display: flex; flex-direction: column; gap: 8px">
+      
+      <p style="font-size: 16px; line-height: 24px; color: #585858">{{left}}</p>
+    </div>
+    <div aria-label="Player 2 team" style="display: flex; align-items: center; gap: 8px">
+      <sc-for list="{{p2team}}" as="s" hint-placeholder-count="6">
+        <div class="slot">
+          <sc-if value="{{s.filled}}" hint-placeholder-val="{{ false }}">
+            <div class="spr" style="width: 64px; height: 64px"><img class="pix" src="{{s.src}}" alt="{{s.name}}" style="width: 64px; height: 128px"></div>
+          </sc-if>
+          <sc-if value="{{s.empty}}" hint-placeholder-val="{{ true }}">
+            <img class="pix p2ball" src="/_blob/42adad1d7cf5061d3889e683f8adb86c" alt="Empty slot" style="width: 32px; height: 32px; opacity: .2">
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  <div role="list" aria-label="Pokémon available to rent" style="display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 0px">
+    <sc-for list="{{cells}}" as="c" hint-placeholder-count="40">
+      <div role="listitem">
+        <sc-if value="{{c.free}}" hint-placeholder-val="{{ true }}">
+          <a class="cell {{c.on}}" href="Detail.dc.html" onMouseEnter="{{c.hover}}" onFocus="{{c.hover}}" aria-label="{{c.aria}}">
+            <div class="spr" style="width: 96px; height: 96px"><img class="pix" src="{{c.src}}" alt="" style="width: 96px; height: 192px"></div>
+          </a>
+        </sc-if>
+        <sc-if value="{{c.taken}}" hint-placeholder-val="{{ false }}">
+          <div class="cell taken {{c.on}}" onMouseEnter="{{c.hover}}">
+            <img class="pix {{c.ballCls}}" src="/_blob/fb383c33e038829411911e9eeb755646" alt="{{c.aria}}" style="width: 96px; height: 96px">
+          </div>
+        </sc-if>
+      </div>
+    </sc-for>
+  </div>
+  <p style="font-size: 16px; line-height: 24px; text-align: center; color: #585858">Hover for moves · Click for details</p>
+  <div class="frame" style="flex-grow: 1; padding: 18px 36px; display: flex; flex-direction: column">
+    <sc-if value="{{hasInfo}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; align-items: center; justify-content: space-between; height: 48px">
+        <p style="font-size: 24px; line-height: 48px">{{info.name}}</p>
+        <div style="display: flex; gap: 12px">
+          <sc-for list="{{info.types}}" as="t" hint-placeholder-count="2">
+            <span class="tag" style="background: {{t.color}}">{{t.label}}</span>
+          </sc-for>
+        </div>
+      </div>
+      <sc-if value="{{info.isTaken}}" hint-placeholder-val="{{ false }}">
+        <p style="font-size: 24px; line-height: 48px">Rented by {{info.takenBy}}.</p>
+      </sc-if>
+      <sc-if value="{{info.isFree}}" hint-placeholder-val="{{ true }}">
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 48px">
+          <sc-for list="{{info.moves}}" as="m" hint-placeholder-count="4">
+            <p style="font-size: 24px; line-height: 48px">{{m}}</p>
+          </sc-for>
+        </div>
+      </sc-if>
+    </sc-if>
+    <sc-if value="{{noInfo}}" hint-placeholder-val="{{ false }}">
+      <p style="font-size: 24px; line-height: 48px">{{prompt1}}</p>
+      <p style="font-size: 24px; line-height: 48px">{{prompt2}}</p>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"p1picks":{"editor":"text","default":""},"p2picks":{"editor":"text","default":""},"hover":{"editor":"int","min":0,"max":38,"default":1},"$preview":{"width":1200,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { h: null };
+  }
+  renderVals() {
+    // Draft pool: [name, types, icon blob id]
+    const POOL = [
+      ['VENUSAUR', 'GRASS POISON', '306822b5b874f91ba29da9143239f925'],
+      ['CHARIZARD', 'FIRE FLYING', 'fdc9afe1d3ee4535cc58e8d64c0fa82d'],
+      ['BLASTOISE', 'WATER', '17fbd00ba256194c1bb6229c837a8236'],
+      ['RAICHU', 'ELECTRIC', '12116b3c1ed02964fdf7c7c0ee361067'],
+      ['NIDOKING', 'POISON GROUND', 'dd91d63bbe065beedf1c16e774194570'],
+      ['NIDOQUEEN', 'POISON GROUND', 'd0f4d67ce2240135666373a17189d0b6'],
+      ['NINETALES', 'FIRE', '6911748f92ca0e1d5708851baa1fc098'],
+      ['ARCANINE', 'FIRE', 'b549b068a760cfac423e61bdb5d2cc64'],
+      ['ALAKAZAM', 'PSYCHIC', 'c25458a95948aa9045b1bac83777ada4'],
+      ['MACHAMP', 'FIGHTING', '56adfc606d626b7878b3ec711b09a538'],
+      ['GENGAR', 'GHOST POISON', 'f777e20e17c63332aea4dab6a5721cbb'],
+      ['GOLEM', 'ROCK GROUND', 'aa3e27dcb0e5c43b7904ea7a974b0638'],
+      ['SLOWBRO', 'WATER PSYCHIC', '0c62d17a0b81ef5fc1c9e628b9ccf156'],
+      ['STARMIE', 'WATER PSYCHIC', '22b72198a1d859b518905519db5f43af'],
+      ['JYNX', 'ICE PSYCHIC', '84208ea82876e1dc4525a2a2ddcf32c6'],
+      ['GYARADOS', 'WATER FLYING', 'db7415dad60d2c609f07bc348686093b'],
+      ['LAPRAS', 'WATER ICE', '30e03c98871bfb829d5c337179f2ab46'],
+      ['SNORLAX', 'NORMAL', '8eca4cdf0e562954f2b141182ad432f5'],
+      ['DRAGONITE', 'DRAGON FLYING', '70fdd9aa41dfbf01ce9085c9ee344623'],
+      ['AERODACTYL', 'ROCK FLYING', '80dddd5a92082476f68d053262f6fda3'],
+      ['MEGANIUM', 'GRASS', '438fe50b84f72d8409bc5be6cf2c8445'],
+      ['TYPHLOSION', 'FIRE', '2ab5b35c6562ee9bc002398db8d93170'],
+      ['FERALIGATR', 'WATER', '75811f7abf5913a3a1bffc651f321e80'],
+      ['AMPHAROS', 'ELECTRIC', '89dfb3749bef90e99fe2979f7d693155'],
+      ['AZUMARILL', 'WATER', '1b280762d3f2ec9199baaf6a45f05f97'],
+      ['ESPEON', 'PSYCHIC', '6eb54a67a386c80b42172697faba72c4'],
+      ['UMBREON', 'DARK', 'd9c40340fac330e0c4397407caca7eab'],
+      ['SCIZOR', 'BUG STEEL', 'f337c3d1d07de7d7ad52748ab67cf8c1'],
+      ['HERACROSS', 'BUG FIGHTING', '0146f56a29d76e01016c2451d5bb7439'],
+      ['SKARMORY', 'STEEL FLYING', '50b4118af0ef5eace503910fe0569056'],
+      ['HOUNDOOM', 'DARK FIRE', 'c9919cdba2800d9e86121f0b58dc9972'],
+      ['KINGDRA', 'WATER DRAGON', '0595b79dd88b11df378d507e44c0937b'],
+      ['DONPHAN', 'GROUND', '75bfa2b8c623b76c29c81cd6e68931fe'],
+      ['BLISSEY', 'NORMAL', '17d01c5943b4048a5277bba5019196e1'],
+      ['TYRANITAR', 'ROCK DARK', 'a0c6aad3e5c4a34d09bd20acb400ca99'],
+      ['CROBAT', 'POISON FLYING', '18c3d603516c234bded3b21bc7fd617c'],
+      ['STEELIX', 'STEEL GROUND', '33edfe3e3a41ce86f9743189bc6e0f23'],
+      ['POLITOED', 'WATER', '5b5da011ebe735480619db9be738fddf'],
+      ['MANTINE', 'WATER FLYING', '4895dd543ff02fa462a8b9bedbf4a551'],
+      ['MILTANK', 'NORMAL', 'b90aa033e69727c1872aecaa302dd7bb']
+    ];
+    const IDS = POOL.map((p) => p[2]);
+    const TYPE = {
+      NORMAL: '#6E6E4E', FIRE: '#B8461A', WATER: '#2F68C0', GRASS: '#2F7D3F', ELECTRIC: '#8C6E00',
+      ICE: '#2A7F7F', FIGHTING: '#A02820', POISON: '#8A3A8A', GROUND: '#80622A', FLYING: '#6050B0',
+      PSYCHIC: '#B82E62', BUG: '#5F6E10', ROCK: '#756628', GHOST: '#56468A', DRAGON: '#4A30B8',
+      DARK: '#4A3A30', STEEL: '#5E5E7A'
+    };
+    const MOVES = {
+      1: ['SLUDGE BOMB', 'ENERGY BALL', 'SLEEP POWDER', 'LEECH SEED']
+    };
+    const pad = (n) => (n < 10 ? '0' : '') + n;
+    const dex = (n) => ({
+      name: POOL[n - 1][0],
+      types: POOL[n - 1][1].split(' '),
+      moves: MOVES[n] || ['[MOVE]', '[MOVE]', '[MOVE]', '[MOVE]']
+    });
+    const parse = (s) => String(s || '').split(',').map((x) => parseInt(x, 10)).filter((x) => x > 0 && x <= IDS.length);
+    const p1 = parse(this.props.p1picks);
+    const p2 = parse(this.props.p2picks);
+    const h = this.state.h != null ? this.state.h : (this.props.hover ?? 1);
+
+    // Snake order: P1, P2 P2, P1 P1, ... P1
+    const ORDER = [1, 2, 2, 1, 1, 2, 2, 1, 1, 2, 2, 1];
+    const n = Math.min(p1.length + p2.length, 12);
+    const turn = ORDER[n] || 0;
+    let left = 0;
+    for (let i = n; i < ORDER.length && ORDER[i] === turn; i++) left++;
+
+    const src = (no) => '/_blob/' + IDS[no - 1];
+    const team = (picks) => Array.from({ length: 6 }, (_, i) => {
+      const no = picks[i];
+      return no ? { filled: true, empty: false, src: src(no), name: dex(no).name } : { filled: false, empty: true };
+    });
+
+    const cells = IDS.map((_, i) => {
+      const no = i + 1;
+      const by = p1.includes(no) ? 1 : p2.includes(no) ? 2 : 0;
+      return {
+        src: src(no),
+        free: !by,
+        taken: !!by,
+        ballCls: by === 2 ? 'p2ball' : '',
+        on: h === no ? 'on' : '',
+        aria: by ? 'No.' + pad(no) + ' rented by Player ' + by : 'View No.' + pad(no) + ' ' + dex(no).name,
+        hover: () => this.setState({ h: no })
+      };
+    });
+
+    let info = null;
+    if (h > 0 && h <= IDS.length) {
+      const d = dex(h);
+      const by = p1.includes(h) ? 1 : p2.includes(h) ? 2 : 0;
+      info = {
+        no: 'No.' + pad(h),
+        name: d.name,
+        types: d.types.map((t) => ({ label: t, color: TYPE[t] })),
+        moves: d.moves,
+        isTaken: !!by,
+        isFree: !by,
+        takenBy: 'PLAYER ' + by
+      };
+    }
+
+    return {
+      title: turn ? 'PLAYER ' + turn + "'S CHOICE" : 'DRAFT COMPLETE',
+      pickNo: Math.min(n + 1, 12),
+      left: turn ? left + (left === 1 ? ' PICK' : ' PICKS') : '',
+      p1team: team(p1),
+      p2team: team(p2),
+      cells,
+      info: info || { types: [], moves: [] },
+      hasInfo: !!info,
+      noInfo: !info,
+      prompt1: 'Hover a POKéMON to see its moves.',
+      prompt2: 'Click one to see its details.'
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,123 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Home.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "0a · Host or join",
+      "w": 1200,
+      "x": 0,
+      "y": -1320
+    },
+    "HomeError.dc.html": {
+      "h": 900,
+      "title": "0b · Join error",
+      "w": 1200,
+      "x": 1280,
+      "y": -1320
+    },
+    "Lobby.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "0c · Waiting room",
+      "w": 1200,
+      "x": 2560,
+      "y": -1320
+    },
+    "LobbyFull.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "0d · Both players in",
+      "w": 1200,
+      "x": 3840,
+      "y": -1320
+    },
+    "Detail.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "2b · Pokémon detail",
+      "w": 1200,
+      "x": 1280,
+      "y": 1320
+    },
+    "Draft.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "2a · Draft (hover)",
+      "w": 1200,
+      "x": 0,
+      "y": 1320
+    },
+    "DraftRented.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "2c · Draft after rentals",
+      "w": 1200,
+      "x": 2560,
+      "y": 1320
+    },
+    "Main.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "1a · Type select",
+      "w": 1200,
+      "x": 0,
+      "y": 0
+    },
+    "Result.dc.html": {
+      "h": 900,
+      "title": "1b · Type result",
+      "w": 1200,
+      "x": 1280,
+      "y": 0
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-19T12:00:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "row0": {
+      "kind": "title1",
+      "maxW": 5040,
+      "text": "0 · Host or join",
+      "w": 240,
+      "x": 0,
+      "y": -1620
+    },
+    "row1": {
+      "kind": "title1",
+      "maxW": 2480,
+      "text": "1 · Who picks first",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "row2": {
+      "kind": "title1",
+      "maxW": 3760,
+      "text": "2 · Snake draft",
+      "w": 240,
+      "x": 0,
+      "y": 1020
+    }
+  },
+  "order": [
+    "Home.dc.html",
+    "HomeError.dc.html",
+    "Lobby.dc.html",
+    "LobbyFull.dc.html",
+    "Main.dc.html",
+    "Result.dc.html",
+    "Draft.dc.html",
+    "Detail.dc.html",
+    "DraftRented.dc.html"
+  ],
+  "pages": [],
+  "title": "Picomon Stadium Layout"
+}
