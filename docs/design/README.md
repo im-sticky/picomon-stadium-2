@@ -27,6 +27,37 @@ The format is a prototype format, so don't copy it into the app:
 Rebuild screens as Next.js/React components that match the layout, sizes, colours
 and interactions. Read the Next.js note in `AGENTS.md` before writing code.
 
+## Building screens in the app
+
+Home and the Lobby are built (`app/page.tsx`, `app/home-form.tsx`,
+`app/room/[code]/`). Reuse their shared pieces for new screens rather than
+restyling from scratch.
+
+`app/ui/`, styled by `app/ui/crystal.module.css`:
+
+| Component | Use |
+|---|---|
+| `Stage` | The fixed 1200×900 screen, centred in the window. Pass a `className` for the screen's own padding and layout. |
+| `Frame` | Crystal double-line frame. `as` renders it as `div`, `section`, `form` or `span`. |
+| `Button` | Crystal button with the ▶ cursor. `primary` gives the dark version. Defaults to `type="button"`. |
+| `MessageBox` | The two-line message box. Takes a `Message` (`[line1, line2]`) and a `role` (`status` by default, `alert` for errors). |
+| `Field`, `SectionLabel` | Framed text input, and the 16px grey section label. `SectionLabel` with `htmlFor` renders a real `<label>`. |
+| `VisuallyHidden` | Text for screen readers only (e.g. the room code, whose letter cells are `aria-hidden`). |
+
+The colours are CSS variables in `app/globals.css` (`--bg`, `--ink`, `--text-2`,
+`--placeholder`, `--hover`, `--p1`, `--p2`). Press Start 2P is loaded with
+`next/font/google` in `app/layout.tsx`.
+
+Gotchas:
+- **CSS module order isn't guaranteed.** To override a shared class from a screen's
+  own module, use element plus class (`input.code`, `button.startButton`) so the
+  override wins whatever order the stylesheets load in.
+- **Next keeps earlier routes alive in `<Activity>`.** A hidden screen keeps its
+  state, so reset things like a busy flag in an effect cleanup (see
+  `home-form.tsx`). Page-wide DOM queries also find the hidden screen's elements.
+- **Unbuilt screens:** a button that leads to a screen that doesn't exist yet gets
+  no action. Don't add stub pages.
+
 ## Screens and flow
 
 ```
@@ -63,15 +94,24 @@ state, not separate screens.
   - no name: "Enter a name. / It can be 1-12 characters."
   - wrong code length: "Enter a 4-character / room code."
   - unknown room: "Room not found. / Check the code and try again."
+  - room full (from the server, no design copy): "Room is full." with a blank
+    second line
+  - any other failure: "Something went wrong. / Try again."
+- The name field is limited to 12 characters and the code field to 4.
 
 ### Lobby (`Lobby.dc.html`)
 - Waiting: title "WAITING ROOM", the code as four framed 96×120 letter cells, and a
-  COPY button that copies the code and shows "COPIED!" for 1.5s.
+  COPY button that copies the code and shows "COPIED!" for 1.5s. The app shows
+  "COPIED!" only once the copy succeeds. COPY is 300px wide so it fits "COPIED!"
+  without resizing.
 - Players list: `P1 <name> HOST`, and P2 as `- - - - - -` until someone joins.
 - Message: "Send this code to a friend. / Waiting for PLAYER 2..."
 - Full: title "ROOM <code>", the COPY button is hidden, and P2's name is shown.
-  The message reads "Both players connected! / Ready to battle?" and a 384px-wide
-  dark START BATTLE button sits centred below the message box.
+  - Host: the message reads "Both players connected! / Ready to battle?" and a
+    dark START BATTLE button (420px) sits centred below the message box. It has no
+    action yet because the type battle screen doesn't exist.
+  - Guest: no START BATTLE button. The message reads "Both players connected! /
+    Waiting for PLAYER 1..." (app copy; the design only shows the host's view).
 
 ### Type select (`Main.dc.html`)
 - Your column (P1) is clickable. Hovering an option gives it a light grey background.
@@ -171,14 +211,22 @@ The inner line takes up the first 6px inside the border, so leave padding beyond
 **Message box**: a Crystal frame, 30px 42px padding, two 24px lines at 48px line
 height, min-height 168px. Prompts and errors go here, Crystal style.
 
-**Button**: a Crystal frame, 240×108 (36px vertical / 24px horizontal padding),
-24px centred text.
+**Button**: a Crystal frame, at least 240×108, with 24px centred text that doesn't
+wrap. Padding is 36px top and bottom and 60px each side.
 - Hover/focus: every button shows a ▶ cursor 30px from its left edge, positioned
   absolutely so the text stays centred (on primary buttons the cursor is light).
-  Keyboard focus also gets a `#E8E8E8` fill.
+  Keyboard focus also gets a `#E8E8E8` fill, except on primary buttons, which stay
+  dark.
+- The cursor must never overlap the label, and showing it must never resize the
+  button. The 60px side padding clears the cursor (30px in, 24px wide, 6px gap),
+  and the cursor is only hidden with `visibility`, never removed from the page.
 - Primary (RENT, HOST, FIRST, START BATTLE): `background:#181818; color:#F8F8F8;
   box-shadow: inset 0 0 0 3px #181818, inset 0 0 0 6px #F8F8F8`.
-- Wider labels widen the button and keep the 108px height (START BATTLE is 384px).
+- Longer labels widen the button and keep the 108px height. A 4-letter label fits
+  240px, START BATTLE is 420px (the canvas shows 384px, but the label can't be
+  centred at that width without running under the cursor), and COPY is fixed at
+  300px for "COPIED!". If a button's label changes, size it for the longest label
+  so it doesn't jump.
 - Watch the CSS reset: an `a.btn { padding:0; border:0 }` rule outranks `.btn`
   and silently strips the padding and frame.
 
