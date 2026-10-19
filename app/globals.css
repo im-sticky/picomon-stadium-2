@@ -1,0 +1,26 @@
+/* Pokémon Crystal style tokens: see docs/design/README.md. */
+:root {
+  --bg: #f8f8f8;
+  --ink: #181818;
+  --text-2: #585858;
+  --placeholder: #a8a8a8;
+  --hover: #e8e8e8;
+  --p1: #c03028;
+  --p2: #2860b8;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-press-start), monospace;
+  -webkit-font-smoothing: none;
+}
+
+p,
+h1,
+h2 {
+  margin: 0;
+  font-weight: 400;
+}

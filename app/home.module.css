@@ -1,0 +1,61 @@
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 36px;
+  padding: 48px 72px;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.title h1 {
+  font-size: 40px;
+  line-height: 48px;
+}
+
+.pokeball {
+  display: block;
+  image-rendering: pixelated;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+  width: 768px;
+  box-sizing: border-box;
+  padding: 36px 42px;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 48px;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.blurb {
+  font-size: 16px;
+  line-height: 26px;
+}
+
+input.code {
+  width: 240px;
+  padding: 0 0 0 16px;
+  font-size: 32px;
+  letter-spacing: 16px;
+  text-align: center;
+}
+
+.message {
+  align-self: stretch;
+}

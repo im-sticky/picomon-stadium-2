@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { normalizeCode } from "@/lib/codes";
+import { LOADING, RoomNotice } from "./room-notice";
 import { RoomView } from "./room-view";
 
 async function RoomContent({ params }: { params: Promise<{ code: string }> }) {
@@ -13,7 +14,7 @@ async function RoomContent({ params }: { params: Promise<{ code: string }> }) {
 export default function RoomPage({ params }: { params: Promise<{ code: string }> }) {
   return (
     <main>
-      <Suspense fallback={<p>Loading…</p>}>
+      <Suspense fallback={<RoomNotice message={LOADING} />}>
         <RoomContent params={params} />
       </Suspense>
     </main>

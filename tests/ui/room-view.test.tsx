@@ -43,12 +43,12 @@ beforeEach(() => {
   vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
-const MSG = "Live updates unavailable — refresh the page.";
+const MSG = "Live updates unavailable.";
 
 describe("RoomView realtime failures", () => {
   it("shows no notice when everything is healthy", async () => {
     render(<RoomView code="K7PQ" />);
-    expect(await screen.findByText("Your room code")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "WAITING ROOM" })).toBeInTheDocument();
     expect(screen.queryByText(MSG)).toBeNull();
   });
 
@@ -56,12 +56,13 @@ describe("RoomView realtime failures", () => {
     h.subscribeResult = Promise.reject(new Error("attach failed"));
     render(<RoomView code="K7PQ" />);
     expect(await screen.findByText(MSG)).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("Live updates unavailable.Refresh the page.");
     expect(console.error).toHaveBeenCalled();
   });
 
   it("logs and shows a notice when the connection fails", async () => {
     render(<RoomView code="K7PQ" />);
-    await screen.findByText("Your room code");
+    await screen.findByRole("heading", { name: "WAITING ROOM" });
     const l = h.listeners.find((x) => Array.isArray(x.events) && x.events.includes("failed"))!;
     act(() => l.fn({ current: "failed", reason: new Error("boom") }));
     expect(screen.getByText(MSG)).toBeInTheDocument();
@@ -70,7 +71,7 @@ describe("RoomView realtime failures", () => {
 
   it("removes its connection listeners on unmount", async () => {
     const { unmount } = render(<RoomView code="K7PQ" />);
-    await screen.findByText("Your room code");
+    await screen.findByRole("heading", { name: "WAITING ROOM" });
     unmount();
     expect(h.listeners.filter((l) => l.events === "failed" || Array.isArray(l.events))).toHaveLength(0);
   });

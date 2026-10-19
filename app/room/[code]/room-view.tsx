@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import * as Ably from "ably";
 import { startRoomSync } from "@/lib/room-sync";
 import type { PublicPlayer, RoomState } from "@/lib/types";
+import { LIVE_FAILED, LOADING, RoomNotice } from "./room-notice";
 import { RoomScreen } from "./room-screen";
 
 export function RoomView({ code }: { code: string }) {
@@ -86,11 +87,7 @@ export function RoomView({ code }: { code: string }) {
     };
   }, [code, router]);
 
-  const notice = liveFailed && <p role="alert">Live updates unavailable — refresh the page.</p>;
-  return (
-    <>
-      {notice}
-      {state ? <RoomScreen state={state} /> : <p>Loading…</p>}
-    </>
-  );
+  const notice = liveFailed ? LIVE_FAILED : undefined;
+  if (state) return <RoomScreen state={state} notice={notice} />;
+  return notice ? <RoomNotice message={notice} role="alert" /> : <RoomNotice message={LOADING} />;
 }

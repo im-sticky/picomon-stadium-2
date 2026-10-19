@@ -1,5 +1,8 @@
 import { Suspense } from "react";
+import Image from "next/image";
+import { Stage } from "./ui/stage";
 import { HomeForm } from "./home-form";
+import styles from "./home.module.css";
 
 async function HomeContent({
   searchParams,
@@ -7,7 +10,20 @@ async function HomeContent({
   searchParams: Promise<{ error?: string | string[] }>;
 }) {
   const { error } = await searchParams;
-  return <HomeForm initialError={error === "not-found" ? "Room not found." : undefined} />;
+  return <HomeForm initialError={error === "not-found" ? "not-found" : undefined} />;
+}
+
+function Pokeball() {
+  return (
+    <Image
+      className={styles.pokeball}
+      src="/sprites/misc/pokeball.png"
+      alt=""
+      width={64}
+      height={64}
+      unoptimized
+    />
+  );
 }
 
 export default function Home({
@@ -17,10 +33,16 @@ export default function Home({
 }) {
   return (
     <main>
-      <h1>Picomon Stadium</h1>
-      <Suspense fallback={null}>
-        <HomeContent searchParams={searchParams} />
-      </Suspense>
+      <Stage className={styles.stage}>
+        <div className={styles.title}>
+          <Pokeball />
+          <h1>PICOMON STADIUM</h1>
+          <Pokeball />
+        </div>
+        <Suspense fallback={null}>
+          <HomeContent searchParams={searchParams} />
+        </Suspense>
+      </Stage>
     </main>
   );
 }
