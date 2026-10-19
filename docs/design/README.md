@@ -173,8 +173,9 @@ height, min-height 168px. Prompts and errors go here, Crystal style.
 
 **Button**: a Crystal frame, 240×108 (36px vertical / 24px horizontal padding),
 24px centred text.
-- Hover/focus: a ▶ cursor appears 30px from the left edge, positioned absolutely so
-  the text stays centred. Focus also gets a `#E8E8E8` fill.
+- Hover/focus: every button shows a ▶ cursor 30px from its left edge, positioned
+  absolutely so the text stays centred (on primary buttons the cursor is light).
+  Keyboard focus also gets a `#E8E8E8` fill.
 - Primary (RENT, HOST, FIRST, START BATTLE): `background:#181818; color:#F8F8F8;
   box-shadow: inset 0 0 0 3px #181818, inset 0 0 0 6px #F8F8F8`.
 - Wider labels widen the button and keep the 108px height (START BATTLE is 384px).
@@ -211,7 +212,8 @@ the right end, filled with `#40C048`.
 - Type options: hover gives a `#E8E8E8` background. Selected gets the Crystal frame.
   Others dim to 30% opacity.
 - Draft cells and move rows: hover/selected gives a `#E8E8E8` background, no frame.
-- Arrows: no ▶ cursors beside list items. They appear only inside buttons on hover.
+- Arrows: the ▶ cursor appears only inside buttons on hover/focus, never beside list
+  items, type options or grid cells.
 
 **Sprites**: `image-rendering: pixelated`, always at whole-number scales.
 - Pokémon icons are 32×64 with two stacked animation frames. Show the top 32×32 in an
