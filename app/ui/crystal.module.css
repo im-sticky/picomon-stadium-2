@@ -77,9 +77,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 240px;
+  width: fit-content;
+  min-width: 240px;
   box-sizing: border-box;
-  padding: 36px 24px;
+  /* 60px each side clears the ▶ cursor (30px in, 24px wide, 6px gap), so the label
+     stays centred and never runs under it. Long labels widen the button instead. */
+  padding: 36px 60px;
+  white-space: nowrap;
   font: inherit;
   font-size: 24px;
   color: var(--ink);
@@ -107,7 +111,8 @@
   opacity: 0.5;
 }
 
-/* ▶ cursor, absolutely placed so the label stays centred. */
+/* ▶ cursor: absolutely placed and only hidden (not removed), so showing it never
+   changes the button's size or moves the label. */
 .cursor {
   position: absolute;
   left: 30px;

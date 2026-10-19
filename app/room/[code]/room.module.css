@@ -34,7 +34,9 @@
   line-height: 64px;
 }
 
-.copy {
+/* Wide enough for "COPIED!" so the button doesn't resize when the label changes. */
+button.copy {
+  min-width: 300px;
   margin-left: auto;
 }
 
@@ -85,7 +87,7 @@
 }
 
 button.startButton {
-  width: 384px;
+  min-width: 384px;
 }
 
 /* Loading / notice screen. */

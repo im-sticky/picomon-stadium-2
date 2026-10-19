@@ -3,7 +3,7 @@ import styles from "./crystal.module.css";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { primary?: boolean };
 
-/** 240×108 Crystal button with a ▶ cursor on hover/focus. Wider via `style`/`className`. */
+/** Crystal button (at least 240×108) with a ▶ cursor on hover/focus. Grows to fit its label. */
 export function Button({ primary, className, children, type = "button", ...rest }: ButtonProps) {
   const cls = [styles.button, primary && styles.primary, className].filter(Boolean).join(" ");
   return (
