@@ -92,6 +92,7 @@ export function HomeForm({ initialError }: { initialError?: "not-found" }) {
             id={nameId}
             value={name}
             onChange={(e) => setName(e.target.value)}
+            maxLength={12}
             placeholder="YOUR NAME"
             autoComplete="off"
           />
@@ -114,6 +115,7 @@ export function HomeForm({ initialError }: { initialError?: "not-found" }) {
                 className={styles.code}
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
+                maxLength={4}
                 placeholder="----"
                 autoComplete="off"
               />
