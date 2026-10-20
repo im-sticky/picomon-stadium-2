@@ -93,19 +93,22 @@ the players entered on Home, in uppercase (GOLD and SILVER in the designs). Play
 sides (host on the left), the red/blue player colours and the snake order.
 
 ### Home (`Home.dc.html`)
-- Name field: 1–12 characters, shown uppercase. Room code field: 4 characters from
-  `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (matches `lib/codes.ts`).
+- Name field: 1–10 characters, shown uppercase. The cap is 10 so the longest
+  name fits at 32px in every title and the type-select centre gap (the app's
+  `lib/names.ts` currently allows 12 and needs lowering to match).
+- Room code field: 4 characters from `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (matches
+  `lib/codes.ts`).
 - HOST (dark primary button) validates the name, then creates a room.
 - JOIN (submit, so Enter joins) validates the name and code, then joins.
 - The message box at the bottom shows the hint or the error:
   - default: "Enter your name, then host a / room or join one with a code."
-  - no name: "Enter a name. / It can be 1-12 characters."
+  - no name: "Enter a name. / It can be 1-10 characters."
   - wrong code length: "Enter a 4-character / room code."
   - unknown room: "Room not found. / Check the code and try again."
   - room full (from the server, no design copy): "Room is full." with a blank
     second line
   - any other failure: "Something went wrong. / Try again."
-- The name field is limited to 12 characters and the code field to 4.
+- The name field is limited to 10 characters and the code field to 4.
 
 ### Lobby (`Lobby.dc.html`)
 - Waiting: title "WAITING ROOM", the code as four framed 96×120 letter cells, and a
@@ -128,9 +131,8 @@ sides (host on the left), the red/blue player colours and the snake order.
   Picking one frames it and dims the others.
 - The opponent's column stays dimmed until both have picked, then their choice is
   framed. The centre shows `VS` → `. . .` (waiting) → the winner's name
-  above `WINS!` (both 32px), or `DRAW!`. The centre gap is 336px, which fits 10
-  characters at 32px; 11–12 character names would overflow, so the app should
-  step those down to 24px.
+  above `WINS!` (both 32px), or `DRAW!`. The centre gap is 336px, which fits the
+  10-character name cap at 32px.
 - Option frames are a fixed 288×156 so they're the same size whatever the label.
 - Rules: Grass beats Water, Water beats Fire, Fire beats Grass.
 - The winner chooses the draft order. If you win, FIRST (dark) and SECOND (light)

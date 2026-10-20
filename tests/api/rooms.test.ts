@@ -67,6 +67,17 @@ describe('rooms API', () => {
     expect(await res.json()).toEqual({ error: 'invalid-name' });
   });
 
+  it('create with an 11-character name is 400', async () => {
+    const res = await createRoomRoute(req('/api/rooms', 'POST', { name: 'a'.repeat(11) }));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: 'invalid-name' });
+  });
+
+  it('create with a 10-character name is 201', async () => {
+    const res = await createRoomRoute(req('/api/rooms', 'POST', { name: 'a'.repeat(10) }));
+    expect(res.status).toBe(201);
+  });
+
   it('friend joins with lowercase code', async () => {
     const { code } = await host();
     const res = await joinRoute(
@@ -103,6 +114,13 @@ describe('rooms API', () => {
     const { code } = await host();
     const res = await joinRoute(req(`/api/rooms/${code}/join`, 'POST', { name: '' }), ctx(code));
     expect(res.status).toBe(400);
+  });
+
+  it('join with an 11-character name is 400', async () => {
+    const { code } = await host();
+    const res = await joinRoute(req(`/api/rooms/${code}/join`, 'POST', { name: 'a'.repeat(11) }), ctx(code));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: 'invalid-name' });
   });
 
   it('host re-entering own code gets 200 and no publish', async () => {

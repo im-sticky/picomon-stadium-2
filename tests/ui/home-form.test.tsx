@@ -29,7 +29,7 @@ describe("HomeForm", () => {
     const fetchFn = mockFetch(201, { code: "K7PQ" });
     render(<HomeForm />);
     await userEvent.click(screen.getByRole("button", { name: "HOST" }));
-    expectMessage("Enter a name.", "It can be 1-12 characters.");
+    expectMessage("Enter a name.", "It can be 1-10 characters.");
     expect(fetchFn).not.toHaveBeenCalled();
   });
 
@@ -40,6 +40,11 @@ describe("HomeForm", () => {
     await userEvent.click(screen.getByRole("button", { name: "JOIN" }));
     expectMessage("Enter a 4-character", "room code.");
     expect(fetchFn).not.toHaveBeenCalled();
+  });
+
+  it("limits the name field to 10 characters", () => {
+    render(<HomeForm />);
+    expect(screen.getByLabelText("NAME")).toHaveAttribute("maxLength", "10");
   });
 
   it("shows the hint before any error", () => {

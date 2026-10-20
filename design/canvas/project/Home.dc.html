@@ -40,7 +40,7 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
   <form class="frame" onSubmit="{{submit}}" style="width: 768px; box-sizing: border-box; padding: 36px 42px; display: flex; flex-direction: column; gap: 36px">
     <div>
       <label class="lbl" for="home-name">NAME</label>
-      <input id="home-name" class="field" value="{{name}}" onChange="{{setName}}" maxlength="12" placeholder="YOUR NAME" autocomplete="off">
+      <input id="home-name" class="field" value="{{name}}" onChange="{{setName}}" maxlength="10" placeholder="YOUR NAME" autocomplete="off">
     </div>
     <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 48px">
       <div style="display: flex; flex-direction: column; gap: 24px">
@@ -85,7 +85,7 @@ class Component extends DCLogic {
     const fail = (e) => this.setState({ error: e });
     const validName = () => {
       const n = name.trim();
-      return n.length >= 1 && n.length <= 12;
+      return n.length >= 1 && n.length <= 10;
     };
     const host = () => {
       if (!validName()) return fail('name');
@@ -104,7 +104,7 @@ class Component extends DCLogic {
 
     const MSG = {
       '': ['Enter your name, then host a', 'room or join one with a code.'],
-      name: ['Enter a name.', 'It can be 1-12 characters.'],
+      name: ['Enter a name.', 'It can be 1-10 characters.'],
       code: ['Enter a 4-character', 'room code.'],
       'not-found': ['Room not found.', 'Check the code and try again.']
     };

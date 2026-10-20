@@ -3,7 +3,7 @@
 import { useEffect, useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { normalizeCode } from "@/lib/codes";
-import { normalizeName } from "@/lib/names";
+import { MAX_NAME_LENGTH, normalizeName } from "@/lib/names";
 import { Button } from "./ui/button";
 import { Field, SectionLabel } from "./ui/field";
 import { Frame } from "./ui/frame";
@@ -11,7 +11,7 @@ import { MessageBox, type Message } from "./ui/message-box";
 import styles from "./home.module.css";
 
 const HINT: Message = ["Enter your name, then host a", "room or join one with a code."];
-const BAD_NAME: Message = ["Enter a name.", "It can be 1-12 characters."];
+const BAD_NAME: Message = ["Enter a name.", `It can be 1-${MAX_NAME_LENGTH} characters.`];
 const BAD_CODE: Message = ["Enter a 4-character", "room code."];
 const NOT_FOUND: Message = ["Room not found.", "Check the code and try again."];
 const FAILED: Message = ["Something went wrong.", "Try again."];
@@ -92,7 +92,7 @@ export function HomeForm({ initialError }: { initialError?: "not-found" }) {
             id={nameId}
             value={name}
             onChange={(e) => setName(e.target.value)}
-            maxLength={12}
+            maxLength={MAX_NAME_LENGTH}
             placeholder="YOUR NAME"
             autoComplete="off"
           />
