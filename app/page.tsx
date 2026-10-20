@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Image from "next/image";
 import { Stage } from "./ui/stage";
 import { HomeForm } from "./home-form";
-import styles from "./home.module.css";
+import styles from "./home.module.scss";
 
 async function HomeContent({
   searchParams,
@@ -16,7 +16,7 @@ async function HomeContent({
 function Pokeball() {
   return (
     <Image
-      className={styles.pokeball}
+      className={styles.home__pokeball}
       src="/sprites/misc/pokeball.png"
       alt=""
       width={64}
@@ -33,19 +33,24 @@ export default function Home({
 }) {
   return (
     <main>
-      <Stage className={styles.stage}>
-        <div className={styles.title}>
+      <Stage className={styles.home}>
+        <div className={styles.home__title}>
           <Pokeball />
-          <h1>PICOMON STADIUM</h1>
+          <h1 className={styles.home__heading}>PICOMON STADIUM</h1>
           <Pokeball />
         </div>
         <Suspense fallback={null}>
           <HomeContent searchParams={searchParams} />
         </Suspense>
-        <footer className={styles.credits}>
+        <footer className={styles.home__credits}>
           <p>
             Sprites and Pokémon data changes from{" "}
-            <a href="https://github.com/Rangi42/polishedcrystal" target="_blank" rel="noreferrer">
+            <a
+              className={styles.home__creditLink}
+              href="https://github.com/Rangi42/polishedcrystal"
+              target="_blank"
+              rel="noreferrer"
+            >
               Polished Crystal
             </a>{" "}
             by Rangi42 and contributors.

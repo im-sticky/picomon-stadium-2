@@ -1,0 +1,228 @@
+/* Draft (boards 2a/2c/2e). Sizes follow docs/design/README.md. BEM block `draft`. */
+@use "../../styles/mixins" as *;
+
+.draft {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px 60px;
+
+  &__title {
+    @include screen-title;
+  }
+
+  &__line {
+    font-size: 24px;
+    line-height: 48px;
+  }
+
+  /* Team strips: 24px label line, 4px gap, 64px slots. */
+  &__teams {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    height: 92px;
+    margin-bottom: 12px;
+  }
+
+  &__strip {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+
+    &--right {
+      align-items: flex-end;
+    }
+  }
+
+  &__picksLeft {
+    font-size: 16px;
+    line-height: 24px;
+    color: var(--text-2);
+  }
+
+  &__slots {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    @include bare-list;
+  }
+
+  &__slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+  }
+
+  &__slotButton {
+    display: block;
+    padding: 0;
+    background: none;
+    border: 0;
+    border-radius: 4px;
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+      outline: none;
+      background: var(--hover);
+    }
+  }
+
+  /* Pokéballs: empty team slots, and rented Pokémon in the grid (blue for the guest). */
+  &__ball {
+    @include pixelated;
+
+    &--empty {
+      opacity: 0.2;
+    }
+
+    &--p2 {
+      filter: hue-rotate(235deg);
+    }
+  }
+
+  &__format {
+    align-self: center;
+    font-size: 32px;
+    line-height: 48px;
+    text-align: center;
+  }
+
+  /* 9 equal columns of 108px cells, 4 rows visible. */
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+    justify-items: center;
+    @include bare-list;
+  }
+
+  &__cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 108px;
+    height: 108px;
+    box-sizing: border-box;
+    @include bare-button;
+    border: 6px solid transparent;
+    border-radius: 6px;
+  }
+
+  @at-root button#{&}__cell {
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+      outline: none;
+      background: var(--hover);
+    }
+  }
+
+  /* The hovered cell (also shown when hovering a rented one). */
+  &__cell--active {
+    outline: none;
+    background: var(--hover);
+  }
+
+  /* An uber when you already have one: it can be looked at but not rented. */
+  &__cell--blocked {
+    opacity: 0.3;
+  }
+
+  &__hint {
+    font-size: 16px;
+    line-height: 24px;
+    color: var(--text-2);
+    text-align: center;
+  }
+
+  /* Info box: 148px inner height. */
+  &__info {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    justify-content: center;
+    padding: 18px 36px;
+  }
+
+  &__infoRow {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 48px;
+  }
+
+  &__infoLeft {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    gap: 8px;
+    width: 308px;
+  }
+
+  &__infoName {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 32px;
+    font-size: 24px;
+    line-height: 32px;
+  }
+
+  /* The pokéball / master ball beside the name. */
+  &__infoIcon {
+    @include pixelated;
+  }
+
+  &__badges {
+    display: flex;
+    gap: 12px;
+  }
+
+  &__ability {
+    font-size: 16px;
+    line-height: 24px;
+  }
+
+  &__infoRight {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__infoMoves {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 36px;
+    row-gap: 16px;
+    @include bare-list;
+  }
+
+  &__infoMove {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__moveName {
+    font-size: 24px;
+    line-height: 32px;
+    white-space: nowrap;
+  }
+
+  &__pp {
+    font-size: 16px;
+    line-height: 24px;
+    text-align: right;
+  }
+
+  &__done {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+  }
+}

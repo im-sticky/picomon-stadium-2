@@ -10,7 +10,7 @@ import { HpBar } from "@/app/ui/hp-bar";
 import { PokemonIcon } from "@/app/ui/pokemon-icon";
 import { Stage } from "@/app/ui/stage";
 import { TypeBadge } from "@/app/ui/type-badge";
-import styles from "./draft.module.css";
+import styles from "./detail.module.scss";
 
 const LEVEL = 50;
 const STATS: { key: StatKey; base: string; calc: string }[] = [
@@ -67,54 +67,54 @@ export function DetailScreen({
 
   return (
     <Stage className={styles.detail}>
-      <h1 className={styles.title}>{title}</h1>
-      <Frame className={styles.detailMain}>
-        <div className={styles.top}>
+      <h1 className={styles.detail__title}>{title}</h1>
+      <Frame className={styles.detail__main}>
+        <div className={styles.detail__top}>
           <PokemonIcon src={pokemon.sprite} size={128} alt={pokemon.name} />
-          <div className={styles.nameBlock}>
-            <h2 className={styles.detailName}>{pokemon.name.toUpperCase()}</h2>
-            <div className={styles.badges}>
+          <div className={styles.detail__nameBlock}>
+            <h2 className={styles.detail__name}>{pokemon.name.toUpperCase()}</h2>
+            <div className={styles.detail__badges}>
               {pokemon.types.map((t) => (
                 <TypeBadge key={t} type={t} />
               ))}
             </div>
             <HeldItem item={pokemon.item} />
           </div>
-          <section aria-label="Ability" className={styles.abilityBox}>
-            <p className={styles.label}>ABILITY</p>
-            <p className={styles.abilityName}>{pokemon.ability.name}</p>
-            <p className={styles.abilityText}>{pokemon.ability.description}</p>
+          <section aria-label="Ability" className={styles.detail__ability}>
+            <p className={styles.detail__label}>ABILITY</p>
+            <p className={styles.detail__abilityName}>{pokemon.ability.name}</p>
+            <p className={styles.detail__abilityText}>{pokemon.ability.description}</p>
           </section>
         </div>
 
-        <div className={styles.columns}>
-          <section aria-label="Moves" className={styles.moves}>
-            <p className={`${styles.label} ${styles.movesLabel}`}>MOVES</p>
+        <div className={styles.detail__columns}>
+          <section aria-label="Moves" className={styles.detail__moves}>
+            <p className={`${styles.detail__label} ${styles["detail__label--moves"]}`}>MOVES</p>
             {pokemon.moves.map((m, i) => (
               <button
                 key={m.name}
                 type="button"
-                className={`${styles.move} ${i === selected ? styles.on : ""}`}
+                className={`${styles.detail__move} ${i === selected ? styles["detail__move--selected"] : ""}`}
                 aria-pressed={i === selected}
                 onMouseEnter={() => setSelected(i)}
                 onFocus={() => setSelected(i)}
                 onClick={() => setSelected(i)}
               >
-                <span className={styles.moveName}>{m.name.toUpperCase()}</span>
-                <span className={styles.pp}>
+                <span className={styles.detail__moveName}>{m.name.toUpperCase()}</span>
+                <span className={styles.detail__pp}>
                   PP {m.pp}/{m.pp}
                 </span>
               </button>
             ))}
           </section>
 
-          <section aria-label="Stats" className={styles.stats}>
-            <div className={styles.statsHead}>
-              <p className={styles.label}>STATS</p>
-              <div role="group" aria-label="Stat view" className={styles.toggle}>
+          <section aria-label="Stats" className={styles.detail__stats}>
+            <div className={styles.detail__statsHead}>
+              <p className={styles.detail__label}>STATS</p>
+              <div role="group" aria-label="Stat view" className={styles.detail__toggle}>
                 <button
                   type="button"
-                  className={`${styles.seg} ${view === "calc" ? styles.segOn : ""}`}
+                  className={`${styles.detail__toggleOption} ${view === "calc" ? styles["detail__toggleOption--on"] : ""}`}
                   aria-pressed={view === "calc"}
                   onClick={() => setView("calc")}
                 >
@@ -122,7 +122,7 @@ export function DetailScreen({
                 </button>
                 <button
                   type="button"
-                  className={`${styles.seg} ${view === "base" ? styles.segOn : ""}`}
+                  className={`${styles.detail__toggleOption} ${view === "base" ? styles["detail__toggleOption--on"] : ""}`}
                   aria-pressed={view === "base"}
                   onClick={() => setView("base")}
                 >
@@ -132,17 +132,17 @@ export function DetailScreen({
             </div>
             {view === "calc" ? (
               <>
-                <div className={styles.statRow}>
+                <div className={styles.detail__statRow}>
                   <span>HP</span>
                   <span>
                     {hp}/{hp}
                   </span>
                 </div>
-                <div className={styles.hpRow}>
-                  <HpBar value={hp} max={hp} className={styles.hpBar} />
+                <div className={styles.detail__hpRow}>
+                  <HpBar value={hp} max={hp} className={styles.detail__hpBar} />
                 </div>
                 {STATS.slice(1).map((s) => (
-                  <div key={s.key} className={styles.statRow}>
+                  <div key={s.key} className={styles.detail__statRow}>
                     <span>{s.calc}</span>
                     <span>{levelStat(baseStats[s.key], false)}</span>
                   </div>
@@ -151,11 +151,12 @@ export function DetailScreen({
             ) : (
               <>
                 {STATS.map((s) => (
-                  <div key={s.key} className={styles.baseRow}>
+                  <div key={s.key} className={styles.detail__baseRow}>
                     <span>{s.base}</span>
-                    <span className={styles.baseValue}>{baseStats[s.key]}</span>
-                    <div className={styles.bar}>
+                    <span className={styles.detail__baseValue}>{baseStats[s.key]}</span>
+                    <div className={styles.detail__bar}>
                       <div
+                        className={styles.detail__barFill}
                         style={{
                           width: `${Math.min(100, Math.round((baseStats[s.key] / 160) * 100))}%`,
                           background: barColour(baseStats[s.key]),
@@ -164,9 +165,9 @@ export function DetailScreen({
                     </div>
                   </div>
                 ))}
-                <div className={styles.baseRow}>
-                  <span className={styles.total}>TOTAL</span>
-                  <span className={styles.baseValue}>{total}</span>
+                <div className={styles.detail__baseRow}>
+                  <span className={styles.detail__total}>TOTAL</span>
+                  <span className={styles.detail__baseValue}>{total}</span>
                 </div>
               </>
             )}
@@ -174,27 +175,27 @@ export function DetailScreen({
         </div>
       </Frame>
 
-      <Frame className={styles.moveBox} aria-live="polite" aria-label={move?.name}>
+      <Frame className={styles.detail__moveBox} aria-live="polite" aria-label={move?.name}>
         {move && (
           <>
-            <div className={styles.catRow}>
+            <div className={styles.detail__catRow}>
               <Image
-                className={styles.pixel}
+                className={styles.detail__catIcon}
                 src={`/sprites/misc/icon-${move.category.toLowerCase()}.png`}
                 alt={move.category}
                 width={64}
                 height={32}
                 unoptimized
               />
-              <TypeBadge type={move.type} className={styles.catBadge} />
-              <p className={styles.powAcc}>{powerAccuracy(move)}</p>
+              <TypeBadge type={move.type} className={styles.detail__catBadge} />
+              <p className={styles.detail__powAcc}>{powerAccuracy(move)}</p>
             </div>
-            <p className={styles.line}>{move.effect}</p>
+            <p className={styles.detail__effect}>{move.effect}</p>
           </>
         )}
       </Frame>
 
-      <div className={styles.buttons}>
+      <div className={styles.detail__buttons}>
         {!viewOnly && (
           <Button primary disabled={!canRent} onClick={onRent}>
             RENT

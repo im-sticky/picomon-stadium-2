@@ -1,4 +1,4 @@
-import styles from "./crystal.module.css";
+import styles from "./crystal.module.scss";
 
 export type RadioOption<T> = { value: T; label: string };
 
@@ -21,8 +21,9 @@ export function RadioGroup<T extends string | number>({
   return (
     <fieldset className={`${styles.radioGroup} ${className ?? ""}`} aria-label={label}>
       {options.map((option) => (
-        <label key={option.value} className={styles.radio}>
+        <label key={option.value} className={styles.radioGroup__option}>
           <input
+            className={styles.radioGroup__input}
             type="radio"
             name={name}
             value={option.value}

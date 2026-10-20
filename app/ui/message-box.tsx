@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Frame } from "./frame";
-import styles from "./crystal.module.css";
+import styles from "./crystal.module.scss";
 
 /** Two lines of prompt or error text, Crystal style. */
 export type Message = readonly [string, string];
@@ -19,9 +19,9 @@ export function MessageBox({
 }) {
   return (
     <Frame className={`${styles.messageBox} ${className ?? ""}`}>
-      <div role={role} className={styles.messageLines}>
-        <p>{message[0]}</p>
-        <p>{message[1]}</p>
+      <div role={role} className={styles.messageBox__lines}>
+        <p className={styles.messageBox__line}>{message[0]}</p>
+        <p className={styles.messageBox__line}>{message[1]}</p>
       </div>
       {actions}
     </Frame>

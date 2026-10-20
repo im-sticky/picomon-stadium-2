@@ -15,7 +15,7 @@ import { Stage } from "@/app/ui/stage";
 import { TypeBadge } from "@/app/ui/type-badge";
 import { DetailScreen } from "./detail-screen";
 import type { RoomAction } from "./room-view";
-import styles from "./draft.module.css";
+import styles from "./draft.module.scss";
 
 const PROMPT: Message = ["Hover a POKéMON to see its moves.", "Click one to see its details."];
 const FAILED: Message = ["Something went wrong.", "Try again."];
@@ -112,19 +112,19 @@ export function DraftScreen({
   const strip = (slot: Slot) => {
     const ids = team(slot);
     return (
-      <div className={`${styles.strip} ${slot === 2 ? styles.stripRight : ""}`}>
-        <p className={styles.picksLeft} style={{ visibility: turn === slot ? "visible" : "hidden" }}>
+      <div className={`${styles.draft__strip} ${slot === 2 ? styles["draft__strip--right"] : ""}`}>
+        <p className={styles.draft__picksLeft} style={{ visibility: turn === slot ? "visible" : "hidden" }}>
           {left === 1 ? "1 PICK" : `${left} PICKS`}
         </p>
-        <ul className={styles.slots} aria-label={`${name(slot)}'s team`}>
+        <ul className={styles.draft__slots} aria-label={`${name(slot)}'s team`}>
           {Array.from({ length: PICKS_PER_PLAYER }, (_, i) => {
             const p = ids[i] ? byId.get(ids[i]) : undefined;
             return (
-              <li key={i} className={styles.slot}>
+              <li key={i} className={styles.draft__slot}>
                 {p ? (
                   <button
                     type="button"
-                    className={styles.slotButton}
+                    className={styles.draft__slotButton}
                     aria-label={`View ${p.name.toUpperCase()}`}
                     onClick={() => setOpen({ id: p.id, viewOnly: true })}
                   >
@@ -132,7 +132,7 @@ export function DraftScreen({
                   </button>
                 ) : (
                   <Image
-                    className={`${styles.pixel} ${styles.emptySlot} ${slot === 2 ? styles.p2Ball : ""}`}
+                    className={`${styles.draft__ball} ${styles["draft__ball--empty"]} ${slot === 2 ? styles["draft__ball--p2"] : ""}`}
                     src={BALL_ICON}
                     alt="Empty slot"
                     width={32}
@@ -150,27 +150,27 @@ export function DraftScreen({
 
   return (
     <Stage className={styles.draft}>
-      <h1 className={styles.title}>{title}</h1>
-      <div className={styles.teams}>
+      <h1 className={styles.draft__title}>{title}</h1>
+      <div className={styles.draft__teams}>
         {strip(1)}
-        <p className={styles.format} aria-label="Battle format">
+        <p className={styles.draft__format} aria-label="Battle format">
           {battleSize}V{battleSize}
         </p>
         {strip(2)}
       </div>
 
       <PixelScroll label="Pokémon available to rent, scrollable" height={432} step={108}>
-        <ul className={styles.grid} aria-label="Pokémon available to rent">
+        <ul className={styles.draft__grid} aria-label="Pokémon available to rent">
           {pool.map((p) => {
             const owner = rentedBy.get(p.id);
             const label = p.name.toUpperCase();
-            const on = !done && hover === p.id ? styles.on : "";
+            const on = !done && hover === p.id ? styles["draft__cell--active"] : "";
             if (owner) {
               return (
                 <li key={p.id}>
-                  <div className={`${styles.cell} ${styles.taken} ${on}`} onMouseEnter={() => setHover(p.id)}>
+                  <div className={`${styles.draft__cell} ${on}`} onMouseEnter={() => setHover(p.id)}>
                     <Image
-                      className={`${styles.pixel} ${owner === 2 ? styles.p2Ball : ""}`}
+                      className={`${styles.draft__ball} ${owner === 2 ? styles["draft__ball--p2"] : ""}`}
                       src={POKEBALL}
                       alt={`${label} rented by ${name(owner)}`}
                       width={96}
@@ -184,7 +184,7 @@ export function DraftScreen({
             if (done) {
               return (
                 <li key={p.id}>
-                  <div className={styles.cell} aria-label={label}>
+                  <div className={styles.draft__cell} aria-label={label}>
                     <PokemonIcon src={p.sprite} size={96} />
                   </div>
                 </li>
@@ -194,7 +194,7 @@ export function DraftScreen({
               <li key={p.id}>
                 <button
                   type="button"
-                  className={`${styles.cell} ${on} ${blocked(p) ? styles.blocked : ""}`}
+                  className={`${styles.draft__cell} ${on} ${blocked(p) ? styles["draft__cell--blocked"] : ""}`}
                   aria-label={`View ${label}${blocked(p) ? " (you already have an uber)" : ""}`}
                   onMouseEnter={() => setHover(p.id)}
                   onFocus={() => setHover(p.id)}
@@ -208,33 +208,33 @@ export function DraftScreen({
         </ul>
       </PixelScroll>
 
-      <p className={styles.hint} style={{ visibility: done ? "hidden" : "visible" }}>
+      <p className={styles.draft__hint} style={{ visibility: done ? "hidden" : "visible" }}>
         Hover for moves · Click for details
       </p>
 
-      <Frame className={styles.info}>
+      <Frame className={styles.draft__info}>
         {done && you.slot === 1 ? (
-          <div className={styles.done}>
+          <div className={styles.draft__done}>
             {/* The battle order screen isn't built yet, so this has no action. */}
             <Button primary>START BATTLE</Button>
           </div>
         ) : done ? (
           <div role="status">
-            <p className={styles.line}>Waiting for {name(1)}</p>
-            <p className={styles.line}>to start the battle...</p>
+            <p className={styles.draft__line}>Waiting for {name(1)}</p>
+            <p className={styles.draft__line}>to start the battle...</p>
           </div>
         ) : message ? (
           <div role={notice || failed ? "alert" : "status"}>
-            <p className={styles.line}>{message[0]}</p>
-            <p className={styles.line}>{message[1]}</p>
+            <p className={styles.draft__line}>{message[0]}</p>
+            <p className={styles.draft__line}>{message[1]}</p>
           </div>
         ) : (
           hovered && (
-            <div className={styles.infoRow}>
-              <div className={styles.infoLeft}>
-                <div className={styles.infoName}>
+            <div className={styles.draft__infoRow}>
+              <div className={styles.draft__infoLeft}>
+                <div className={styles.draft__infoName}>
                   <Image
-                    className={styles.pixel}
+                    className={styles.draft__infoIcon}
                     src={hovered.isUber ? MASTER_BALL_ICON : BALL_ICON}
                     alt={hovered.isUber ? "Uber" : ""}
                     width={32}
@@ -243,25 +243,25 @@ export function DraftScreen({
                   />
                   <p>{hovered.name.toUpperCase()}</p>
                 </div>
-                <div className={styles.badges}>
+                <div className={styles.draft__badges}>
                   {hovered.types.map((t) => (
                     <TypeBadge key={t} type={t} />
                   ))}
                 </div>
-                <p className={styles.ability} aria-label="Ability">
+                <p className={styles.draft__ability} aria-label="Ability">
                   {hovered.ability.name}
                 </p>
                 <HeldItem item={hovered.item} />
               </div>
-              <div className={styles.infoRight}>
+              <div className={styles.draft__infoRight}>
                 {hoveredBy ? (
-                  <p className={styles.line}>Rented by {name(hoveredBy)}.</p>
+                  <p className={styles.draft__line}>Rented by {name(hoveredBy)}.</p>
                 ) : (
-                  <ul className={styles.infoMoves} aria-label="Moves">
+                  <ul className={styles.draft__infoMoves} aria-label="Moves">
                     {hovered.moves.map((m) => (
-                      <li key={m.name} className={styles.infoMove}>
-                        <span className={styles.moveName}>{m.name.toUpperCase()}</span>
-                        <span className={styles.pp}>
+                      <li key={m.name} className={styles.draft__infoMove}>
+                        <span className={styles.draft__moveName}>{m.name.toUpperCase()}</span>
+                        <span className={styles.draft__pp}>
                           PP {m.pp}/{m.pp}
                         </span>
                       </li>

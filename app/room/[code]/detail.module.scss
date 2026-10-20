@@ -1,0 +1,244 @@
+/* Pokémon detail (boards 2b/2f). Sizes follow docs/design/README.md. BEM block `detail`. */
+@use "../../styles/mixins" as *;
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px 48px;
+
+  &__title {
+    @include screen-title;
+  }
+
+  &__main {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    gap: 18px;
+    padding: 18px 36px;
+  }
+
+  &__top {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+
+  &__nameBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__name {
+    font-size: 32px;
+    line-height: 48px;
+  }
+
+  &__badges {
+    display: flex;
+    gap: 12px;
+  }
+
+  &__ability {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 480px;
+    margin-left: auto;
+  }
+
+  /* MOVES / ABILITY / STATS headings. */
+  &__label {
+    font-size: 16px;
+    line-height: 32px;
+    color: var(--text-2);
+
+    &--moves {
+      padding-left: 12px;
+    }
+  }
+
+  &__abilityName {
+    font-size: 24px;
+    line-height: 32px;
+  }
+
+  &__abilityText {
+    font-size: 16px;
+    line-height: 24px;
+  }
+
+  &__columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 60px;
+  }
+
+  &__moves {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__move {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    box-sizing: border-box;
+    @include bare-button;
+    padding: 2px 12px;
+    text-align: left;
+    border: 0;
+    border-radius: 6px;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 3px solid var(--ink);
+    }
+
+    &--selected {
+      background: var(--hover);
+    }
+  }
+
+  &__moveName {
+    font-size: 24px;
+    line-height: 32px;
+    white-space: nowrap;
+  }
+
+  &__pp {
+    font-size: 16px;
+    line-height: 24px;
+    text-align: right;
+  }
+
+  &__stats {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__statsHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 32px;
+  }
+
+  /* LV.50 / BASE toggle: 28px pixel-notched segments. */
+  &__toggle {
+    display: flex;
+    gap: 8px;
+  }
+
+  &__toggleOption {
+    height: 28px;
+    padding: 0 10px;
+    font: inherit;
+    font-size: 16px;
+    line-height: 28px;
+    color: var(--ink);
+    background: var(--hover);
+    border: 0;
+    cursor: pointer;
+    @include pixel-notch(4px);
+
+    &:focus-visible {
+      @include focus-ring(2px);
+    }
+
+    &--on {
+      color: var(--bg);
+      background: var(--ink);
+    }
+  }
+
+  &__statRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 32px;
+    font-size: 16px;
+  }
+
+  &__hpRow {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    height: 24px;
+  }
+
+  &__hpBar {
+    width: 216px;
+  }
+
+  &__baseRow {
+    display: grid;
+    grid-template-columns: 168px 84px 1fr;
+    align-items: center;
+    height: 32px;
+    font-size: 16px;
+  }
+
+  &__baseValue {
+    padding-right: 18px;
+    text-align: right;
+  }
+
+  &__bar {
+    height: 12px;
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  &__barFill {
+    height: 100%;
+  }
+
+  &__total {
+    color: var(--text-2);
+  }
+
+  /* Move box. */
+  &__moveBox {
+    display: flex;
+    flex-direction: column;
+    height: 192px;
+    box-sizing: border-box;
+    padding: 18px 36px;
+  }
+
+  &__catRow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 48px;
+  }
+
+  &__catIcon {
+    @include pixelated;
+  }
+
+  /* The category icon art has 4px of empty space under it. */
+  &__catBadge {
+    margin-bottom: 4px;
+  }
+
+  &__powAcc {
+    margin-left: auto;
+    font-size: 24px;
+  }
+
+  &__effect {
+    font-size: 24px;
+    line-height: 48px;
+  }
+
+  &__buttons {
+    display: flex;
+    justify-content: center;
+    gap: 48px;
+  }
+}

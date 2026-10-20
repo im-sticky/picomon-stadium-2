@@ -10,7 +10,7 @@ import { Field, SectionLabel } from "./ui/field";
 import { Frame } from "./ui/frame";
 import { MessageBox, type Message } from "./ui/message-box";
 import { RadioGroup } from "./ui/radio-group";
-import styles from "./home.module.css";
+import styles from "./home.module.scss";
 
 const SIZE_OPTIONS = BATTLE_SIZES.map((n) => ({ value: n, label: `${n}V${n}` }));
 
@@ -85,7 +85,7 @@ export function HomeForm({ initialError }: { initialError?: "not-found" }) {
     <>
       <Frame
         as="form"
-        className={styles.form}
+        className={styles.homeForm}
         onSubmit={(e) => {
           e.preventDefault();
           if (!busy) join();
@@ -102,11 +102,11 @@ export function HomeForm({ initialError }: { initialError?: "not-found" }) {
             autoComplete="off"
           />
         </div>
-        <div className={styles.columns}>
-          <div className={styles.column}>
+        <div className={styles.homeForm__columns}>
+          <div className={styles.homeForm__column}>
             <div>
               <SectionLabel>NEW ROOM</SectionLabel>
-              <p className={styles.blurb}>Host a room and share its code.</p>
+              <p className={styles.homeForm__blurb}>Host a room and share its code.</p>
             </div>
             <Button primary disabled={busy} onClick={host}>
               HOST
@@ -119,12 +119,12 @@ export function HomeForm({ initialError }: { initialError?: "not-found" }) {
               onChange={setBattleSize}
             />
           </div>
-          <div className={styles.column}>
+          <div className={styles.homeForm__column}>
             <div>
               <SectionLabel htmlFor={codeId}>ROOM CODE</SectionLabel>
               <Field
                 id={codeId}
-                className={styles.code}
+                className={styles.homeForm__code}
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 maxLength={4}
@@ -138,7 +138,7 @@ export function HomeForm({ initialError }: { initialError?: "not-found" }) {
           </div>
         </div>
       </Frame>
-      <MessageBox className={styles.message} message={error ?? HINT} />
+      <MessageBox className={styles.homeForm__message} message={error ?? HINT} />
     </>
   );
 }

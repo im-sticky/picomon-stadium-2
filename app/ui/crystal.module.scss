@@ -1,0 +1,327 @@
+/* Shared Crystal-style pieces. Sizes follow docs/design/README.md (1 GB px = 3 CSS px).
+   Class names follow BEM: one block per component, `block__element`, `block--modifier`. */
+@use "../styles/mixins" as *;
+
+/* Stage: the fixed 1200×900 screen, centred in the window. */
+.viewport {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.stage {
+  width: 1200px;
+  height: 900px;
+  flex: none;
+  box-sizing: border-box;
+}
+
+/* Thick outer line, a gap, then a thin inner line. */
+.frame {
+  @include crystal-frame;
+}
+
+.messageBox {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  box-sizing: border-box;
+  min-height: 168px;
+  padding: 30px 42px;
+
+  &__lines {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__line {
+    font-size: 24px;
+    line-height: 48px;
+    /* Keep an empty second line's height. */
+    min-height: 48px;
+  }
+}
+
+.sectionLabel {
+  display: block;
+  font-size: 16px;
+  line-height: 32px;
+  color: var(--text-2);
+}
+
+.field {
+  display: block;
+  width: 100%;
+  height: 84px;
+  box-sizing: border-box;
+  padding: 0 24px;
+  font: inherit;
+  font-size: 24px;
+  color: var(--ink);
+  text-transform: uppercase;
+  @include crystal-frame;
+  outline: none;
+
+  &::placeholder {
+    color: var(--placeholder);
+  }
+
+  &:focus {
+    background: var(--hover);
+    @include double-line($gap: var(--hover));
+  }
+}
+
+.button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-width: 240px;
+  box-sizing: border-box;
+  /* 60px each side clears the ▶ cursor (30px in, 24px wide, 6px gap), so the label
+     stays centred and never runs under it. Long labels widen the button instead. */
+  padding: 36px 60px;
+  white-space: nowrap;
+  font: inherit;
+  font-size: 24px;
+  color: var(--ink);
+  @include crystal-frame;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: none;
+    background: var(--hover);
+  }
+
+  &--primary,
+  &--primary:focus-visible {
+    color: var(--bg);
+    background: var(--ink);
+    @include double-line($line: var(--bg), $gap: var(--ink));
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
+
+  /* ▶ cursor: absolutely placed and only hidden (not removed), so showing it never
+     changes the button's size or moves the label. */
+  &__cursor {
+    position: absolute;
+    left: 30px;
+    top: 50%;
+    margin-top: -12px;
+    visibility: hidden;
+    fill: var(--ink);
+  }
+
+  &--primary &__cursor {
+    fill: var(--bg);
+  }
+
+  &:enabled:hover &__cursor,
+  &:enabled:focus-visible &__cursor {
+    visibility: visible;
+  }
+}
+
+/* Radio group: one 32px row of 24px pixel-square radios, 24px apart. */
+.radioGroup {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+
+  &__option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    line-height: 24px;
+    cursor: pointer;
+  }
+
+  &__input {
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    margin: 0;
+    box-sizing: border-box;
+    border: 3px solid var(--ink);
+    background: var(--bg);
+    cursor: pointer;
+
+    &:checked {
+      background: var(--ink);
+      box-shadow: inset 0 0 0 3px var(--bg);
+    }
+
+    &:focus-visible {
+      @include focus-ring;
+    }
+  }
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Pixel-notched shapes (type badges, the HP bar): one square block cut from each
+   corner, n = 4px for badges and 3px for the HP bar. */
+.typeBadge {
+  display: inline-block;
+  flex: none;
+  width: 148px;
+  height: 28px;
+  box-sizing: border-box;
+  font-size: 16px;
+  line-height: 28px;
+  color: var(--bg);
+  text-align: center;
+  @include pixel-notch(4px);
+}
+
+.hpBar {
+  display: flex;
+  align-items: center;
+  height: 18px;
+  box-sizing: border-box;
+  padding: 3px 3px 3px 0;
+  background: var(--ink);
+  @include pixel-notch(3px);
+
+  &__label {
+    padding: 0 6px;
+    font-size: 12px;
+    line-height: 12px;
+    color: #f8b830;
+  }
+
+  &__track {
+    flex: 1;
+    height: 12px;
+    overflow: hidden;
+    background: var(--bg);
+    /* Notched on the right only: the left edge butts against the HP label. */
+    clip-path: polygon(0 0, calc(100% - 3px) 0, calc(100% - 3px) 3px, 100% 3px, 100% calc(100% - 3px),
+      calc(100% - 3px) calc(100% - 3px), calc(100% - 3px) 100%, 0 100%);
+  }
+
+  &__fill {
+    height: 100%;
+    background: #40c048;
+  }
+}
+
+/* Shows one frame of a two-frame sprite sheet at a time. */
+.pokemonIcon {
+  display: block;
+  flex: none;
+  overflow: hidden;
+
+  /* The sheet holds two stacked frames: show each for 200ms. */
+  &__sprite {
+    @include pixelated;
+    animation: spriteFrames 400ms steps(2) infinite;
+
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+  }
+}
+
+@keyframes spriteFrames {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-100%);
+  }
+}
+
+/* Pixel scrollbar: 36px wide, 12px from the content. */
+.pixelScroll {
+  display: flex;
+  gap: 12px;
+
+  &__box {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    &:focus-visible {
+      @include focus-ring;
+    }
+  }
+
+  &__bar {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    width: 36px;
+  }
+
+  &__button,
+  &__thumb {
+    box-sizing: border-box;
+    background: var(--ink);
+    border: 0;
+    box-shadow: inset 3px 3px 0 var(--text-2);
+  }
+
+  &__button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    cursor: pointer;
+    fill: var(--bg);
+  }
+
+  /* 3px checkerboard dither. */
+  &__track {
+    position: relative;
+    flex: 1;
+    background-color: var(--text-2);
+    background-image: conic-gradient(var(--ink) 25%, var(--text-2) 0 50%, var(--ink) 0 75%, var(--text-2) 0);
+    background-size: 6px 6px;
+  }
+
+  &__thumb {
+    position: absolute;
+    left: 0;
+    width: 36px;
+    cursor: grab;
+  }
+}
+
+.heldItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 32px;
+  font-size: 16px;
+
+  &__icon {
+    @include pixelated;
+  }
+}
