@@ -258,7 +258,7 @@ describe('type battle API', () => {
     expect(await again.json()).toEqual({ error: 'Already picked.' });
   });
 
-  it('AGAIN after a draw starts round 2 for both players', async () => {
+  it('again after a draw starts round 2 for both players', async () => {
     const { code, host: hostCookie, guest } = await started();
     await pick(code, hostCookie, 'water');
     await pick(code, guest, 'water');

@@ -11,6 +11,8 @@ import styles from "./room.module.css";
 
 const CHOOSE: Message = ["Choose a type.", "Winner chooses the draft order."];
 const FAILED: Message = ["Something went wrong.", "Try again."];
+/** After a draw, the next round starts this long after the result is shown. */
+export const NEXT_ROUND_DELAY_MS = 2000;
 
 const label = (type: TypeChoice) => type.toUpperCase();
 
@@ -56,6 +58,23 @@ export function TypeBattleScreen({
   const youWon = winner === you.slot;
   const choosingOrder = youWon && firstDrafter === null;
 
+  // A draw starts the next round by itself. Both clients send it; the server only
+  // advances once, and ignores a request for a round that has already moved on.
+  // The cleanup clears the timer on unmount (a new round remounts this screen) and
+  // when <Activity> hides the screen; showing it again restarts the 2s.
+  const { round } = battle;
+  const [againAttempt, setAgainAttempt] = useState(0);
+  useEffect(() => {
+    if (!draw) return;
+    const timer = setTimeout(async () => {
+      setFailed(false);
+      if (await onAction("again", { round })) return;
+      setFailed(true);
+      setAgainAttempt((n) => n + 1); // try again after another delay
+    }, NEXT_ROUND_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [draw, round, againAttempt, onAction]);
+
   // On success stay busy: the refetched state replaces the buttons.
   async function run(action: string, body: object) {
     setBusy(true);
@@ -88,13 +107,7 @@ export function TypeBattleScreen({
   if (notice) message = notice;
 
   let actions = null;
-  if (draw) {
-    actions = (
-      <Button disabled={busy} onClick={() => void run("again", { round: battle.round })}>
-        AGAIN
-      </Button>
-    );
-  } else if (choosingOrder) {
+  if (choosingOrder) {
     actions = (
       <div role="group" aria-label="Draft order" className={styles.orderButtons}>
         <Button primary className={styles.orderButton} disabled={busy} onClick={() => void run("order", { order: "first" })}>

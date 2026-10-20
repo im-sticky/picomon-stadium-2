@@ -96,7 +96,7 @@ describe('type battle', () => {
     expect(await pickType(db, room.code, room.host, 'fire', T0)).toEqual({ kind: 'not-picking' });
   });
 
-  it('a draw starts a new round when either player chooses again', async () => {
+  it('a draw starts a new round once, whichever player asks', async () => {
     const db = await createTestDb();
     const room = await startedRoom(db);
     await pickType(db, room.code, room.host, 'grass', T0);
@@ -110,16 +110,19 @@ describe('type battle', () => {
     });
 
     expect(await playTypeBattleAgain(db, room.code, room.guest, 1, T0)).toEqual({ kind: 'new-round' });
-    // The other player pressing AGAIN for the same round doesn't skip another round.
+    // Both clients ask for the next round; the second request doesn't skip another round.
     expect(await playTypeBattleAgain(db, room.code, room.host, 1, T0)).toEqual({ kind: 'already-new-round' });
     expect(await view(db, room.code, room.host)).toMatchObject({ round: 2, yourPick: null, opponentPick: null });
+    // A stale request for round 1 arriving later is ignored too.
+    expect(await playTypeBattleAgain(db, room.code, room.guest, 1, T0)).toEqual({ kind: 'already-new-round' });
+    expect(await view(db, room.code, room.host)).toMatchObject({ round: 2 });
 
     expect(await pickType(db, room.code, room.host, 'fire', T0)).toEqual({ kind: 'picked', resolved: false });
     expect(await pickType(db, room.code, room.guest, 'water', T0)).toEqual({ kind: 'picked', resolved: true });
     expect(await view(db, room.code, room.host)).toMatchObject({ round: 2, winner: 2 });
   });
 
-  it('AGAIN is rejected after a decided round', async () => {
+  it('a new round is rejected after a decided round', async () => {
     const db = await createTestDb();
     const room = await startedRoom(db);
     await pickType(db, room.code, room.host, 'grass', T0);
