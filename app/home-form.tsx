@@ -9,7 +9,10 @@ import { Button } from "./ui/button";
 import { Field, SectionLabel } from "./ui/field";
 import { Frame } from "./ui/frame";
 import { MessageBox, type Message } from "./ui/message-box";
+import { RadioGroup } from "./ui/radio-group";
 import styles from "./home.module.css";
+
+const SIZE_OPTIONS = BATTLE_SIZES.map((n) => ({ value: n, label: `${n}V${n}` }));
 
 const HINT: Message = ["Enter your name, then host a", "room or join one with a code."];
 const BAD_NAME: Message = ["Enter a name.", `It can be 1-${MAX_NAME_LENGTH} characters.`];
@@ -108,20 +111,13 @@ export function HomeForm({ initialError }: { initialError?: "not-found" }) {
             <Button primary disabled={busy} onClick={host}>
               HOST
             </Button>
-            <fieldset className={styles.sizes} aria-label="Battle size">
-              {BATTLE_SIZES.map((n) => (
-                <label key={n} className={styles.radio}>
-                  <input
-                    type="radio"
-                    name="battle-size"
-                    value={n}
-                    checked={battleSize === n}
-                    onChange={() => setBattleSize(n)}
-                  />
-                  <span>{`${n}V${n}`}</span>
-                </label>
-              ))}
-            </fieldset>
+            <RadioGroup
+              label="Battle size"
+              name="battle-size"
+              options={SIZE_OPTIONS}
+              value={battleSize}
+              onChange={setBattleSize}
+            />
           </div>
           <div className={styles.column}>
             <div>
