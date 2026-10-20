@@ -92,7 +92,9 @@ state, not separate screens.
 **Player names:** screens never say "Player 1" / "Player 2". They show the names
 the players entered on Home, in uppercase (GOLD and SILVER in the designs). Player
 1 is always the host and Player 2 the guest. That still decides column and strip
-sides (host on the left), the red/blue player colours and the snake order.
+sides (host on the left), the red/blue player colours and the snake order. The one
+exception is the lobby's players list, which keeps short red P1 / blue P2 labels
+beside the names.
 
 ### Home (`Home.dc.html`)
 - Name field: 1–10 characters, shown uppercase. The cap is 10 so the longest
@@ -126,8 +128,10 @@ sides (host on the left), the red/blue player colours and the snake order.
   COPY button that copies the code and shows "COPIED!" for 1.5s. The app shows
   "COPIED!" only once the copy succeeds. COPY is 300px wide so it fits "COPIED!"
   without resizing.
-- Players list: the host's name with a HOST tag, then the guest's name, shown as
-  `- - - - - -` until someone joins. There are no P1/P2 labels.
+- Players list: a red `P1` label (`#C03028`, 48px wide) then the host's name with a
+  HOST tag, and a blue `P2` label (`#2860B8`) then the guest's name, shown as
+  `- - - - - -` until someone joins. The labels appear only in this list (0c and
+  0d), nowhere else.
 - Message: "Send this code to a friend. / Waiting for an opponent..."
 - Full: title "ROOM <code>", the COPY button is hidden, and the guest's name is shown.
   - Host: the message reads "Both players connected! / Ready to battle?" and a
@@ -154,7 +158,16 @@ sides (host on the left), the red/blue player colours and the snake order.
 ### Draft (`Draft.dc.html`)
 - Title: "<NAME>'S CHOICE" with the name of whoever's turn it is.
 - Team strip: six 64px slots per player (P1 left, P2 right). Picked slots show the
-  Pokémon's icon, empty slots a faint pokéball. The centre shows picks left this turn.
+  Pokémon's icon, empty slots a faint pokéball.
+  - Above the strip of whoever's turn it is, "N PICKS" (or "1 PICK") shows how
+    many picks they have left this turn: 16px `#585858`, left-aligned over P1's
+    strip or right-aligned over P2's. The other side's line is hidden but keeps its
+    space. No line shows once the draft is complete.
+  - The centre, between the strips, shows the battle format the host chose on
+    Home ("3V3", "4V4" or "6V6") in 32px ink. It's display only; the draft is
+    always 6 each. The prototype reads it from Home through `localStorage`; the
+    app reads it from the room.
+  - The strip row is 92px tall (24px label line, 4px gap, 64px slots).
   - Drafted Pokémon in either team strip are clickable (hover gives a light grey
     background). Clicking one opens its Detail screen in a view-only state (board
     2f). That works during the draft and after it's complete, for both players'
@@ -196,8 +209,8 @@ sides (host on the left), the red/blue player colours and the snake order.
     right-aligned underneath, as on Detail.
   - For a rented Pokémon, the right column shows "Rented by <NAME>." in place of
     the moves. The left column stays the same.
-  - Heights: the left stack is 140px and the moves 128px, inside the box's 176px
-    inner height.
+  - Heights: the left stack is 140px and the moves 128px, inside the box's 148px
+    inner height (the taller team strip row takes the rest).
 - Snake order over 12 picks: `P1, P2, P2, P1, P1, P2, P2, P1, P1, P2, P2, P1`.
 - Draft complete (all 12 picks made): the title reads "DRAFT COMPLETE", and both
   team strips are full.
