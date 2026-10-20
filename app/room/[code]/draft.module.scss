@@ -1,4 +1,4 @@
-/* Draft (boards 2a/2c/2e) and Detail (2b/2f). Sizes follow docs/design/README.md. */
+/* Draft (boards 2a/2c/2e). Sizes follow docs/design/README.md. BEM block `draft`. */
 @use "../../styles/mixins" as *;
 
 .draft {
@@ -6,426 +6,223 @@
   flex-direction: column;
   gap: 12px;
   padding: 24px 60px;
-}
 
-.title {
-  font-size: 32px;
-  line-height: 48px;
-  text-align: center;
-}
+  &__title {
+    @include screen-title;
+  }
 
-.pixel {
-  @include pixelated;
-}
+  &__line {
+    font-size: 24px;
+    line-height: 48px;
+  }
 
-.line {
-  font-size: 24px;
-  line-height: 48px;
-}
+  /* Team strips: 24px label line, 4px gap, 64px slots. */
+  &__teams {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    height: 92px;
+    margin-bottom: 12px;
+  }
 
-/* Team strips: 24px label line, 4px gap, 64px slots. */
-.teams {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px;
-  height: 92px;
-  margin-bottom: 12px;
-}
+  &__strip {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
 
-.strip {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-}
+    &--right {
+      align-items: flex-end;
+    }
+  }
 
-.stripRight {
-  align-items: flex-end;
-}
+  &__picksLeft {
+    font-size: 16px;
+    line-height: 24px;
+    color: var(--text-2);
+  }
 
-.picksLeft {
-  font-size: 16px;
-  line-height: 24px;
-  color: var(--text-2);
-}
+  &__slots {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    @include bare-list;
+  }
 
-.slots {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  @include bare-list;
-}
+  &__slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+  }
 
-.slot {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 64px;
-  height: 64px;
-}
+  &__slotButton {
+    display: block;
+    padding: 0;
+    background: none;
+    border: 0;
+    border-radius: 4px;
+    cursor: pointer;
 
-.slotButton {
-  display: block;
-  padding: 0;
-  background: none;
-  border: 0;
-  border-radius: 4px;
-  cursor: pointer;
+    &:hover,
+    &:focus-visible {
+      outline: none;
+      background: var(--hover);
+    }
+  }
 
-  &:hover,
-  &:focus-visible {
+  /* Pokéballs: empty team slots, and rented Pokémon in the grid (blue for the guest). */
+  &__ball {
+    @include pixelated;
+
+    &--empty {
+      opacity: 0.2;
+    }
+
+    &--p2 {
+      filter: hue-rotate(235deg);
+    }
+  }
+
+  &__format {
+    align-self: center;
+    font-size: 32px;
+    line-height: 48px;
+    text-align: center;
+  }
+
+  /* 9 equal columns of 108px cells, 4 rows visible. */
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+    justify-items: center;
+    @include bare-list;
+  }
+
+  &__cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 108px;
+    height: 108px;
+    box-sizing: border-box;
+    @include bare-button;
+    border: 6px solid transparent;
+    border-radius: 6px;
+  }
+
+  @at-root button#{&}__cell {
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+      outline: none;
+      background: var(--hover);
+    }
+  }
+
+  /* The hovered cell (also shown when hovering a rented one). */
+  &__cell--active {
     outline: none;
     background: var(--hover);
   }
-}
 
-.emptySlot {
-  opacity: 0.2;
-}
-
-.p2Ball {
-  filter: hue-rotate(235deg);
-}
-
-.format {
-  align-self: center;
-  font-size: 32px;
-  line-height: 48px;
-  text-align: center;
-}
-
-/* 9 equal columns of 108px cells, 4 rows visible. */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(9, minmax(0, 1fr));
-  justify-items: center;
-  @include bare-list;
-}
-
-.cell {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 108px;
-  height: 108px;
-  box-sizing: border-box;
-  @include bare-button;
-  border: 6px solid transparent;
-  border-radius: 6px;
-}
-
-button.cell {
-  cursor: pointer;
-}
-
-button.cell:hover,
-button.cell:focus-visible,
-.cell.on {
-  outline: none;
-  background: var(--hover);
-}
-
-/* An uber when you already have one: it can be looked at but not rented. */
-.blocked {
-  opacity: 0.3;
-}
-
-.hint {
-  font-size: 16px;
-  line-height: 24px;
-  color: var(--text-2);
-  text-align: center;
-}
-
-/* Info box: 148px inner height. */
-.info {
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-  justify-content: center;
-  padding: 18px 36px;
-}
-
-.infoRow {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  gap: 48px;
-}
-
-.infoLeft {
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  gap: 8px;
-  width: 308px;
-}
-
-.infoName {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  height: 32px;
-  font-size: 24px;
-  line-height: 32px;
-}
-
-.badges {
-  display: flex;
-  gap: 12px;
-}
-
-.ability {
-  font-size: 16px;
-  line-height: 24px;
-}
-
-.infoRight {
-  flex: 1;
-  min-width: 0;
-}
-
-.infoMoves {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: 36px;
-  row-gap: 16px;
-  @include bare-list;
-}
-
-.infoMove {
-  display: flex;
-  flex-direction: column;
-}
-
-.moveName {
-  font-size: 24px;
-  line-height: 32px;
-  white-space: nowrap;
-}
-
-.pp {
-  font-size: 16px;
-  line-height: 24px;
-  text-align: right;
-}
-
-.done {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Detail. */
-.detail {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 24px 48px;
-}
-
-.detailMain {
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-  gap: 18px;
-  padding: 18px 36px;
-}
-
-.top {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
-
-.nameBlock {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.detailName {
-  font-size: 32px;
-  line-height: 48px;
-}
-
-.abilityBox {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  width: 480px;
-  margin-left: auto;
-}
-
-.label {
-  font-size: 16px;
-  line-height: 32px;
-  color: var(--text-2);
-}
-
-.abilityName {
-  font-size: 24px;
-  line-height: 32px;
-}
-
-.abilityText {
-  font-size: 16px;
-  line-height: 24px;
-}
-
-.columns {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: 60px;
-}
-
-.moves {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.movesLabel {
-  padding-left: 12px;
-}
-
-.move {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  box-sizing: border-box;
-  @include bare-button;
-  padding: 2px 12px;
-  text-align: left;
-  border: 0;
-  border-radius: 6px;
-  cursor: pointer;
-
-  &:focus-visible {
-    outline: 3px solid var(--ink);
+  /* An uber when you already have one: it can be looked at but not rented. */
+  &__cell--blocked {
+    opacity: 0.3;
   }
 
-  &.on {
-    background: var(--hover);
+  &__hint {
+    font-size: 16px;
+    line-height: 24px;
+    color: var(--text-2);
+    text-align: center;
   }
-}
 
-.stats {
-  display: flex;
-  flex-direction: column;
-}
-
-.statsHead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 32px;
-}
-
-/* LV.50 / BASE toggle: 28px pixel-notched segments. */
-.toggle {
-  display: flex;
-  gap: 8px;
-}
-
-.seg {
-  height: 28px;
-  padding: 0 10px;
-  font: inherit;
-  font-size: 16px;
-  line-height: 28px;
-  color: var(--ink);
-  background: var(--hover);
-  border: 0;
-  cursor: pointer;
-  @include pixel-notch(4px);
-
-  &:focus-visible {
-    @include focus-ring(2px);
+  /* Info box: 148px inner height. */
+  &__info {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    justify-content: center;
+    padding: 18px 36px;
   }
-}
 
-.segOn {
-  color: var(--bg);
-  background: var(--ink);
-}
-
-.statRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 32px;
-  font-size: 16px;
-}
-
-.hpRow {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  height: 24px;
-}
-
-.hpBar {
-  width: 216px;
-}
-
-.baseRow {
-  display: grid;
-  grid-template-columns: 168px 84px 1fr;
-  align-items: center;
-  height: 32px;
-  font-size: 16px;
-}
-
-.baseValue {
-  padding-right: 18px;
-  text-align: right;
-}
-
-.bar {
-  height: 12px;
-  overflow: hidden;
-  background: var(--bg);
-
-  > div {
-    height: 100%;
+  &__infoRow {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 48px;
   }
-}
 
-.total {
-  color: var(--text-2);
-}
+  &__infoLeft {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    gap: 8px;
+    width: 308px;
+  }
 
-/* Move box. */
-.moveBox {
-  display: flex;
-  flex-direction: column;
-  height: 192px;
-  box-sizing: border-box;
-  padding: 18px 36px;
-}
+  &__infoName {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 32px;
+    font-size: 24px;
+    line-height: 32px;
+  }
 
-.catRow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  height: 48px;
-}
+  /* The pokéball / master ball beside the name. */
+  &__infoIcon {
+    @include pixelated;
+  }
 
-/* The category icon art has 4px of empty space under it. */
-.catBadge {
-  margin-bottom: 4px;
-}
+  &__badges {
+    display: flex;
+    gap: 12px;
+  }
 
-.powAcc {
-  margin-left: auto;
-  font-size: 24px;
-}
+  &__ability {
+    font-size: 16px;
+    line-height: 24px;
+  }
 
-.buttons {
-  display: flex;
-  justify-content: center;
-  gap: 48px;
+  &__infoRight {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__infoMoves {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 36px;
+    row-gap: 16px;
+    @include bare-list;
+  }
+
+  &__infoMove {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__moveName {
+    font-size: 24px;
+    line-height: 32px;
+    white-space: nowrap;
+  }
+
+  &__pp {
+    font-size: 16px;
+    line-height: 24px;
+    text-align: right;
+  }
+
+  &__done {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+  }
 }

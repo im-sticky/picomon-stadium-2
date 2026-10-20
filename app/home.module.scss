@@ -1,79 +1,81 @@
+/* Home (board 0a). BEM: `home` is the page, `homeForm` the host/join form. */
 @use "./styles/mixins" as *;
 
-.stage {
+.home {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 36px;
   padding: 48px 72px;
-}
 
-/* Small credits in the empty strip under the message box. */
-.credits {
-  position: absolute;
-  right: 0;
-  bottom: 16px;
-  left: 0;
-  color: var(--text-2);
-  font-size: 8px;
-  line-height: 14px;
-  text-align: center;
+  /* Small credits in the empty strip under the message box. */
+  &__credits {
+    position: absolute;
+    right: 0;
+    bottom: 16px;
+    left: 0;
+    color: var(--text-2);
+    font-size: 8px;
+    line-height: 14px;
+    text-align: center;
+  }
 
-  a {
+  &__creditLink {
     color: inherit;
   }
-}
 
-.title {
-  display: flex;
-  align-items: center;
-  gap: 24px;
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
 
-  h1 {
+  &__heading {
     font-size: 40px;
     line-height: 48px;
   }
+
+  &__pokeball {
+    @include pixelated;
+  }
 }
 
-.pokeball {
-  @include pixelated;
-}
-
-.form {
+.homeForm {
   display: flex;
   flex-direction: column;
   gap: 24px;
   width: 768px;
   box-sizing: border-box;
   padding: 30px 42px;
-}
 
-.columns {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: 48px;
-}
+  &__columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 48px;
+  }
 
-.column {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
+  &__column {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
 
-.blurb {
-  font-size: 16px;
-  line-height: 26px;
-}
+  &__blurb {
+    font-size: 16px;
+    line-height: 26px;
+  }
 
-input.code {
-  width: 240px;
-  padding: 0 0 0 16px;
-  font-size: 32px;
-  letter-spacing: 16px;
-  text-align: center;
-}
+  /* Tag-qualified so it outranks the shared field styles it overrides. */
+  @at-root input#{&}__code {
+    width: 240px;
+    padding: 0 0 0 16px;
+    font-size: 32px;
+    letter-spacing: 16px;
+    text-align: center;
+  }
 
-.message {
-  align-self: stretch;
+  &__message {
+    align-self: stretch;
+  }
 }

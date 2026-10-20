@@ -1,0 +1,7 @@
+/* Loading / notice screen: just a message box. BEM block `roomNotice`. */
+.roomNotice {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 24px 72px;
+}

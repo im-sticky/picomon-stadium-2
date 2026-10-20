@@ -5,11 +5,11 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { primary?: boolean
 
 /** Crystal button (at least 240×108) with a ▶ cursor on hover/focus. Grows to fit its label. */
 export function Button({ primary, className, children, type = "button", ...rest }: ButtonProps) {
-  const cls = [styles.button, primary && styles.primary, className].filter(Boolean).join(" ");
+  const cls = [styles.button, primary && styles["button--primary"], className].filter(Boolean).join(" ");
   return (
     <button type={type} className={cls} {...rest}>
       <svg
-        className={styles.cursor}
+        className={styles.button__cursor}
         width="24"
         height="24"
         viewBox="0 0 8 8"

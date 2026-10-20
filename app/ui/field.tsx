@@ -4,11 +4,11 @@ import styles from "./crystal.module.scss";
 /** Section label (NAME, ROOM CODE, PLAYERS…): 16px uppercase, secondary grey. */
 export function SectionLabel({ htmlFor, children }: { htmlFor?: string; children: ReactNode }) {
   return htmlFor ? (
-    <label className={styles.label} htmlFor={htmlFor}>
+    <label className={styles.sectionLabel} htmlFor={htmlFor}>
       {children}
     </label>
   ) : (
-    <p className={styles.label}>{children}</p>
+    <p className={styles.sectionLabel}>{children}</p>
   );
 }
 

@@ -50,3 +50,10 @@
   outline: 3px solid var(--ink);
   outline-offset: $offset;
 }
+
+// The 32px centred title at the top of a screen (lobby, type battle, draft).
+@mixin screen-title {
+  font-size: 32px;
+  line-height: 48px;
+  text-align: center;
+}

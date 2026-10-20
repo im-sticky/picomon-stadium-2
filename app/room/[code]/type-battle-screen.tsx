@@ -7,7 +7,7 @@ import { Button } from "@/app/ui/button";
 import { MessageBox, type Message } from "@/app/ui/message-box";
 import { Stage } from "@/app/ui/stage";
 import type { RoomAction } from "./room-view";
-import styles from "./room.module.scss";
+import styles from "./type-battle.module.scss";
 
 const CHOOSE: Message = ["Choose a type.", "Winner chooses the draft order."];
 const FAILED: Message = ["Something went wrong.", "Try again."];
@@ -109,11 +109,11 @@ export function TypeBattleScreen({
   let actions = null;
   if (choosingOrder) {
     actions = (
-      <div role="group" aria-label="Draft order" className={styles.orderButtons}>
-        <Button primary className={styles.orderButton} disabled={busy} onClick={() => void run("order", { order: "first" })}>
+      <div role="group" aria-label="Draft order" className={styles.typeBattle__orderButtons}>
+        <Button primary className={styles.typeBattle__orderButton} disabled={busy} onClick={() => void run("order", { order: "first" })}>
           FIRST
         </Button>
-        <Button className={styles.orderButton} disabled={busy} onClick={() => void run("order", { order: "second" })}>
+        <Button className={styles.typeBattle__orderButton} disabled={busy} onClick={() => void run("order", { order: "second" })}>
           SECOND
         </Button>
       </div>
@@ -121,9 +121,9 @@ export function TypeBattleScreen({
   }
 
   return (
-    <Stage className={styles.battle}>
-      <h1 className={styles.title}>CHOOSE A TYPE</h1>
-      <div className={styles.battleRow}>
+    <Stage className={styles.typeBattle}>
+      <h1 className={styles.typeBattle__title}>CHOOSE A TYPE</h1>
+      <div className={styles.typeBattle__row}>
         <TypeColumn
           side="left"
           name={name(1)}
@@ -133,14 +133,14 @@ export function TypeBattleScreen({
           disabled={yourPick !== null}
           onPick={pick}
         />
-        <div className={styles.centre}>
+        <div className={styles.typeBattle__centre}>
           {done && winner !== null && <p>{name(winner)}</p>}
           {done ? (
             <p>{winner !== null ? "WINS!" : "DRAW!"}</p>
           ) : yourPick ? (
             <p>. . .</p>
           ) : (
-            <p className={styles.vs}>VS</p>
+            <p className={styles.typeBattle__vs}>VS</p>
           )}
         </div>
         <TypeColumn
@@ -156,7 +156,7 @@ export function TypeBattleScreen({
       <MessageBox
         message={message}
         role={notice || failed ? "alert" : "status"}
-        className={`${styles.battleMessage} ${choosingOrder ? styles.orderMessage : ""}`}
+        className={`${styles.typeBattle__message} ${choosingOrder ? styles["typeBattle__message--order"] : ""}`}
         actions={actions}
       />
     </Stage>
@@ -183,17 +183,17 @@ function TypeColumn({
   onPick: (type: TypeChoice) => void;
 }) {
   return (
-    <section aria-label={name} className={`${styles.column} ${side === "right" ? styles.columnRight : ""}`}>
-      <h2 className={styles.columnName}>
-        {name} {isYou && <span className={styles.you}>YOU</span>}
+    <section aria-label={name} className={`${styles.typeBattle__column} ${side === "right" ? styles["typeBattle__column--right"] : ""}`}>
+      <h2 className={styles.typeBattle__columnName}>
+        {name} {isYou && <span className={styles.typeBattle__you}>YOU</span>}
       </h2>
       {TYPE_CHOICES.map((type) => {
         const shown = isYou || revealed ? pick : null;
         const cls = [
-          styles.option,
-          side === "right" && styles.optionRight,
-          shown === type && styles.selected,
-          (isYou ? pick !== null && pick !== type : shown !== type) && styles.dim,
+          styles.typeBattle__option,
+          side === "right" && styles["typeBattle__option--right"],
+          shown === type && styles["typeBattle__option--selected"],
+          (isYou ? pick !== null && pick !== type : shown !== type) && styles["typeBattle__option--dim"],
         ]
           .filter(Boolean)
           .join(" ");
@@ -201,7 +201,7 @@ function TypeColumn({
         const children = (
           <>
             <Image
-              className={styles.badge}
+              className={styles.typeBattle__badge}
               src={`/sprites/misc/badge-${type}.png`}
               alt=""
               width={96}

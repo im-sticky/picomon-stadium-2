@@ -99,18 +99,18 @@ export function PixelScroll({
   }
 
   return (
-    <div className={`${styles.scrollArea} ${className ?? ""}`} style={{ height }}>
-      <div ref={box} className={styles.scrollBox} tabIndex={0} aria-label={label} onScroll={measure}>
+    <div className={`${styles.pixelScroll} ${className ?? ""}`} style={{ height }}>
+      <div ref={box} className={styles.pixelScroll__box} tabIndex={0} aria-label={label} onScroll={measure}>
         {children}
       </div>
-      <div className={styles.scrollBar} aria-hidden="true">
-        <button type="button" className={styles.scrollButton} tabIndex={-1} onClick={() => scrollBy(-step)}>
+      <div className={styles.pixelScroll__bar} aria-hidden="true">
+        <button type="button" className={styles.pixelScroll__button} tabIndex={-1} onClick={() => scrollBy(-step)}>
           <Arrow />
         </button>
-        <div className={styles.scrollTrack} onPointerDown={onTrackDown}>
-          <div className={styles.scrollThumb} style={{ top: thumbTop, height: thumb }} onPointerDown={onThumbDown} />
+        <div className={styles.pixelScroll__track} onPointerDown={onTrackDown}>
+          <div className={styles.pixelScroll__thumb} style={{ top: thumbTop, height: thumb }} onPointerDown={onThumbDown} />
         </div>
-        <button type="button" className={styles.scrollButton} tabIndex={-1} onClick={() => scrollBy(step)}>
+        <button type="button" className={styles.pixelScroll__button} tabIndex={-1} onClick={() => scrollBy(step)}>
           <Arrow down />
         </button>
       </div>

@@ -1,7 +1,8 @@
-/* Shared Crystal-style pieces. Sizes follow docs/design/README.md (1 GB px = 3 CSS px). */
+/* Shared Crystal-style pieces. Sizes follow docs/design/README.md (1 GB px = 3 CSS px).
+   Class names follow BEM: one block per component, `block__element`, `block--modifier`. */
 @use "../styles/mixins" as *;
 
-/* Fixed 1200×900 screen, centred in the window. */
+/* Stage: the fixed 1200×900 screen, centred in the window. */
 .viewport {
   display: flex;
   align-items: center;
@@ -29,7 +30,12 @@
   min-height: 168px;
   padding: 30px 42px;
 
-  p {
+  &__lines {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__line {
     font-size: 24px;
     line-height: 48px;
     /* Keep an empty second line's height. */
@@ -37,12 +43,7 @@
   }
 }
 
-.messageLines {
-  flex: 1;
-  min-width: 0;
-}
-
-.label {
+.sectionLabel {
   display: block;
   font-size: 16px;
   line-height: 32px;
@@ -94,36 +95,36 @@
     outline: none;
     background: var(--hover);
   }
-}
 
-.primary,
-.primary:focus-visible {
-  color: var(--bg);
-  background: var(--ink);
-  @include double-line($line: var(--bg), $gap: var(--ink));
-}
+  &--primary,
+  &--primary:focus-visible {
+    color: var(--bg);
+    background: var(--ink);
+    @include double-line($line: var(--bg), $gap: var(--ink));
+  }
 
-.button:disabled {
-  cursor: default;
-  opacity: 0.5;
-}
+  &:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
 
-/* ▶ cursor: absolutely placed and only hidden (not removed), so showing it never
-   changes the button's size or moves the label. */
-.cursor {
-  position: absolute;
-  left: 30px;
-  top: 50%;
-  margin-top: -12px;
-  visibility: hidden;
-  fill: var(--ink);
+  /* ▶ cursor: absolutely placed and only hidden (not removed), so showing it never
+     changes the button's size or moves the label. */
+  &__cursor {
+    position: absolute;
+    left: 30px;
+    top: 50%;
+    margin-top: -12px;
+    visibility: hidden;
+    fill: var(--ink);
+  }
 
-  .primary & {
+  &--primary &__cursor {
     fill: var(--bg);
   }
 
-  .button:enabled:hover &,
-  .button:enabled:focus-visible & {
+  &:enabled:hover &__cursor,
+  &:enabled:focus-visible &__cursor {
     visibility: visible;
   }
 }
@@ -137,17 +138,17 @@
   margin: 0;
   padding: 0;
   border: 0;
-}
 
-.radio {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  line-height: 24px;
-  cursor: pointer;
+  &__option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    line-height: 24px;
+    cursor: pointer;
+  }
 
-  input {
+  &__input {
     appearance: none;
     width: 24px;
     height: 24px;
@@ -168,7 +169,7 @@
   }
 }
 
-.srOnly {
+.visuallyHidden {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -200,44 +201,39 @@
   padding: 3px 3px 3px 0;
   background: var(--ink);
   @include pixel-notch(3px);
+
+  &__label {
+    padding: 0 6px;
+    font-size: 12px;
+    line-height: 12px;
+    color: #f8b830;
+  }
+
+  &__track {
+    flex: 1;
+    height: 12px;
+    overflow: hidden;
+    background: var(--bg);
+    /* Notched on the right only: the left edge butts against the HP label. */
+    clip-path: polygon(0 0, calc(100% - 3px) 0, calc(100% - 3px) 3px, 100% 3px, 100% calc(100% - 3px),
+      calc(100% - 3px) calc(100% - 3px), calc(100% - 3px) 100%, 0 100%);
+  }
+
+  &__fill {
+    height: 100%;
+    background: #40c048;
+  }
 }
 
-.hpLabel {
-  padding: 0 6px;
-  font-size: 12px;
-  line-height: 12px;
-  color: #f8b830;
-}
-
-.hpTrack {
-  flex: 1;
-  height: 12px;
-  overflow: hidden;
-  background: var(--bg);
-  /* Notched on the right only: the left edge butts against the HP label. */
-  clip-path: polygon(0 0, calc(100% - 3px) 0, calc(100% - 3px) 3px, 100% 3px, 100% calc(100% - 3px),
-    calc(100% - 3px) calc(100% - 3px), calc(100% - 3px) 100%, 0 100%);
-}
-
-.hpFill {
-  height: 100%;
-  background: #40c048;
-}
-
-/* Sprites: whole-number scales, pixelated. */
-.pixel {
-  @include pixelated;
-}
-
-/* Shows one frame of a two-frame icon at a time. */
-.icon {
+/* Shows one frame of a two-frame sprite sheet at a time. */
+.pokemonIcon {
   display: block;
   flex: none;
   overflow: hidden;
 
   /* The sheet holds two stacked frames: show each for 200ms. */
-  img {
-    display: block;
+  &__sprite {
+    @include pixelated;
     animation: spriteFrames 400ms steps(2) infinite;
 
     @media (prefers-reduced-motion: reduce) {
@@ -256,66 +252,66 @@
 }
 
 /* Pixel scrollbar: 36px wide, 12px from the content. */
-.scrollArea {
+.pixelScroll {
   display: flex;
   gap: 12px;
-}
 
-.scrollBox {
-  flex: 1;
-  min-width: 0;
-  overflow-y: auto;
-  scrollbar-width: none;
+  &__box {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+    scrollbar-width: none;
 
-  &::-webkit-scrollbar {
-    display: none;
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    &:focus-visible {
+      @include focus-ring;
+    }
   }
 
-  &:focus-visible {
-    @include focus-ring;
+  &__bar {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    width: 36px;
   }
-}
 
-.scrollBar {
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  width: 36px;
-}
+  &__button,
+  &__thumb {
+    box-sizing: border-box;
+    background: var(--ink);
+    border: 0;
+    box-shadow: inset 3px 3px 0 var(--text-2);
+  }
 
-.scrollButton,
-.scrollThumb {
-  box-sizing: border-box;
-  background: var(--ink);
-  border: 0;
-  box-shadow: inset 3px 3px 0 var(--text-2);
-}
+  &__button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    cursor: pointer;
+    fill: var(--bg);
+  }
 
-.scrollButton {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  cursor: pointer;
-  fill: var(--bg);
-}
+  /* 3px checkerboard dither. */
+  &__track {
+    position: relative;
+    flex: 1;
+    background-color: var(--text-2);
+    background-image: conic-gradient(var(--ink) 25%, var(--text-2) 0 50%, var(--ink) 0 75%, var(--text-2) 0);
+    background-size: 6px 6px;
+  }
 
-/* 3px checkerboard dither. */
-.scrollTrack {
-  position: relative;
-  flex: 1;
-  background-color: var(--text-2);
-  background-image: conic-gradient(var(--ink) 25%, var(--text-2) 0 50%, var(--ink) 0 75%, var(--text-2) 0);
-  background-size: 6px 6px;
-}
-
-.scrollThumb {
-  position: absolute;
-  left: 0;
-  width: 36px;
-  cursor: grab;
+  &__thumb {
+    position: absolute;
+    left: 0;
+    width: 36px;
+    cursor: grab;
+  }
 }
 
 .heldItem {
@@ -324,4 +320,8 @@
   gap: 12px;
   height: 32px;
   font-size: 16px;
+
+  &__icon {
+    @include pixelated;
+  }
 }
