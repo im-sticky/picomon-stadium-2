@@ -1,5 +1,7 @@
 # Gen 4 (HeartGold / SoulSilver) Battle Mechanics: Research for Picomon Stadium
 
+> **Superseded (2026-10-19):** the battle engine now targets **Gen 6**, not Gen 4. See [2026-10-19-gen6-battle-mechanics.md](2026-10-19-gen6-battle-mechanics.md). This document is kept for reference only. Do not use its Gen 4 numbers for implementation.
+
 - **Date:** 2026-10-16
 - **Status:** Research draft. To be reviewed, then turned into an implementation spec.
 - **Scope:** Singles battles only (decided). Doubles mechanics are out of scope and are not documented here.

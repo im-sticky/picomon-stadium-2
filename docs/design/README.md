@@ -158,7 +158,7 @@ state, not separate screens.
   Hover, focus or click selects it (grey background).
 - Stats (right): a LV.50 / BASE toggle. LV.50 is the default and sits on the left.
   - LV.50: `HP 155/155` with the HP bar (216px wide, right-aligned), then the other
-    stats as label/value rows. Gen 4 formula at level 50, 31 IVs, 0 EVs, neutral
+    stats as label/value rows. Stat formula (same in Gen 3–6) at level 50, 31 IVs, 0 EVs, neutral
     nature: HP = ⌊(2B+31)·50/100⌋+60, others = ⌊(2B+31)·50/100⌋+5.
   - BASE: label, value and a coloured bar (bar length = value / 160), plus a total.
 - Move box (bottom): category icon, type badge and `90P/100%` (power `---` for status
