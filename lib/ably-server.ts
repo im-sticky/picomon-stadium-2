@@ -20,6 +20,23 @@ export async function publishPlayerJoined(code: string, players: PublicPlayer[])
   await getClient().channels.get(channelName(code)).publish('player-joined', { players });
 }
 
+/**
+ * Tells both players that the room changed. It carries no data, so nothing secret
+ * (like a type pick) is broadcast: each client refetches its own view.
+ */
+export async function publishRoomUpdated(code: string): Promise<void> {
+  await getClient().channels.get(channelName(code)).publish('room-updated', {});
+}
+
+/** Like publishRoomUpdated, but a failure is only logged: clients also refetch on reconnect. */
+export async function notifyRoomUpdated(code: string): Promise<void> {
+  try {
+    await publishRoomUpdated(code);
+  } catch (err) {
+    console.error('Failed to publish room-updated', err);
+  }
+}
+
 export async function createTokenRequestFor(
   playerId: string,
   code: string,

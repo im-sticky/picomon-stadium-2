@@ -15,15 +15,20 @@ vi.mock('@/lib/ably-server', async (importOriginal) => {
   return {
     ...actual,
     publishPlayerJoined: vi.fn().mockResolvedValue(undefined),
+    notifyRoomUpdated: vi.fn().mockResolvedValue(undefined),
     createTokenRequestFor: vi.fn().mockResolvedValue({ keyName: 'k' }),
   };
 });
 
-import { publishPlayerJoined, createTokenRequestFor } from '@/lib/ably-server';
+import { publishPlayerJoined, notifyRoomUpdated, createTokenRequestFor } from '@/lib/ably-server';
 import { POST as createRoomRoute } from '@/app/api/rooms/route';
 import { POST as joinRoute } from '@/app/api/rooms/[code]/join/route';
 import { GET as stateRoute } from '@/app/api/rooms/[code]/route';
 import { GET as tokenRoute } from '@/app/api/ably-token/route';
+import { POST as startRoute } from '@/app/api/rooms/[code]/start/route';
+import { POST as pickRoute } from '@/app/api/rooms/[code]/type-pick/route';
+import { POST as againRoute } from '@/app/api/rooms/[code]/again/route';
+import { POST as orderRoute } from '@/app/api/rooms/[code]/order/route';
 
 const CODE_RE = /^[A-HJKMNP-Z2-9]{4}$/;
 
@@ -191,5 +196,95 @@ describe('rooms API', () => {
     expect(await res.json()).toEqual({ error: 'Realtime unavailable.' });
     expect(spy).toHaveBeenCalled();
     spy.mockRestore();
+  });
+});
+
+describe('type battle API', () => {
+  async function started() {
+    const h = await host('Ash');
+    const joined = await joinRoute(req(`/api/rooms/${h.code}/join`, 'POST', { name: 'Misty' }), ctx(h.code));
+    const guest = cookieOf(joined);
+    const res = await startRoute(req(`/api/rooms/${h.code}/start`, 'POST', {}, h.cookie), ctx(h.code));
+    expect(res.status).toBe(200);
+    vi.mocked(notifyRoomUpdated).mockClear();
+    return { code: h.code, host: h.cookie, guest };
+  }
+  const pick = (code: string, cookie: string, type: unknown) =>
+    pickRoute(req(`/api/rooms/${code}/type-pick`, 'POST', { type }, cookie), ctx(code));
+  const getState = async (code: string, cookie: string) =>
+    (await stateRoute(req(`/api/rooms/${code}`, 'GET', undefined, cookie), ctx(code))).json();
+
+  it('only the host can start; starting tells both players', async () => {
+    const h = await host('Ash');
+    const joined = await joinRoute(req(`/api/rooms/${h.code}/join`, 'POST', { name: 'Misty' }), ctx(h.code));
+    const guest = cookieOf(joined);
+    const asGuest = await startRoute(req(`/api/rooms/${h.code}/start`, 'POST', {}, guest), ctx(h.code));
+    expect(asGuest.status).toBe(403);
+    expect(notifyRoomUpdated).not.toHaveBeenCalled();
+
+    const res = await startRoute(req(`/api/rooms/${h.code}/start`, 'POST', {}, h.cookie), ctx(h.code));
+    expect(res.status).toBe(200);
+    expect(notifyRoomUpdated).toHaveBeenCalledWith(h.code);
+    expect((await getState(h.code, guest)).phase).toBe('type-battle');
+  });
+
+  it("GET never includes the opponent's pick before both have picked", async () => {
+    const { code, host: hostCookie, guest } = await started();
+    expect((await pick(code, hostCookie, 'fire')).status).toBe(200);
+    // The first pick is not broadcast at all.
+    expect(notifyRoomUpdated).not.toHaveBeenCalled();
+
+    const guestRes = await stateRoute(req(`/api/rooms/${code}`, 'GET', undefined, guest), ctx(code));
+    const raw = await guestRes.text();
+    expect(raw).not.toContain('fire');
+    expect(JSON.parse(raw).typeBattle).toMatchObject({ yourPick: null, opponentPick: null, winner: null });
+    expect((await getState(code, hostCookie)).typeBattle).toMatchObject({ yourPick: 'fire', opponentPick: null });
+
+    expect((await pick(code, guest, 'grass')).status).toBe(200);
+    expect(notifyRoomUpdated).toHaveBeenCalledTimes(1);
+    expect((await getState(code, guest)).typeBattle).toMatchObject({
+      yourPick: 'grass',
+      opponentPick: 'fire',
+      winner: 1,
+    });
+  });
+
+  it('rejects a second pick and an invalid type', async () => {
+    const { code, host: hostCookie } = await started();
+    expect((await pick(code, hostCookie, 'electric')).status).toBe(400);
+    expect((await pick(code, hostCookie, 'water')).status).toBe(200);
+    const again = await pick(code, hostCookie, 'fire');
+    expect(again.status).toBe(409);
+    expect(await again.json()).toEqual({ error: 'Already picked.' });
+  });
+
+  it('again after a draw starts round 2 for both players', async () => {
+    const { code, host: hostCookie, guest } = await started();
+    await pick(code, hostCookie, 'water');
+    await pick(code, guest, 'water');
+    vi.mocked(notifyRoomUpdated).mockClear();
+
+    const res = await againRoute(req(`/api/rooms/${code}/again`, 'POST', { round: 1 }, guest), ctx(code));
+    expect(res.status).toBe(200);
+    expect(notifyRoomUpdated).toHaveBeenCalledTimes(1);
+    expect((await getState(code, hostCookie)).typeBattle).toMatchObject({ round: 2, yourPick: null, opponentPick: null });
+  });
+
+  it('only the winner can choose the order, and the choice is broadcast', async () => {
+    const { code, host: hostCookie, guest } = await started();
+    await pick(code, hostCookie, 'grass');
+    await pick(code, guest, 'fire');
+    vi.mocked(notifyRoomUpdated).mockClear();
+
+    const order = (cookie: string, value: unknown) =>
+      orderRoute(req(`/api/rooms/${code}/order`, 'POST', { order: value }, cookie), ctx(code));
+    expect((await order(hostCookie, 'first')).status).toBe(403);
+    expect((await order(guest, 'last')).status).toBe(400);
+    expect(notifyRoomUpdated).not.toHaveBeenCalled();
+
+    expect((await order(guest, 'first')).status).toBe(200);
+    expect(notifyRoomUpdated).toHaveBeenCalledTimes(1);
+    expect((await getState(code, hostCookie)).typeBattle).toMatchObject({ winner: 2, firstDrafter: 2 });
+    expect((await order(guest, 'second')).status).toBe(409);
   });
 });
