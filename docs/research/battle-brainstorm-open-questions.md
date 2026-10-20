@@ -1,13 +1,13 @@
 # Battle Brainstorm — Starting Point
 
-*Created 2026-10-16. Updated 2026-10-19: the battle engine moved from Gen 4 to Gen 6. Start here when brainstorming the battle spec.*
+*Created 2026-10-16. Updated 2026-10-19. Start here when brainstorming the battle spec.*
 
-Background research: [Gen 6 battle mechanics](2026-10-19-gen6-battle-mechanics.md). The earlier [Gen 4 HGSS research](2026-10-16-gen4-hgss-battle-mechanics.md) is superseded and kept for reference only.
+Background research: [Gen 6 battle mechanics](2026-10-19-gen6-battle-mechanics.md).
 
 ## Decided
 
 - **Singles only.** No doubles mechanics.
-- **Mechanics and data are Gen 6** (X/Y and Omega Ruby/Alpha Sapphire, as Showdown's gen6 engine implements them). **The visuals come from the older games** (Pokémon Crystal / Gen 2 look). *Changed from Gen 4 HGSS on 2026-10-19.*
+- **Mechanics and data are Gen 6** (X/Y and Omega Ruby/Alpha Sapphire, as Showdown's gen6 engine implements them). **The visuals come from the older games** (Pokémon Crystal / Gen 2 look).
 - **No Mega Evolution** (and no Primal Reversion) and **no terrain** (Electric/Grassy/Misty). *Decided 2026-10-19.*
 - **Engine:** use Pokémon Showdown's ready-made engine from npm (`@pkmn/sim`, with `@pkmn/dex` / `@pkmn/data` for data; all MIT) in its **gen6** mode. Don't write a custom engine.
 - **Fidelity:** where Showdown and the original cartridge differ, match Showdown. The npm package data is trusted as-is, with no extra cross-checking against Bulbapedia.

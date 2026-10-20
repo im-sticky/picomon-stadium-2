@@ -2,7 +2,6 @@
 
 - **Date:** 2026-10-19
 - **Status:** Research draft. To be reviewed, then turned into an implementation spec.
-- **Supersedes:** [2026-10-16-gen4-hgss-battle-mechanics.md](2026-10-16-gen4-hgss-battle-mechanics.md). That document stays for reference; its structure is mirrored here.
 - **Scope:** Singles battles only (decided). Doubles and triples are out of scope. Showdown supports them, but nothing below covers them.
 - **Also decided out of scope:** **Mega Evolution**, **Primal Reversion** and **terrain** (Electric, Grassy and Misty Terrain). §5 and §10.2 only record how to keep them switched off.
 - **Rule for the whole project:** Gen 2 (Crystal) supplies the look. **Pokémon Showdown's `gen6` engine** supplies every mechanic. Where Showdown and the cartridge differ, Showdown wins (decided). The npm package data is trusted as-is (decided), **except for the project's own custom changes to species types, base stats, abilities and moves, listed in §17**. Those override the engine data.
@@ -45,7 +44,7 @@
   - Ghost types cannot be trapped;
   - Grass types, Overcoat and Safety Goggles block powder moves;
   - a Poison-type user's Toxic never misses.
-- **Fairy and the type chart.** The 18-type chart adds Fairy, and Steel no longer resists Ghost or Dark (verified by diffing gen4 against gen6). Thirteen **Gen 1–2 species** were retyped:
+- **Fairy and the type chart.** The 18-type chart adds Fairy, and Steel no longer resists Ghost or Dark (verified by diffing the type charts [run]). Thirteen **Gen 1–2 species** were retyped:
   - Clefairy, Clefable, Cleffa;
   - Jigglypuff, Wigglytuff, Igglybuff;
   - Mr. Mime;
@@ -92,7 +91,7 @@
 12. [Abilities and held items](#12-abilities-and-held-items)
 13. [Moves](#13-moves)
 14. [Data access and running the engine](#14-data-access-and-running-the-engine)
-15. [Gen 4 → Gen 6 change list](#15-gen-4--gen-6-change-list)
+15. [Key Gen 6 mechanics](#15-key-gen-6-mechanics)
 16. [Recommendations and open questions](#16-recommendations-and-open-questions)
 17. [Custom modifications](#17-custom-modifications)
 18. [Appendix: Sources and verification notes](#appendix-sources-and-verification-notes)
@@ -104,7 +103,6 @@
 | **[PS]** | `pokemon-showdown@0.11.11` from npm. The package ships the TypeScript source. Paths are relative to the package root, e.g. `sim/battle-actions.ts`, `data/mods/gen6/conditions.ts`. Upstream: https://github.com/smogon/pokemon-showdown |
 | **[pkmn]** | `@pkmn/sim`, `@pkmn/dex`, `@pkmn/data` 0.10.11 from npm (https://github.com/pkmn/ps). These are automatic extractions of the Showdown simulator and data. |
 | **[run]** | Scripts I ran against the installed packages in the scratch directory. Their output is quoted in the text. |
-| **[gen4doc]** | The earlier research, [2026-10-16-gen4-hgss-battle-mechanics.md](2026-10-16-gen4-hgss-battle-mechanics.md). Used only for the "Gen 4" column of §15. |
 
 "Gen 6 resolved data" means `Dex.mod('gen6')`, which applies gen6 → gen7 → gen8 → base inheritance. Where a value is a property of the resolved data rather than a line of source, I say so.
 
@@ -172,7 +170,7 @@ Nature (boosted)  = tr( tr(stat * 110, 16 bits) / 100 )
 Nature (hindered) = tr( tr(stat *  90, 16 bits) / 100 )
 ```
 
-These are algebraically the same as the Gen 3/4 formulas in [gen4doc] §2. Shedinja's 1 HP is a special case in the simulator.
+These are algebraically the same as the formulas used since Gen 3. Shedinja's 1 HP is a special case in the simulator.
 
 | Input | Range in Gen 6 |
 |---|---|
@@ -238,7 +236,7 @@ getDamage(source, target, move):
       If crit: ignore a NEGATIVE attacker stage and a POSITIVE defender stage.
       attack  = calculateStat(atk|spa, boosts)   then runEvent('ModifyAtk'|'ModifySpA')  (chained)
       defense = calculateStat(def|spd, boosts)   then runEvent('ModifyDef'|'ModifySpD')  (chained)
-      (Explosion/Self-Destruct Def halving: gen <= 4 only, so not in Gen 6)
+      (no Explosion/Self-Destruct Def halving in Gen 6)
  7. base = trunc( trunc( trunc( trunc(2*L/5 + 2) * BP * A ) / D ) / 50 )
 
 modifyDamage(base):
@@ -402,9 +400,9 @@ Generated from `Dex.mod('gen6').types` [run]. Rows are the attacking type and co
 | **Steel** | · | ½ | ½ | ½ | · | 2 | · | · | · | · | · | · | 2 | · | · | · | ½ | 2 |
 | **Fairy** | · | ½ | · | · | · | · | 2 | ½ | · | · | · | · | · | · | 2 | 2 | ½ | · |
 
-**Non-damage type immunities** in the gen6 data. These are lowercase keys in `damageTaken`, compared with gen4 [run]:
+**Non-damage type immunities** in the gen6 data. These are lowercase keys in `damageTaken` [run]:
 
-| Type | Gen 6 immunities | New since Gen 4? |
+| Type | Gen 6 immunities | New in Gen 6? |
 |---|---|---|
 | Electric | paralysis | **new (Gen 6)** |
 | Ghost | trapping (`trapped`: Mean Look, Shadow Tag, Arena Trap, binding's trap) | **new (Gen 6)** |
@@ -416,9 +414,9 @@ Generated from `Dex.mod('gen6').types` [run]. Rows are the attacking type and co
 
 Prankster: the gen6 `typechart.ts` override for Dark has no `prankster` immunity key. In Gen 6, Prankster-boosted moves **work on Dark types**; Gen 7 added the block.
 
-### 4.2 Changes from Gen 4 (complete diff of the 17 shared types)
+### 4.2 Type chart changes in Gen 6
 
-Running a gen4-vs-gen6 diff over every attacker/defender pair of the 17 shared types [run] found exactly two changes:
+Diffing every attacker/defender pair of the 17 older types against the previous chart [run] found exactly two changes:
 
 1. **Ghost → Steel:** ½ → neutral.
 2. **Dark → Steel:** ½ → neutral.
@@ -456,11 +454,11 @@ On top of that, **Fairy** is added:
 | 468 | Togekiss | Normal/Flying | Fairy/Flying |
 | 546–547 | Cottonee, Whimsicott | Grass | Grass/Fairy |
 
-So 13 Gen 1–2 species changed type. No Gen 1–2 species changed type between Gen 4 and Gen 5.
+So 13 Gen 1–2 species changed type.
 
-**Base stats.** This is every Gen 1–2 species (#1–251) whose base stats differ between gen4 and gen6 [run]. Gen 5 changed none, so all of these are Gen 6 buffs. The `data/mods/gen6/pokedex.ts` override reverts the later Gen 7 changes (Arbok, Dugtrio, Farfetch'd, Dodrio, Electrode, Exeggutor, Noctowl, Ariados, Qwilfish, Magcargo, Corsola and others), so those species keep their Gen 6 stats.
+**Base stats.** This is every Gen 1–2 species (#1–251) whose base stats were raised in Gen 6 [run]. The `data/mods/gen6/pokedex.ts` override reverts the later Gen 7 changes (Arbok, Dugtrio, Farfetch'd, Dodrio, Electrode, Exeggutor, Noctowl, Ariados, Qwilfish, Magcargo, Corsola and others), so those species keep their Gen 6 stats.
 
-| Species | Change (Gen 4 → Gen 6) |
+| Species | Change (Gen 5 → Gen 6) |
 |---|---|
 | Pikachu | Def 30→40, SpD 40→50 |
 | Butterfree | SpA 80→90 |
@@ -483,7 +481,7 @@ So 13 Gen 1–2 species changed type. No Gen 1–2 species changed type between 
 
 **Abilities.**
 
-- Gen 6 has Hidden Abilities. 239 base-forme Gen 1–2 species have a different ability set in gen6 than in gen4, almost all because of an added `H` slot.
+- Gen 6 has Hidden Abilities (the `H` slot in a species' `abilities`).
 - Non-hidden changes: Jigglypuff, Wigglytuff and Igglybuff gained **Competitive** in slot 1.
 - Gengar keeps **Levitate** in Gen 6. The gen6 override sets `abilities: {0: 'Levitate'}`; Gen 7 changed it to Cursed Body.
 
@@ -571,9 +569,9 @@ Ability modifiers (`onModifyPriority`):
 - **Pursuit** (40 BP, Dark, still standard in Gen 6):
   - `beforeTurnCallback` adds a `pursuit` volatile to the user.
   - When the foe is about to switch out (`onFoeBeforeSwitchOut`), Pursuit runs immediately, with doubled base power (`basePowerCallback`) and perfect accuracy (`onModifyMove`).
-  - **If the target faints from it, the switch is cancelled.** This is the Gen 5+ rule; the `pursuitfaint` branch only lets the switch continue when `gen <= 4`.
+  - **If the target faints from it, the switch is cancelled.** This is the Gen 6 rule (the `pursuitfaint` branch in the engine).
 - **U-turn and Volt Switch** switch the user out after hitting, through a mid-turn `switch` request to that player only.
-- **Faint replacements** happen at the end of the turn. If several sides have fainted actives, all of them get a `forceSwitch` request at the same time. This is the Gen 4+ behaviour; switching after every move is `gen <= 3` only (`sim/battle.ts` `runAction`).
+- **Faint replacements** happen at the end of the turn. If several sides have fainted actives, all of them get a `forceSwitch` request at the same time. (`sim/battle.ts` `runAction`).
 
 ---
 
@@ -758,7 +756,7 @@ When a new weather is set, it replaces the current one. The exception is that on
 
 ## 11. End-of-turn order
 
-Gen 5+ groups end-of-turn effects **per effect**: each effect runs for every active Pokémon in speed order before the next effect starts. This is unlike Gen 4, which ran all effects per Pokémon.
+Gen 6 groups end-of-turn effects **per effect**: each effect runs for every active Pokémon in speed order before the next effect starts.
 
 The table below was generated from every `onResidualOrder` / `onResidualSubOrder`, `onSideResidualOrder` and `onFieldResidualOrder` value in the gen6 resolved data [run]. It is executed by `fieldEvent('Residual')`, which `speedSort`s all handlers by order, then speed, then sub-order. Each effect's duration countdown runs when its handler is reached. If the countdown hits 0, the effect ends *instead of* applying that turn.
 
@@ -1138,69 +1136,70 @@ I ran this [run], with a Mega choice in the test. The p2 switch was intercepted 
 
 - **Code and data:** MIT for all four packages. This permits use, modification and commercial distribution if the notice is kept.
 - **Nintendo IP:** MIT covers Showdown's *code and its compilation*. It grants **no rights** to Pokémon names, species designs, sprites or other Nintendo / Creatures / Game Freak / The Pokémon Company IP.
-- The previous document's IP note ([gen4doc] §16) applies unchanged:
-  - this is not legal advice;
-  - trademarks and character designs are protected;
-  - fan projects have received takedowns;
-  - lower-risk options include original creatures, private or invite-only play, and non-commercial use.
+- **IP note.** These are factual considerations. **This is not legal advice.** Consult a lawyer before any public or commercial release.
+  - **Trademarks.** "Pokémon" and the species names are trademarks of Nintendo, Creatures and Game Freak, managed by The Pokémon Company. "Picomon" is a different word, but closeness to a famous mark can still raise trademark questions.
+  - **Copyright.** Sprites, artwork, music, sound effects and in-game text are copyrighted. Gen 2 sprites ripped from Crystal are Nintendo and Game Freak assets. Fan-made sprites of existing Pokémon "in the style of" Gen 2 are generally still derivative works.
+  - **Mechanics and numbers.** Abstract game rules and formulas are generally treated as unprotectable ideas or methods in many jurisdictions (e.g. US copyright law). Code, expressive text and some compilations can be protected, so copying game binaries or decompiled code is riskier than using public data.
+  - **Enforcement.** Nintendo and The Pokémon Company have sent takedown notices (e.g. DMCA) to several fan games and projects. Showdown has run for years without takedowns of its names and sprites; draw no conclusions from that.
+  - **Lower-risk options:** original creatures, names and art; private or invite-only play; non-commercial use; no official logos or ripped assets.
 
 ---
 
-## 15. Gen 4 → Gen 6 change list
+## 15. Key Gen 6 mechanics
 
-> **Stock values.** The Gen 6 column is stock Gen 6. §17 patches some of these (types, base stats, abilities and moves). Use §17's value wherever it lists one.
+> **Stock values.** These are stock Gen 6 values. §17 patches some of them (types, base stats, abilities and moves). Use §17's value wherever it lists one.
 
-This replaces Appendix A of [gen4doc]. The Gen 4 values come from [gen4doc] (HGSS decomp and Showdown gen4). The Gen 6 values come from the gen6 engine as cited above.
+A quick reference to the Gen 6 behaviour from the gen6 engine, as cited in the sections above.
 
-| Mechanic | Gen 4 (old target) | Gen 6 (use this) |
-|---|---|---|
-| Modifier math | Integer `x*N/D` steps, floored | 4096-based `chainModify`/`modify` (pokeRound, half down) |
-| Damage order | burn/screens/weather → +2 → crit → Life Orb → random → STAB → type → Expert Belt etc. | +2 → weather → crit → random → STAB → type → burn → final chain (screens, Life Orb, Expert Belt, berries…) → min 1 → 16-bit |
-| Crit multiplier | ×2 (Sniper ×3) | **×1.5** (Sniper ×2.25) |
-| Crit stages | 1/16, 1/8, 1/4, 1/3, 1/2 | **1/16, 1/8, 1/2, always** |
-| Crits vs screens and stages | Ignore screens and unfavourable stages | Same |
-| Type chart | 17 types; Steel resists Ghost and Dark | **18 types (Fairy)**; Steel no longer resists Ghost or Dark |
-| Species typing | Clefable line Normal, etc. | 13 Gen 1–2 species retyped (§4.3) |
-| Base stats | Gen 4 | 18 Gen 1–2 species buffed (§4.3) |
-| Abilities | No Hidden Abilities | Hidden Abilities; Competitive added to the Jigglypuff line |
-| Mega Evolution | — | Exists in Gen 6; **out of scope (decided)** |
-| Paralysis | ¼ Speed, 25%; Electric not immune | ¼ Speed, 25%; **Electric immune** |
-| Burn | 1/8; physical ×0.5 | 1/8; ×0.5, **Facade exempt** |
-| Sleep | 1–4 turns | **1–3 turns**; not reset on switch |
-| Freeze | 20% thaw | 20% thaw; Scald and other `defrost` moves thaw the user |
-| Toxic | n/16 | n/16; **always hits when the user is Poison-type** |
-| Confusion | 50% self-hit, 1–4 turns | **50%**, 1–4 turns (33% only from Gen 7) |
-| Binding | 2–5 turns, 1/16 | **4–5 turns, 1/8** (Binding Band 1/6, Grip Claw 7) |
-| Ability weather | Indefinite | **5 turns** (8 with a rock) |
-| Terrains | — | Exist in Gen 6 (moves only); **out of scope (decided)** |
-| Hazards | Stealth Rock, Spikes, Toxic Spikes | + **Sticky Web**; Defog clears both sides |
-| Protect / Detect | +3; counter halves | **+4**; counter ×3 (1/3, 1/9, …) |
-| Fake Out | +1 | **+3**, first turn out only |
-| Extreme Speed | +1 | **+2** |
-| Follow Me / Feint | +3 / +2 | +2 / +2 |
-| Gale Wings, Prankster vs Dark | — | +1 Flying (no HP condition); Prankster works on Dark |
-| Pursuit KO on a switching target | Switch continues | **Switch cancelled** |
-| End-of-turn grouping | Per Pokémon | **Per effect** (§11) |
-| Turn order recompute | Fixed at turn start | Fixed at turn start (Gen 8 is dynamic) |
-| Explosion | Halves target Def | No halving |
-| Sturdy | OHKO-move immunity only | Also survives at 1 HP from full |
-| Sound vs Substitute | Blocked | **Bypasses** |
-| Ghost vs trapping | Can be trapped | **Immune** |
-| Powder moves vs Grass, Overcoat | Hit | **Immune** |
-| Multi-hit odds | 3/8, 3/8, 1/8, 1/8 | 35/35/15/15 |
-| Tailwind | 3 turns | 4 turns |
-| Taunt / Encore | 3–5 / 4–8 | 3 (+1) / 3 |
-| Hidden Power | 30–70 BP | 60 BP fixed |
-| Curse | `???` type | Ghost |
-| Knock Off | 20 BP | 65 BP, ×1.5 vs an item holder |
-| Main special moves | 95 / 120 BP | **90 / 110** (Thunderbolt, Flamethrower, Ice Beam, Surf / Fire Blast, Hydro Pump, Thunder, Blizzard) |
-| Tackle | 35 / 95% | 50 / 100% |
-| Life Orb | ×1.3 in Mod2 | ×5324/4096 final; recoil 1/10 |
-| Gems | — | Only Normal Gem obtainable (×1.3) |
-| New items | — | Assault Vest, Weakness Policy, Safety Goggles, Roseli/Kee/Maranga, Luminous Moss, Snowball, Pixie Plate, Rocky Helmet, Eviolite, Air Balloon (Gen 5) |
-| Pinch berries | — | Heal 1/8 at ≤ 1/2 HP (may confuse) |
-| Faint replacement | Simultaneous, end of turn | Same |
-| Level-50 rule | Frontier: battle at 50 | `Adjust Level Down = 50` (validator only) |
+| Mechanic | Gen 6 |
+|---|---|
+| Modifier math | 4096-based `chainModify`/`modify` (pokeRound, half down) |
+| Damage order | +2 → weather → crit → random → STAB → type → burn → final chain (screens, Life Orb, Expert Belt, berries…) → min 1 → 16-bit |
+| Crit multiplier | ×1.5 (Sniper ×2.25) |
+| Crit stages | 1/16, 1/8, 1/2, always |
+| Crits vs screens and stages | Ignore screens and unfavourable stages |
+| Type chart | 18 types including Fairy; Steel does not resist Ghost or Dark |
+| Species typing | Gen 6 types, including the Fairy retypings (§4.3) |
+| Base stats | Gen 6 values (§4.3) |
+| Abilities | Hidden Abilities exist; the Jigglypuff line has Competitive |
+| Mega Evolution | Exists in Gen 6; **out of scope (decided)** |
+| Paralysis | ¼ Speed, 25% full paralysis; Electric types immune |
+| Burn | 1/8 per turn; physical damage ×0.5, Facade exempt |
+| Sleep | 1–3 turns; not reset on switch |
+| Freeze | 20% thaw; Scald and other `defrost` moves thaw the user |
+| Toxic | n/16; always hits when the user is Poison-type |
+| Confusion | 50% self-hit, 1–4 turns |
+| Binding | 4–5 turns, 1/8 (Binding Band 1/6, Grip Claw 7 turns) |
+| Ability weather | 5 turns (8 with a rock) |
+| Terrains | Exist in Gen 6 (moves only); **out of scope (decided)** |
+| Hazards | Stealth Rock, Spikes, Toxic Spikes, Sticky Web; Defog clears both sides |
+| Protect / Detect | +4; each consecutive use has 1/3 the chance (1/3, 1/9, …) |
+| Fake Out | +3, first turn out only |
+| Extreme Speed | +2 |
+| Follow Me / Feint | +2 / +2 |
+| Gale Wings, Prankster vs Dark | Gale Wings gives Flying moves +1 (no HP condition); Prankster works on Dark |
+| Pursuit KO on a switching target | Switch cancelled |
+| End-of-turn grouping | Per effect (§11) |
+| Turn order recompute | Fixed at turn start |
+| Explosion | Does not halve target Def |
+| Sturdy | Blocks OHKO moves; survives at 1 HP from full |
+| Sound vs Substitute | Bypasses |
+| Ghost vs trapping | Immune |
+| Powder moves vs Grass, Overcoat | Immune |
+| Multi-hit odds | 35/35/15/15 (2/3/4/5 hits) |
+| Tailwind | 4 turns |
+| Taunt / Encore | 3 (+1) / 3 turns |
+| Hidden Power | 60 BP fixed |
+| Curse | Ghost type |
+| Knock Off | 65 BP, ×1.5 vs an item holder |
+| Main special moves | 90 BP (Thunderbolt, Flamethrower, Ice Beam, Surf) / 110 BP (Fire Blast, Hydro Pump, Thunder, Blizzard) |
+| Tackle | 50 BP / 100% |
+| Life Orb | ×5324/4096 final; recoil 1/10 |
+| Gems | Only Normal Gem obtainable (×1.3) |
+| Notable items | Assault Vest, Weakness Policy, Safety Goggles, Roseli/Kee/Maranga, Luminous Moss, Snowball, Pixie Plate, Rocky Helmet, Eviolite, Air Balloon |
+| Pinch berries | Heal 1/8 at ≤ 1/2 HP (may confuse) |
+| Faint replacement | Simultaneous, end of turn |
+| Level-50 rule | `Adjust Level Down = 50` (validator only) |
 
 ---
 
@@ -1264,7 +1263,7 @@ Decided and removed from this list: singles; the Showdown gen6 engine; Showdown 
 6. **Learnsets:** full Gen 6 (XY + ORAS) legality via Showdown's validator, or curated rental sets only?
 7. **Team source:** rentals only, custom building, or random?
 8. **Turn timer and disconnects:** how long per turn? On timeout, use `default` (the engine's auto-choice), or a forfeit? How long a reconnect grace period?
-9. **Simultaneous faint replacements:** Gen 6 (like Gen 4+) asks both players at once at the end of the turn. Show the opponent's pick only after both have chosen? (Recommended; the engine already works this way.)
+9. **Simultaneous faint replacements:** Gen 6 asks both players at once at the end of the turn. Show the opponent's pick only after both have chosen? (Recommended; the engine already works this way.)
 10. **IP posture:** real names and Gen 2-style sprites for private/hobby use, or original creatures? Is a public or commercial launch planned?
 11. **Persistence model:** store the full `toJSON()` state per turn (~20 KB) or the seed plus input log (replay on load)?
 
@@ -1274,7 +1273,7 @@ Decided and removed from this list: singles; the Showdown gen6 engine; Showdown 
 
 The project changes some species (types, base stats, abilities) and moves on top of the stock gen6 data, taken from Polished Crystal's Regular version. Only the final values are recorded. These changes win over the engine data (they are the one exception to "the npm package data is trusted as-is"). Every other value stays as Showdown has it.
 
-How they get in: a custom Showdown mod (or `Dex.mod`-style data overrides) that inherits from `gen6` and patches only the entries below. The patch list is the single source of truth, so the Crystal UI text (move info, Pokédex screens) reads from the same patched data.
+How they get in: a custom Showdown mod (or `Dex.mod`-style data overrides) that inherits from `gen6` and patches only the entries below. The patch list is the single source of truth, so the Crystal UI text (move info, Pokédex screens) reads from the same patched data. See §17.5 for how to build it.
 
 Left out (decided): every Pokémon on the wiki tables that isn't in the Gen 6 data, since we won't add species ourselves. These are Typhlosion (Hisuian), Annihilape, Sneasler, Dudunsparce, Farigiraf, Clodsire, Corsola (Galarian), Cursola, Raticate (Alolan), Raichu (Alolan), Marowak (Alolan), Slowbro (Galarian), Slowking (Galarian) and Mewtwo (Armored). The Gen 8 ability Gorilla Tactics (a Primeape option on the wiki) is left out for the same reason. Every species and ability below exists in Gen 6.
 
@@ -1473,6 +1472,81 @@ Polished Crystal's "before" values are not always the same as Gen 6. So the **Ge
 
 Fury Strikes (Polished Crystal's merged Fury Swipes / Fury Attack) and Hidden Power are on the Regular table but left out here: the project won't use those moves (decided).
 
+### 17.5 Implementing the overrides
+
+We can change any Pokémon's type, base stats, ability or moves without editing Showdown's files. We put our changes in a **custom mod**, which is a set of data in our own code layered on top of the gen6 data. Anything the mod doesn't mention keeps its gen6 value. The tables in §17.1–17.4 are the content of this mod.
+
+#### Use `@pkmn/sim`
+
+`@pkmn/sim`'s `Dex.mod(name, data)` takes the mod's data as a plain object, so our overrides can live in our own source files.
+
+#### Example
+
+```ts
+import { Dex, Battle } from '@pkmn/sim';
+
+const picomon = Dex.mod('picomon', {
+  Scripts: { inherit: 'gen6' },          // start from gen6 rules and data
+  Pokedex: {
+    pikachu: {
+      inherit: true,                      // keep every field not listed here
+      types: ['Electric', 'Steel'],
+      baseStats: { hp: 60, atk: 70, def: 50, spa: 70, spd: 60, spe: 110 },
+      abilities: { 0: 'Lightning Rod' },
+    },
+  },
+  Learnsets: {
+    pikachu: {
+      inherit: true,
+      learnset: {
+        ...gen6PikachuLearnset,           // the full list must be supplied, see below
+        flamethrower: ['6M'],
+      },
+    },
+  },
+  Moves: {
+    thunderbolt: { inherit: true, basePower: 95 },
+  },
+  Formats: [{ name: '[Gen 6] Picomon', mod: 'picomon', ruleset: [] }],
+});
+
+const battle = new Battle({ formatid: 'gen6picomon' }, picomon);
+```
+
+The values above are illustrations, not our changes. The real ones are in §17.1–17.4.
+
+#### What each table changes
+
+| Change | Table | Fields | Our data |
+|---|---|---|---|
+| Type, base stats, abilities | `Pokedex` | `types`, `baseStats`, `abilities` | §17.1, §17.2, §17.3 |
+| Moves a Pokémon can learn | `Learnsets` | `learnset`: a map of move ID → learn sources such as `'6M'` or `'6L20'` | none yet |
+| A move's power, accuracy, type, PP | `Moves` | `basePower`, `accuracy`, `type`, `pp`, `secondary`, and others | §17.4 |
+| A held item's effect | `Items` | its fields and `on*` handlers | none yet |
+| An ability's effect | `Abilities` | its fields and `on*` handlers | none yet |
+
+For §17.3, `abilities` is set to just the one ability picked for that Pokémon, e.g. `{ 0: 'Natural Cure' }`. Metronome's "???" type (§17.4) is display-only, so it goes in the UI text, not the `Moves` table.
+
+#### Gotchas
+
+1. **A learnset is replaced, not merged.** `inherit: true` merges only the top-level fields. When Flamethrower alone was added in a test, Pikachu lost Thunderbolt and every other move. To add or remove one move, copy the existing list first. For example, read `await Dex.forGen(6).learnsets.get('pikachu')` and spread its `learnset`, as the example above does.
+2. **The same applies to every nested object.** This follows from gotcha 1 but was not tested separately. `baseStats` needs all six stats even when only one changes (§17.2 lists all six for this reason). Octazooka's `secondary` must be written out in full, `{ chance: 30, boosts: { accuracy: -1 } }`, not just the new chance.
+3. **Pass the custom dex to the battle.** Pass it as the second argument: `new Battle(options, picomon)`. If you leave it out, the battle quietly uses the default dex, which is the latest generation. In the test, that dex couldn't see our format, so the battle ran on Gen 9 rules with unchanged data.
+4. **Keep `Scripts: { inherit: 'gen6' }`.** Without it, the mod builds on the latest-generation data instead of gen6.
+
+#### Verification
+
+> **To do: verify this against the gen6 ruleset before relying on it.** The test below ran against an older generation's data; nothing here has been run on gen6 yet. The project does not install `@pkmn/sim` yet.
+
+What that test showed: with Pikachu set to Electric/Steel, the edited type, base stats and ability all showed in the dex. In a battle with the dex passed in, the battle reported the generation the mod inherited from, and Thunderbolt was "resisted" against the Steel-type Pikachu.
+
+For gen6, check at least:
+
+- `battle.gen` is 6, and the format's ruleset is the gen6 one we want (§1). The example's `ruleset: []` has no clauses; fill it in from §1.
+- One patched species from each of §17.1–17.3 shows its new type, stats and ability in the dex and in battle. A Fairy type (e.g. Meganium) is a good test, since Fairy is new in Gen 6.
+- One patched move from §17.4 uses its new values in battle, including Octazooka's 30% chance (gotcha 2).
+- An unpatched species and move still match stock gen6 (§14.2).
+
 ---
 
 ## Appendix: Sources and verification notes
@@ -1496,7 +1570,7 @@ Fury Strikes (Polished Crystal's merged Fury Swipes / Fury Attack) and Hidden Po
   - `LICENSE`.
 - **`@pkmn/sim`, `@pkmn/dex`, `@pkmn/data` 0.10.11**: package metadata (MIT), exports, `Generations(Dex).get(6)` queries, `Battle` / `BattleStreams` / `TeamValidator` runs.
 - **Runs [run]:**
-  - type chart generation and the gen4 diff;
+  - type chart generation and diff;
   - species retype, base-stat and ability diffs;
   - the Mega list and Future/CAP flags; Mega-disabling rules (`-Mega` validator-only, Mega Rayquaza Clause Rayquaza-only);
   - terrain sources (moves and abilities);
@@ -1504,7 +1578,7 @@ Fury Strikes (Polished Crystal's merged Fury Swipes / Fury Attack) and Hidden Po
   - the residual order;
   - the before-move order;
   - item and ability coverage scans;
-  - move diffs (gen4→5→6);
+  - move diffs (gen5→6);
   - ORAS-only content via `gen6xy`;
   - two damage examples (engine vs hand calculation);
   - the Mega Speed-order quirk;
