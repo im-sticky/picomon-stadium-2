@@ -54,6 +54,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "lugia",
   sprite: "/sprites/pokemon-icons/lugia.png",
+  isUber: true,
   ability: "Multiscale",
   types: ["Water", "Flying"],
   // baseStats: { hp, atk, def, spa, spd, spe },   // only if changed, all six
@@ -71,6 +72,7 @@ export default {
 |---|---|
 | `id` | Showdown species ID. Must match the file name. |
 | `sprite` | Public path of the image the front end shows. Typed as `` `/sprites/${string}.png` ``. |
+| `isUber` | Draft only. Optional, defaults to `false`. `true` shows a Master Ball (`icon-masterball.png`) on the draft screen instead of a Poké Ball (`icon-pokeballball.png`), and each player may draft at most one uber. It has no effect on battles. |
 | `ability` | The one ability this Pokémon has (§17.3). Always set. It replaces all of the species' gen6 abilities, in battle and in the dex. |
 | `types` | §17.1 types. Leave it out to keep the gen6 types. |
 | `baseStats` | §17.2 stats, all six. Leave it out to keep the gen6 stats. |
@@ -135,23 +137,25 @@ The prototype ruleset is `Team Preview, Cancel Mod, Sleep Clause Mod, Endless Ba
 - **Battle server:** `toSet(getPokemon(id))` for each picked Pokémon → `battle.setPlayer(side, { name, team: Teams.pack(sets) })`.
 - **Draft and battle UI:** read display data (types, stats, move type/power/accuracy/PP, ability text) from the exported `dex`, never from stock gen6. The UI then shows exactly what the battle uses.
 - **Server only:** `lib/pokemon-dex.ts` imports `@pkmn/sim`, which is a large package. Only import it from server code (route handlers, server components). Send the client plain objects with just the fields a screen needs, such as `{ id, name, sprite, types, stats, moves }`. The files in `data/pokemon/` don't import the engine, so a client component can import them for the sprite path.
+- **Ubers in the draft:** show `icon-masterball.png` when `entry.isUber` is true, otherwise `icon-pokeballball.png` (draft info box, design README "Draft"). The one-uber limit is a draft rule. The server's pick handler must reject a second uber from the same player, because the client can't be trusted. The draft screen can also disable the remaining ubers once a player has one.
 - **Sprites:** `sprite` points into `public/sprites/`, e.g. `/sprites/pokemon-icons/lugia.png`. Use it as an `<img src>` or `next/image`.
 
 ## 6. What's left for implementation
 
 1. **Decide the draft pool**, then add one file per Pokémon and list each in `data/pokemon/index.ts`. The four prototype files (Ampharos, Lugia, Meganium, Snorlax) are examples. Their sets and ability picks are placeholders.
-2. **Pick one ability per Pokémon** from §17.3 (or its gen6 options if it isn't listed there).
-3. **Write each set:** moves, item, nature, EVs.
-4. **Fill in `types` / `baseStats`** for every pool Pokémon that appears in §17.1 / §17.2.
-5. **Add the remaining §17.4 move changes to `data/moves.ts`:** Fly, Take Down, Sing, Supersonic, Strength, Fire Spin, Dig, Metronome (PP only, since "???" is display-only), Scald, Crabhammer, Pain Split, Rapid Spin, Whirlpool. Cut and Octazooka are already in.
-6. **Metronome's "???" type:** a display-only override in the UI layer, not the mod.
-7. **Settle the ruleset and level** (§4.3, §4.4). Change `RULESET` / `LEVEL` in `lib/pokemon-dex.ts`.
-8. **Sprite choice:** the prototype points at the draft-pool icons. If battle front/back sprites are added later, change `sprite` to an object (`{ icon, front, back }`) or add fields.
-9. **Optional:** a guard that fails the build if a `sprite` path doesn't exist in `public/`, and a test that keeps §2's checks (patched type/stat/ability/move in battle, restore round trip). Neither is in the prototype; add them if wanted.
-10. **Server-only guard (optional):** add the `server-only` package and import it in `lib/pokemon-dex.ts`, so a client import fails the build.
+2. **Mark the ubers** with `isUber: true`. The design canvas uses Dragonite, Tyranitar and Zapdos as samples. Lugia is marked in the prototype as an example. Enforce the one-uber limit on the server when the draft pick API is built.
+3. **Pick one ability per Pokémon** from §17.3 (or its gen6 options if it isn't listed there).
+4. **Write each set:** moves, item, nature, EVs.
+5. **Fill in `types` / `baseStats`** for every pool Pokémon that appears in §17.1 / §17.2.
+6. **Add the remaining §17.4 move changes to `data/moves.ts`:** Fly, Take Down, Sing, Supersonic, Strength, Fire Spin, Dig, Metronome (PP only, since "???" is display-only), Scald, Crabhammer, Pain Split, Rapid Spin, Whirlpool. Cut and Octazooka are already in.
+7. **Metronome's "???" type:** a display-only override in the UI layer, not the mod.
+8. **Settle the ruleset and level** (§4.3, §4.4). Change `RULESET` / `LEVEL` in `lib/pokemon-dex.ts`.
+9. **Sprite choice:** the prototype points at the draft-pool icons. If battle front/back sprites are added later, change `sprite` to an object (`{ icon, front, back }`) or add fields.
+10. **Optional:** a guard that fails the build if a `sprite` path doesn't exist in `public/`, and a test that keeps §2's checks (patched type/stat/ability/move in battle, restore round trip). Neither is in the prototype; add them if wanted.
+11. **Server-only guard (optional):** add the `server-only` package and import it in `lib/pokemon-dex.ts`, so a client import fails the build.
 
 ## 7. Open questions
 
-- The draft pool and each Pokémon's set (item 1–3 above).
-- Final ruleset, level and team size (item 7).
+- The draft pool and each Pokémon's set (items 1–4 above).
+- Final ruleset, level and team size (item 8).
 - Whether players can change sets (custom EVs/moves) or the sets are fixed. If players can, `TeamValidator` and learnsets come back into scope (research doc §1, §14.2).

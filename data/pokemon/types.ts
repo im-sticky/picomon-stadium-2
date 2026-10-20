@@ -12,6 +12,11 @@ export interface PokemonEntry {
   id: string;
   /** Public path of the sprite to show on the front end, e.g. "/sprites/pokemon-icons/lugia.png". */
   sprite: `/sprites/${string}.png`;
+  /**
+   * Draft only. An uber shows a Master Ball on the draft screen instead of a Poké
+   * Ball, and each player may draft at most one. Defaults to false.
+   */
+  isUber?: boolean;
   /** The one ability this Pokémon has. Replaces all of its gen6 abilities. */
   ability: string;
   /** New types (§17.1 of the gen6 research doc). Leave out to keep the gen6 types. */

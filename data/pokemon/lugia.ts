@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "lugia",
   sprite: "/sprites/pokemon-icons/lugia.png",
+  isUber: true,
   ability: "Multiscale",
   types: ["Water", "Flying"],
   set: {
