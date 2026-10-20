@@ -74,15 +74,23 @@ Home ──JOIN──▶ Lobby (full)
 | 0c Waiting room | `Lobby.dc.html` | Room code cells, COPY, players list with empty P2 |
 | 0d Both players in | `LobbyFull.dc.html` | `Lobby` with `full`: both players, START BATTLE |
 | 1a Type select | `Main.dc.html` | Grass/Water/Fire rock-paper-scissors, VS, message box |
-| 1b Type result | `Result.dc.html` | `Main` with `p1="fire" p2="grass"`: P1 wins, FIRST/SECOND |
+| 1b Type result | `Result.dc.html` | `Main` with `p1="fire" p2="grass"`: the host wins, FIRST/SECOND |
 | 2a Draft | `Draft.dc.html` | Scrolling 9-column Pokémon grid, team slots, hover info box |
 | 2b Pokémon detail | `Detail.dc.html` | Sprite, types, ability, moves, stats, move box, RENT/BACK |
 | 2c Draft after rentals | `DraftRented.dc.html` | `Draft` with P1 and P2 rentals shown as pokéballs |
+| 2d Detail with Master Ball | `DetailMaster.dc.html` | `Detail` with `ball="master"` |
+| 2e Draft complete | `DraftDone.dc.html` | `Draft` with all 12 picks made: START BATTLE in the bottom box |
+| 2f Detail, view only | `DetailRented.dc.html` | `Detail` with `viewOnly` and `rentedBy="GOLD"`: opened from a team slot, BACK only |
 
 The `b`/`c`/`d` boards that import another file are the same screen in a different
 state, not separate screens.
 
 ## Screen behaviour
+
+**Player names:** screens never say "Player 1" / "Player 2". They show the names
+the players entered on Home, in uppercase (GOLD and SILVER in the designs). Player
+1 is always the host and Player 2 the guest. That still decides column and strip
+sides (host on the left), the red/blue player colours and the snake order.
 
 ### Home (`Home.dc.html`)
 - Name field: 1–12 characters, shown uppercase. Room code field: 4 characters from
@@ -104,32 +112,45 @@ state, not separate screens.
   COPY button that copies the code and shows "COPIED!" for 1.5s. The app shows
   "COPIED!" only once the copy succeeds. COPY is 300px wide so it fits "COPIED!"
   without resizing.
-- Players list: `P1 <name> HOST`, and P2 as `- - - - - -` until someone joins.
-- Message: "Send this code to a friend. / Waiting for PLAYER 2..."
-- Full: title "ROOM <code>", the COPY button is hidden, and P2's name is shown.
+- Players list: the host's name with a HOST tag, then the guest's name, shown as
+  `- - - - - -` until someone joins. There are no P1/P2 labels.
+- Message: "Send this code to a friend. / Waiting for an opponent..."
+- Full: title "ROOM <code>", the COPY button is hidden, and the guest's name is shown.
   - Host: the message reads "Both players connected! / Ready to battle?" and a
     dark START BATTLE button (420px) sits centred below the message box. It has no
     action yet because the type battle screen doesn't exist.
   - Guest: no START BATTLE button. The message reads "Both players connected! /
-    Waiting for PLAYER 1..." (app copy; the design only shows the host's view).
+    Waiting for <host name>..." (app copy; the design only shows the host's view).
 
 ### Type select (`Main.dc.html`)
-- Your column (P1) is clickable. Hovering an option gives it a light grey background.
+- Each column is headed with that player's name. Your column (the host's, with a
+  red YOU tag) is clickable. Hovering an option gives it a light grey background.
   Picking one frames it and dims the others.
 - The opponent's column stays dimmed until both have picked, then their choice is
-  framed. The centre shows `VS` → `. . .` (waiting) → `P1 WINS!` / `P2 WINS!` /
-  `DRAW!`.
+  framed. The centre shows `VS` → `. . .` (waiting) → the winner's name
+  above `WINS!` (both 32px), or `DRAW!`. The centre gap is 336px, which fits 10
+  characters at 32px; 11–12 character names would overflow, so the app should
+  step those down to 24px.
 - Option frames are a fixed 288×156 so they're the same size whatever the label.
 - Rules: Grass beats Water, Water beats Fire, Fire beats Grass.
 - The winner chooses the draft order. If you win, FIRST (dark) and SECOND (light)
   buttons (216×108) appear on the right of the message box, beside "<A> beats <B>! /
-  Pick FIRST or SECOND?". If the opponent wins, the message reads "PLAYER 2 is
+  Pick FIRST or SECOND?". If the opponent wins, the message reads "<guest name> is
   choosing the order...". A draw shows an AGAIN button that resets.
 
 ### Draft (`Draft.dc.html`)
-- Title: "PLAYER n'S CHOICE" for whoever's turn it is.
+- Title: "<NAME>'S CHOICE" with the name of whoever's turn it is.
 - Team strip: six 64px slots per player (P1 left, P2 right). Picked slots show the
   Pokémon's icon, empty slots a faint pokéball. The centre shows picks left this turn.
+  - Drafted Pokémon in either team strip are clickable (hover gives a light grey
+    background). Clicking one opens its Detail screen in a view-only state (board
+    2f). That works during the draft and after it's complete, for both players'
+    picks. In view-only:
+    - the title reads "RENTED BY <NAME>" in place of "<NAME>'S CHOICE"
+    - RENT is removed, and BACK is the only button (returning to the draft)
+    - everything else on Detail (moves, stats toggle, ability, move box) works as
+      normal
+    - the design file's `viewOnly` and `rentedBy` props drive this state.
 - Grid: 9 columns of 108px cells with 96px sprites, spread evenly across the
   width left of the scrollbar (each cell centred in an equal column), in a
   432px-tall box (4 rows visible) that scrolls vertically, since the real pool
@@ -147,13 +168,33 @@ state, not separate screens.
   - The scroll box stays keyboard-focusable, and the bar is hidden from screen
     readers because the box scrolls natively.
 - Rented Pokémon become a 96px pokéball: red for P1, blue for P2. They can be hovered
-  ("Rented by PLAYER n.") but not opened.
+  ("Rented by <NAME>.") but not opened.
 - Info box: name with type badges on the right, then four moves in two columns.
 - Snake order over 12 picks: `P1, P2, P2, P1, P1, P2, P2, P1, P1, P2, P2, P1`.
+- Draft complete (all 12 picks made): the title reads "DRAFT COMPLETE", and both
+  team strips are full.
+  - The grid stays visible but is locked: unrented Pokémon can't be opened, and
+    hovering no longer fills the info box.
+  - The hint line is hidden but keeps its space.
+  - The bottom box holds a single centred START BATTLE primary button (384×108)
+    instead of the info. The battle screen isn't designed yet, so the button
+    goes nowhere in the prototype.
 
 ### Detail (`Detail.dc.html`)
-- Top row: 128px sprite, name, type badges. On the right is the ability, with an
-  "ABILITY" heading styled like MOVES/STATS and the name and description under it.
+- Top row: 128px sprite, then the name with a 32px pokéball (`icon-pokeballball.png`
+  at 2×, 12px gap) to its left, and the type badges below, left-aligned with the
+  ball (not indented to the name text). The ball is decorative only, because rented
+  Pokémon can't be opened. Certain Pokémon show a Master Ball (`icon-masterball.png`,
+  same size and place) instead. The design file's `ball` prop switches between the
+  two, and board 2d shows the Master Ball version.
+- Ability (top right): 480px wide, so its left edge lines up with the STATS column
+  below. It has an "ABILITY" heading styled like MOVES/STATS, then the ability name
+  (24px, 32px line height) and its description (16px, 24px line height).
+  - Widths are tight: sprite 128 + name block 364 (ball 44 + FERALIGATR, the longest
+    name, at 320) + ability 480 + two 24px gaps = 1020px, the frame's full inner
+    width.
+  - The top row is 128px tall, which fits a description of up to 2 lines (about 30
+    characters per line). A longer description would make the row taller.
 - Moves (left): each row shows the name with `PP x/x` right-aligned underneath.
   Hover, focus or click selects it (grey background).
 - Stats (right): a LV.50 / BASE toggle. LV.50 is the default and sits on the left.
@@ -300,7 +341,7 @@ The design files reference sprites by canvas id. These are the matching repo fil
 | icon-physical.png | `5e334b67f3a33e0aef7c6d7e44195045` |
 | icon-special.png | `3ee4588b90c265212c90acc7ed0ffd95` |
 | icon-status.png | `87ab199033fd3769fffdeae0ead39fa6` |
-| icon-masterball.png | `1232bfea6d5fbe714ce6f5a04bb1772c` (not used yet) |
+| icon-masterball.png | `1232bfea6d5fbe714ce6f5a04bb1772c` |
 
 `public/sprites/pokemon-icons/` (the draft pool, in grid order):
 

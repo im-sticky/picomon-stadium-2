@@ -41,13 +41,16 @@ a.btn{color:inherit;cursor:pointer;text-decoration:none}
 .hpfill{height:100%;background:#40C048}</style>
 </helmet>
 <div class="gb" style="width: 1200px; height: 900px; box-sizing: border-box; padding: 24px 48px; display: flex; flex-direction: column; gap: 12px">
-  <h1 style="font-size: 32px; line-height: 48px; text-align: center">PLAYER 1'S CHOICE</h1>
+  <h1 style="font-size: 32px; line-height: 48px; text-align: center">{{title}}</h1>
   <div class="frame" style="flex-grow: 1; padding: 18px 36px; display: flex; flex-direction: column; gap: 18px">
-    <div style="display: flex; align-items: center; gap: 36px">
+    <div style="display: flex; align-items: center; gap: 24px">
       <div class="spr" style="width: 128px; height: 128px"><img class="pix" src="/_blob/306822b5b874f91ba29da9143239f925" alt="Venusaur" style="width: 128px; height: 256px"></div>
       <div style="display: flex; flex-direction: column; gap: 12px">
         
-        <h2 style="font-size: 32px; line-height: 48px">VENUSAUR</h2>
+        <div style="display: flex; align-items: center; gap: 12px">
+          <img class="pix" src="{{ballSrc}}" alt="" style="width: 32px; height: 32px">
+          <h2 style="font-size: 32px; line-height: 48px">VENUSAUR</h2>
+        </div>
         <div style="display: flex; gap: 12px">
           <span class="tag" style="background: #2F7D3F">GRASS</span>
           <span class="tag" style="background: #8A3A8A">POISON</span>
@@ -122,10 +125,12 @@ a.btn{color:inherit;cursor:pointer;text-decoration:none}
     <p style="font-size: 24px; line-height: 48px">{{sel.effect}}</p>
   </div>
   <div style="display: flex; justify-content: center; gap: 48px">
-    <a class="btn primary" href="DraftRented.dc.html">
-      <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
-      RENT
-    </a>
+    <sc-if value="{{canRent}}" hint-placeholder-val="{{ true }}">
+      <a class="btn primary" href="DraftRented.dc.html">
+        <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
+        RENT
+      </a>
+    </sc-if>
     <a class="btn" href="Draft.dc.html">
       <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
       BACK
@@ -133,7 +138,7 @@ a.btn{color:inherit;cursor:pointer;text-decoration:none}
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":900}}'>
+<script type="text/x-dc" data-dc-script data-props='{"ball":{"editor":"enum","options":["poke","master"],"default":"poke"},"viewOnly":{"editor":"boolean","default":false},"rentedBy":{"editor":"text","default":"GOLD"},"$preview":{"width":1200,"height":900}}'>
 class Component extends DCLogic {
   constructor(props) {
     super(props);
@@ -159,7 +164,15 @@ class Component extends DCLogic {
     const L = 50;
     const calcStat = (b, isHp) => Math.floor((2 * b + 31) * L / 100) + (isHp ? L + 10 : 5);
     const isCalc = this.state.view === 'calc';
+    // View-only: opened from a team slot for an already drafted Pokémon
+    const viewOnly = this.props.viewOnly === true || this.props.viewOnly === 'true';
     return {
+      title: viewOnly ? 'RENTED BY ' + String(this.props.rentedBy || 'GOLD').toUpperCase() : "GOLD'S CHOICE",
+      canRent: !viewOnly,
+      // Certain Pokémon show a Master Ball next to their name instead
+      ballSrc: this.props.ball === 'master'
+        ? '/_blob/1232bfea6d5fbe714ce6f5a04bb1772c'
+        : '/_blob/42adad1d7cf5061d3889e683f8adb86c',
       isBase: !isCalc,
       isCalc,
       segBase: isCalc ? '' : 'on',

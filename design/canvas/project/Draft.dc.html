@@ -29,7 +29,16 @@ a.cell:hover,a.cell:focus-visible,a.cell.on,.taken.on{background:#E8E8E8;outline
 .strack{position:relative;flex:1;background-color:#585858;background-image:conic-gradient(#181818 25%,#585858 0 50%,#181818 0 75%,#585858 0);background-size:6px 6px}
 .sthumb{position:absolute;left:0;width:36px;cursor:grab}
 .slot{width:64px;height:64px;display:flex;align-items:center;justify-content:center}
+.slotlink{display:block;border-radius:4px}
+.slotlink:hover,.slotlink:focus-visible{background:#E8E8E8;outline:none}
 .cur{flex:none}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+.btn{position:relative;display:flex;align-items:center;justify-content:center;width:240px;box-sizing:border-box;padding:36px 24px;font-size:24px;border:6px solid #181818;border-radius:6px;box-shadow:inset 0 0 0 3px #F8F8F8,inset 0 0 0 6px #181818}
+.btn .cur{position:absolute;left:30px;top:50%;margin-top:-12px;visibility:hidden}
+.btn:hover .cur,.btn:focus-visible .cur{visibility:visible}
+.btn:focus-visible{outline:none;background:#E8E8E8}
+.btn.primary{background:#181818;color:#F8F8F8;box-shadow:inset 0 0 0 3px #181818,inset 0 0 0 6px #F8F8F8}
+.btn.primary path{fill:#F8F8F8}
 .tag{display:inline-block;width:148px;height:28px;box-sizing:border-box;text-align:center;font-size:16px;line-height:28px;color:#F8F8F8;clip-path:polygon(4px 0,calc(100% - 4px) 0,calc(100% - 4px) 4px,100% 4px,100% calc(100% - 4px),calc(100% - 4px) calc(100% - 4px),calc(100% - 4px) 100%,4px 100%,4px calc(100% - 4px),0 calc(100% - 4px),0 4px,4px 4px)}
 </style>
 </helmet>
@@ -40,7 +49,7 @@ a.cell:hover,a.cell:focus-visible,a.cell.on,.taken.on{background:#E8E8E8;outline
       <sc-for list="{{p1team}}" as="s" hint-placeholder-count="6">
         <div class="slot">
           <sc-if value="{{s.filled}}" hint-placeholder-val="{{ false }}">
-            <div class="spr" style="width: 64px; height: 64px"><img class="pix" src="{{s.src}}" alt="{{s.name}}" style="width: 64px; height: 128px"></div>
+            <a class="slotlink" href="DetailRented.dc.html" aria-label="View {{s.name}}"><div class="spr" style="width: 64px; height: 64px"><img class="pix" src="{{s.src}}" alt="" style="width: 64px; height: 128px"></div></a>
           </sc-if>
           <sc-if value="{{s.empty}}" hint-placeholder-val="{{ true }}">
             <img class="pix" src="/_blob/42adad1d7cf5061d3889e683f8adb86c" alt="Empty slot" style="width: 32px; height: 32px; opacity: .2">
@@ -56,7 +65,7 @@ a.cell:hover,a.cell:focus-visible,a.cell.on,.taken.on{background:#E8E8E8;outline
       <sc-for list="{{p2team}}" as="s" hint-placeholder-count="6">
         <div class="slot">
           <sc-if value="{{s.filled}}" hint-placeholder-val="{{ false }}">
-            <div class="spr" style="width: 64px; height: 64px"><img class="pix" src="{{s.src}}" alt="{{s.name}}" style="width: 64px; height: 128px"></div>
+            <a class="slotlink" href="DetailRented.dc.html" aria-label="View {{s.name}}"><div class="spr" style="width: 64px; height: 64px"><img class="pix" src="{{s.src}}" alt="" style="width: 64px; height: 128px"></div></a>
           </sc-if>
           <sc-if value="{{s.empty}}" hint-placeholder-val="{{ true }}">
             <img class="pix p2ball" src="/_blob/42adad1d7cf5061d3889e683f8adb86c" alt="Empty slot" style="width: 32px; height: 32px; opacity: .2">
@@ -74,6 +83,11 @@ a.cell:hover,a.cell:focus-visible,a.cell.on,.taken.on{background:#E8E8E8;outline
           <a class="cell {{c.on}}" href="Detail.dc.html" onMouseEnter="{{c.hover}}" onFocus="{{c.hover}}" aria-label="{{c.aria}}">
             <div class="spr" style="width: 96px; height: 96px"><img class="pix" src="{{c.src}}" alt="" style="width: 96px; height: 192px"></div>
           </a>
+        </sc-if>
+        <sc-if value="{{c.locked}}" hint-placeholder-val="{{ false }}">
+          <div class="cell" aria-label="{{c.aria}}">
+            <div class="spr" style="width: 96px; height: 96px"><img class="pix" src="{{c.src}}" alt="" style="width: 96px; height: 192px"></div>
+          </div>
         </sc-if>
         <sc-if value="{{c.taken}}" hint-placeholder-val="{{ false }}">
           <div class="cell taken {{c.on}}" onMouseEnter="{{c.hover}}">
@@ -96,7 +110,7 @@ a.cell:hover,a.cell:focus-visible,a.cell.on,.taken.on{background:#E8E8E8;outline
     </button>
   </div>
   </div>
-  <p style="font-size: 16px; line-height: 24px; text-align: center; color: #585858">Hover for moves · Click for details</p>
+  <p style="font-size: 16px; line-height: 24px; text-align: center; color: #585858; visibility: {{hintVis}}">Hover for moves · Click for details</p>
   <div class="frame" style="flex-grow: 1; padding: 18px 36px; display: flex; flex-direction: column">
     <sc-if value="{{hasInfo}}" hint-placeholder-val="{{ true }}">
       <div style="display: flex; align-items: center; justify-content: space-between; height: 48px">
@@ -121,6 +135,14 @@ a.cell:hover,a.cell:focus-visible,a.cell.on,.taken.on{background:#E8E8E8;outline
     <sc-if value="{{noInfo}}" hint-placeholder-val="{{ false }}">
       <p style="font-size: 24px; line-height: 48px">{{prompt1}}</p>
       <p style="font-size: 24px; line-height: 48px">{{prompt2}}</p>
+    </sc-if>
+    <sc-if value="{{done}}" hint-placeholder-val="{{ false }}">
+      <div style="flex: 1; display: flex; align-items: center; justify-content: center">
+        <button type="button" class="btn primary" style="width: 384px">
+          <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
+          START BATTLE
+        </button>
+      </div>
     </sc-if>
   </div>
 </div>
@@ -240,6 +262,9 @@ class Component extends DCLogic {
     const p2 = parse(this.props.p2picks);
     const h = this.state.h != null ? this.state.h : (this.props.hover ?? 1);
 
+    // Player 1 is always the host; names come from the room
+    const NAMES = { 1: 'GOLD', 2: 'SILVER' };
+
     // Snake order: P1, P2 P2, P1 P1, ... P1
     const ORDER = [1, 2, 2, 1, 1, 2, 2, 1, 1, 2, 2, 1];
     const n = Math.min(p1.length + p2.length, 12);
@@ -253,16 +278,20 @@ class Component extends DCLogic {
       return no ? { filled: true, empty: false, src: src(no), name: dex(no).name } : { filled: false, empty: true };
     });
 
+    // All 12 picks made: the grid locks and the box shows START BATTLE
+    const done = n >= 12;
+
     const cells = IDS.map((_, i) => {
       const no = i + 1;
       const by = p1.includes(no) ? 1 : p2.includes(no) ? 2 : 0;
       return {
         src: src(no),
-        free: !by,
+        free: !by && !done,
+        locked: !by && done,
         taken: !!by,
         ballCls: by === 2 ? 'p2ball' : '',
         on: h === no ? 'on' : '',
-        aria: by ? 'No.' + pad(no) + ' rented by Player ' + by : 'View No.' + pad(no) + ' ' + dex(no).name,
+        aria: by ? dex(no).name + ' rented by ' + NAMES[by] : 'View ' + dex(no).name,
         hover: () => this.setState({ h: no })
       };
     });
@@ -278,12 +307,12 @@ class Component extends DCLogic {
         moves: d.moves,
         isTaken: !!by,
         isFree: !by,
-        takenBy: 'PLAYER ' + by
+        takenBy: NAMES[by]
       };
     }
 
     return {
-      title: turn ? 'PLAYER ' + turn + "'S CHOICE" : 'DRAFT COMPLETE',
+      title: turn ? NAMES[turn] + "'S CHOICE" : 'DRAFT COMPLETE',
       pickNo: Math.min(n + 1, 12),
       left: turn ? left + (left === 1 ? ' PICK' : ' PICKS') : '',
       p1team: team(p1),
@@ -298,8 +327,10 @@ class Component extends DCLogic {
       thumbTop: thumbTopPx + 'px',
       thumbH: thumbPx + 'px',
       info: info || { types: [], moves: [] },
-      hasInfo: !!info,
-      noInfo: !info,
+      done,
+      hintVis: done ? 'hidden' : 'visible',
+      hasInfo: !!info && !done,
+      noInfo: !info && !done,
       prompt1: 'Hover a POKéMON to see its moves.',
       prompt2: 'Click one to see its details.'
     };

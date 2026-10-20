@@ -48,12 +48,10 @@ a.btn{color:inherit;text-decoration:none}
   <section class="frame" aria-label="Players" style="padding: 30px 42px">
     <p class="lbl">PLAYERS</p>
     <div class="prow">
-      <span style="color: #C03028; width: 48px">P1</span>
       <span style="flex: 1">{{host}}</span>
       <span style="font-size: 16px; color: #585858">HOST</span>
     </div>
     <div class="prow">
-      <span style="color: #2860B8; width: 48px">P2</span>
       <sc-if value="{{full}}" hint-placeholder-val="{{ false }}">
         <span style="flex: 1">{{guest}}</span>
       </sc-if>
@@ -107,7 +105,7 @@ class Component extends DCLogic {
       copy,
       copyLabel: this.state.copied ? 'COPIED!' : 'COPY',
       msg1: full ? 'Both players connected!' : 'Send this code to a friend.',
-      msg2: full ? 'Ready to battle?' : 'Waiting for PLAYER 2...'
+      msg2: full ? 'Ready to battle?' : 'Waiting for an opponent...'
     };
   }
 }
