@@ -44,3 +44,6 @@ next-env.d.ts
 .superpowers/
 .env*.local
 !.env.example
+
+# claude
+.claude/
