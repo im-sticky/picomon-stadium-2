@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "@libsql/client": "^0.18.0",
+    "@pkmn/sim": "0.10.11",
+    "@pkmn/types": "4.0.0",
     "ably": "^2.29.0",
     "drizzle-orm": "^0.45.4",
     "next": "16.4.2",

@@ -1536,6 +1536,8 @@ For §17.3, `abilities` is set to just the one ability picked for that Pokémon,
 
 #### Verification
 
+> **Update 2026-10-20:** verified on gen6 by the prototype in [the Pokémon data design](../superpowers/specs/2026-10-20-pokemon-data-design.md) (§2). It also corrects gotcha 3: `new Battle` reads the mod from the engine's global table, and `Battle.fromJSON` ignores any dex you pass, so the format must be registered on the default Dex instead (§4.3 there).
+>
 > **To do: verify this against the gen6 ruleset before relying on it.** The test below ran against an older generation's data; nothing here has been run on gen6 yet. The project does not install `@pkmn/sim` yet.
 
 What that test showed: with Pikachu set to Electric/Steel, the edited type, base stats and ability all showed in the dex. In a battle with the dex passed in, the battle reported the generation the mod inherited from, and Thunderbolt was "resisted" against the Steel-type Pikachu.
