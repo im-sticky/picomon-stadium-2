@@ -8,6 +8,11 @@ export type PublicPlayer = {
 
 export type Phase = "lobby" | "type-battle";
 
+/** How many Pokémon each player sends into battle, chosen by the host. Everyone drafts 6. */
+export const BATTLE_SIZES = [3, 4, 6] as const;
+export type BattleSize = (typeof BATTLE_SIZES)[number];
+export const DEFAULT_BATTLE_SIZE: BattleSize = 6;
+
 export const TYPE_CHOICES = ["grass", "water", "fire"] as const;
 export type TypeChoice = (typeof TYPE_CHOICES)[number];
 
@@ -27,6 +32,7 @@ export type RoomState = {
   you: { id: string; slot: Slot };
   players: PublicPlayer[];
   phase: Phase;
+  battleSize: BattleSize;
   /** Null in the lobby. */
   typeBattle: TypeBattleView | null;
 };

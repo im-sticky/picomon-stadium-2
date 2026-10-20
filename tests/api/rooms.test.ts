@@ -83,6 +83,29 @@ describe('rooms API', () => {
     expect(res.status).toBe(201);
   });
 
+  it.each([3, 4, 6])('a %iv%i room reports its size to both players', async (size) => {
+    const res = await createRoomRoute(req('/api/rooms', 'POST', { name: 'Ash', battleSize: size }));
+    expect(res.status).toBe(201);
+    const { code } = await res.json();
+    const joined = await joinRoute(req(`/api/rooms/${code}/join`, 'POST', { name: 'Misty' }), ctx(code));
+    for (const cookie of [cookieOf(res), cookieOf(joined)]) {
+      const state = await stateRoute(req(`/api/rooms/${code}`, 'GET', undefined, cookie), ctx(code));
+      expect((await state.json()).battleSize).toBe(size);
+    }
+  });
+
+  it('create without a battle size defaults to 6', async () => {
+    const { code, cookie } = await host();
+    const state = await stateRoute(req(`/api/rooms/${code}`, 'GET', undefined, cookie), ctx(code));
+    expect((await state.json()).battleSize).toBe(6);
+  });
+
+  it.each([5, 0, '4', null, 4.5])('create with battle size %j is 400', async (battleSize) => {
+    const res = await createRoomRoute(req('/api/rooms', 'POST', { name: 'Ash', battleSize }));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: 'invalid-battle-size' });
+  });
+
   it('friend joins with lowercase code', async () => {
     const { code } = await host();
     const res = await joinRoute(

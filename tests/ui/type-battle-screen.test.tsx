@@ -12,6 +12,7 @@ const state: RoomState = {
     { id: "b", name: "Misty", slot: 2 },
   ],
   phase: "type-battle",
+  battleSize: 6,
   typeBattle: draw,
 };
 

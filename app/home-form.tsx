@@ -4,6 +4,7 @@ import { useEffect, useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { normalizeCode } from "@/lib/codes";
 import { MAX_NAME_LENGTH, normalizeName } from "@/lib/names";
+import { BATTLE_SIZES, DEFAULT_BATTLE_SIZE, type BattleSize } from "@/lib/types";
 import { Button } from "./ui/button";
 import { Field, SectionLabel } from "./ui/field";
 import { Frame } from "./ui/frame";
@@ -23,6 +24,7 @@ export function HomeForm({ initialError }: { initialError?: "not-found" }) {
   const initialMessage = initialError === "not-found" ? NOT_FOUND : undefined;
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
+  const [battleSize, setBattleSize] = useState<BattleSize>(DEFAULT_BATTLE_SIZE);
   const [error, setError] = useState<Message | undefined>(initialMessage);
   const [busy, setBusy] = useState(false);
 
@@ -37,7 +39,7 @@ export function HomeForm({ initialError }: { initialError?: "not-found" }) {
   // clear a stale busy flag then (it would otherwise stay disabled when re-shown).
   useEffect(() => () => setBusy(false), []);
 
-  async function submit(url: string, body: { name: string }) {
+  async function submit(url: string, body: { name: string; battleSize?: BattleSize }) {
     setBusy(true);
     setError(undefined);
     try {
@@ -63,7 +65,7 @@ export function HomeForm({ initialError }: { initialError?: "not-found" }) {
   function host() {
     const n = normalizeName(name);
     if (!n) return setError(BAD_NAME);
-    void submit("/api/rooms", { name: n });
+    void submit("/api/rooms", { name: n, battleSize });
   }
 
   function join() {
@@ -106,6 +108,20 @@ export function HomeForm({ initialError }: { initialError?: "not-found" }) {
             <Button primary disabled={busy} onClick={host}>
               HOST
             </Button>
+            <fieldset className={styles.sizes} aria-label="Battle size">
+              {BATTLE_SIZES.map((n) => (
+                <label key={n} className={styles.radio}>
+                  <input
+                    type="radio"
+                    name="battle-size"
+                    value={n}
+                    checked={battleSize === n}
+                    onChange={() => setBattleSize(n)}
+                  />
+                  <span>{`${n}V${n}`}</span>
+                </label>
+              ))}
+            </fieldset>
           </div>
           <div className={styles.column}>
             <div>
