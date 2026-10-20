@@ -249,6 +249,27 @@
   overflow: hidden;
 }
 
+/* The sheet holds two stacked frames: show each for 1000ms. */
+.icon img {
+  display: block;
+  animation: spriteFrames 2000ms steps(2) infinite;
+}
+
+@keyframes spriteFrames {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icon img {
+    animation: none;
+  }
+}
+
 /* Pixel scrollbar: 36px wide, 12px from the content. */
 .scrollArea {
   display: flex;

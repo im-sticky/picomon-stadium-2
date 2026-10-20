@@ -3,7 +3,7 @@ import styles from "./crystal.module.css";
 
 /**
  * A Pokémon icon at `size` px. The sprite files are 32×64 with two stacked
- * animation frames, so only the top frame is shown.
+ * animation frames; the icon alternates between them every 1000ms.
  */
 export function PokemonIcon({ src, size, alt = "" }: { src: string; size: number; alt?: string }) {
   return (
