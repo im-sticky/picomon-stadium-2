@@ -185,3 +185,138 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* Pixel-notched shapes (type badges, the HP bar): one square block cut from each
+   corner, n = 4px for badges and 3px for the HP bar. */
+.typeBadge {
+  display: inline-block;
+  flex: none;
+  width: 148px;
+  height: 28px;
+  box-sizing: border-box;
+  font-size: 16px;
+  line-height: 28px;
+  color: var(--bg);
+  text-align: center;
+  clip-path: polygon(4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px, 100% calc(100% - 4px),
+    calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 4px),
+    0 calc(100% - 4px), 0 4px, 4px 4px);
+}
+
+.hpBar {
+  display: flex;
+  align-items: center;
+  height: 18px;
+  box-sizing: border-box;
+  padding: 3px 3px 3px 0;
+  background: var(--ink);
+  clip-path: polygon(3px 0, calc(100% - 3px) 0, calc(100% - 3px) 3px, 100% 3px, 100% calc(100% - 3px),
+    calc(100% - 3px) calc(100% - 3px), calc(100% - 3px) 100%, 3px 100%, 3px calc(100% - 3px),
+    0 calc(100% - 3px), 0 3px, 3px 3px);
+}
+
+.hpLabel {
+  padding: 0 6px;
+  font-size: 12px;
+  line-height: 12px;
+  color: #f8b830;
+}
+
+.hpTrack {
+  flex: 1;
+  height: 12px;
+  overflow: hidden;
+  background: var(--bg);
+  clip-path: polygon(0 0, calc(100% - 3px) 0, calc(100% - 3px) 3px, 100% 3px, 100% calc(100% - 3px),
+    calc(100% - 3px) calc(100% - 3px), calc(100% - 3px) 100%, 0 100%);
+}
+
+.hpFill {
+  height: 100%;
+  background: #40c048;
+}
+
+/* Sprites: whole-number scales, pixelated. */
+.pixel {
+  display: block;
+  image-rendering: pixelated;
+}
+
+/* Shows the top frame of a two-frame icon. */
+.icon {
+  display: block;
+  flex: none;
+  overflow: hidden;
+}
+
+/* Pixel scrollbar: 36px wide, 12px from the content. */
+.scrollArea {
+  display: flex;
+  gap: 12px;
+}
+
+.scrollBox {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.scrollBox::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollBox:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.scrollBar {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  width: 36px;
+}
+
+.scrollButton,
+.scrollThumb {
+  box-sizing: border-box;
+  background: var(--ink);
+  border: 0;
+  box-shadow: inset 3px 3px 0 var(--text-2);
+}
+
+.scrollButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  cursor: pointer;
+  fill: var(--bg);
+}
+
+/* 3px checkerboard dither. */
+.scrollTrack {
+  position: relative;
+  flex: 1;
+  background-color: var(--text-2);
+  background-image: conic-gradient(var(--ink) 25%, var(--text-2) 0 50%, var(--ink) 0 75%, var(--text-2) 0);
+  background-size: 6px 6px;
+}
+
+.scrollThumb {
+  position: absolute;
+  left: 0;
+  width: 36px;
+  cursor: grab;
+}
+
+.heldItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 32px;
+  font-size: 16px;
+}

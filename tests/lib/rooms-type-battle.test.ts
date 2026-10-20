@@ -143,8 +143,12 @@ describe('type battle', () => {
       firstDrafter: 1,
     });
     expect(await chooseDraftOrder(db, room.code, room.guest, 'first', T0)).toEqual({ kind: 'already-chosen' });
-    expect(await view(db, room.code, room.host)).toMatchObject({ winner: 2, firstDrafter: 1 });
-    expect(await view(db, room.code, room.guest)).toMatchObject({ winner: 2, firstDrafter: 1 });
+    // Choosing the order starts the draft for both players.
+    for (const secret of [room.host, room.guest]) {
+      const state = (await getRoomState(db, room.code, secret, T0))!;
+      expect(state.phase).toBe('draft');
+      expect(state.draft).toEqual({ firstDrafter: 1, picks: [] });
+    }
   });
 
   it('a stranger cannot act on the room', async () => {

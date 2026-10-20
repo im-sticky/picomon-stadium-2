@@ -37,6 +37,7 @@ const roomState = {
   phase: "lobby",
   battleSize: 6,
   typeBattle: null,
+  draft: null,
 };
 
 beforeEach(() => {
@@ -50,21 +51,21 @@ const MSG = "Live updates unavailable.";
 
 describe("RoomView realtime failures", () => {
   it("shows no notice when everything is healthy", async () => {
-    render(<RoomView code="K7PQ" />);
+    render(<RoomView code="K7PQ" pool={[]} />);
     expect(await screen.findByRole("heading", { name: "WAITING ROOM" })).toBeInTheDocument();
     expect(screen.queryByText(MSG)).toBeNull();
   });
 
   it("logs and shows a notice when channel attach fails", async () => {
     h.subscribeResult = Promise.reject(new Error("attach failed"));
-    render(<RoomView code="K7PQ" />);
+    render(<RoomView code="K7PQ" pool={[]} />);
     expect(await screen.findByText(MSG)).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent("Live updates unavailable.Refresh the page.");
     expect(console.error).toHaveBeenCalled();
   });
 
   it("logs and shows a notice when the connection fails", async () => {
-    render(<RoomView code="K7PQ" />);
+    render(<RoomView code="K7PQ" pool={[]} />);
     await screen.findByRole("heading", { name: "WAITING ROOM" });
     const l = h.listeners.find((x) => Array.isArray(x.events) && x.events.includes("failed"))!;
     act(() => l.fn({ current: "failed", reason: new Error("boom") }));
@@ -73,7 +74,7 @@ describe("RoomView realtime failures", () => {
   });
 
   it("removes its connection listeners on unmount", async () => {
-    const { unmount } = render(<RoomView code="K7PQ" />);
+    const { unmount } = render(<RoomView code="K7PQ" pool={[]} />);
     await screen.findByRole("heading", { name: "WAITING ROOM" });
     unmount();
     expect(h.listeners.filter((l) => l.events === "failed" || Array.isArray(l.events))).toHaveLength(0);

@@ -14,6 +14,7 @@ const state: RoomState = {
   phase: "type-battle",
   battleSize: 6,
   typeBattle: draw,
+  draft: null,
 };
 
 afterEach(() => vi.useRealTimers());
