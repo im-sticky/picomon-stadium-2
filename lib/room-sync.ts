@@ -1,7 +1,8 @@
 import type { PublicPlayer, RoomState } from "@/lib/types";
 
 export type RoomSyncDeps = {
-  subscribe(onPlayers: (players: PublicPlayer[]) => void): () => void;
+  /** Calls `onEvent` for every room event; `players` is set for player-joined. */
+  subscribe(onEvent: (players?: PublicPlayer[]) => void): () => void;
   onReconnect(cb: () => void): () => void;
   onVisible(cb: () => void): () => void;
   fetchState(): Promise<RoomState | null>;
@@ -13,7 +14,13 @@ export type RoomSyncDeps = {
 // Backoff before each retry of a rejected fetch (so up to 2 retries).
 const RETRY_DELAYS_MS = [500, 1500];
 
-export function startRoomSync(deps: RoomSyncDeps): () => void {
+export type RoomSync = {
+  stop(): void;
+  /** Fetch the latest state now, e.g. after this player's own action. */
+  refetch(): void;
+};
+
+export function startRoomSync(deps: RoomSyncDeps): RoomSync {
   let stopped = false;
   let latest = 0;
 
@@ -41,7 +48,7 @@ export function startRoomSync(deps: RoomSyncDeps): () => void {
   const unsubs = [
     deps.subscribe((players) => {
       if (stopped) return;
-      deps.onPlayers(players);
+      if (players) deps.onPlayers(players);
       // An event means something changed: refetch, which also invalidates any
       // in-flight fetch that started before the event.
       void refetch();
@@ -51,8 +58,13 @@ export function startRoomSync(deps: RoomSyncDeps): () => void {
   ];
   void refetch();
 
-  return () => {
-    stopped = true;
-    unsubs.forEach((u) => u());
+  return {
+    stop() {
+      stopped = true;
+      unsubs.forEach((u) => u());
+    },
+    refetch() {
+      if (!stopped) void refetch();
+    },
   };
 }

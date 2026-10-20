@@ -97,3 +97,139 @@ button.startButton {
   justify-content: center;
   padding: 24px 72px;
 }
+
+/* Type battle ("Who picks first"). */
+.battle {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 36px 72px;
+}
+
+.battleRow {
+  display: flex;
+  flex-grow: 1;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 360px;
+}
+
+.columnRight {
+  align-items: flex-end;
+}
+
+.columnName {
+  padding-left: 24px;
+  font-size: 24px;
+  line-height: 48px;
+}
+
+.columnRight .columnName {
+  padding-right: 24px;
+  padding-left: 0;
+}
+
+.you {
+  font-size: 16px;
+  color: var(--p1);
+}
+
+/* Fixed 288×156 whatever the label. */
+.option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 288px;
+  box-sizing: border-box;
+  padding: 24px;
+  font: inherit;
+  font-size: 24px;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: 6px solid transparent;
+  border-radius: 6px;
+}
+
+.optionRight {
+  flex-direction: row-reverse;
+}
+
+button.option {
+  cursor: pointer;
+}
+
+button.option:disabled {
+  cursor: default;
+}
+
+button.option:enabled:hover,
+button.option:focus-visible {
+  outline: none;
+  background: var(--hover);
+}
+
+.selected {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 3px var(--bg), inset 0 0 0 6px var(--ink);
+}
+
+.dim {
+  opacity: 0.3;
+}
+
+.badge {
+  display: block;
+  image-rendering: pixelated;
+}
+
+.centre {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-self: center;
+  align-items: center;
+  padding-top: 48px;
+  font-size: 32px;
+  line-height: 48px;
+  text-align: center;
+}
+
+div.battleMessage {
+  padding: 30px;
+  text-align: center;
+}
+
+div.battleMessage p {
+  white-space: nowrap;
+}
+
+/* FIRST/SECOND need the room: see orderButton. */
+div.orderMessage {
+  padding: 30px 12px;
+}
+
+.orderButtons {
+  display: flex;
+  flex: none;
+  gap: 12px;
+}
+
+/* FIRST/SECOND are 240px (the button minimum; the canvas has 216px) and the box's
+   side padding drops to 12px, so "Pick FIRST or SECOND?" fits beside them. To fit
+   SECOND, the side padding is 42px and the cursor sits 12px in (not 30px), which
+   still leaves a 6px gap between cursor and label. */
+button.orderButton {
+  width: 240px;
+  padding: 36px 42px;
+}
+
+button.orderButton svg {
+  left: 12px;
+}

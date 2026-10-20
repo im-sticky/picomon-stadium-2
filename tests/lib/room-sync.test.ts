@@ -11,7 +11,7 @@ type Fetch = Promise<RoomState | null> | (() => Promise<RoomState | null>);
 function setup(fetches: Fetch[]) {
   const order: string[] = [];
   const cbs: {
-    players?: (p: PublicPlayer[]) => void;
+    players?: (p?: PublicPlayer[]) => void;
     reconnect?: () => void;
     visible?: () => void;
   } = {};
@@ -59,6 +59,28 @@ describe("startRoomSync", () => {
     expect(s.deps.onPlayers).toHaveBeenCalledWith([p1, p2]);
   });
 
+  it("an event without players only refetches", async () => {
+    const s = setup([Promise.resolve(state1), Promise.resolve(state2)]);
+    startRoomSync(s.deps);
+    await flush();
+    s.cbs.players!();
+    await flush();
+    expect(s.deps.onPlayers).not.toHaveBeenCalled();
+    expect(s.deps.onState).toHaveBeenLastCalledWith(state2);
+  });
+
+  it("refetch() fetches now and supersedes an in-flight fetch", async () => {
+    let resolveFirst!: (v: RoomState | null) => void;
+    const s = setup([new Promise((r) => { resolveFirst = r; }), Promise.resolve(state2)]);
+    const sync = startRoomSync(s.deps);
+    sync.refetch();
+    await flush();
+    resolveFirst(state1);
+    await flush();
+    expect(s.deps.onState).toHaveBeenCalledTimes(1);
+    expect(s.deps.onState).toHaveBeenCalledWith(state2);
+  });
+
   it("refetches when the tab becomes visible", async () => {
     const s = setup([Promise.resolve(state1), Promise.resolve(state2)]);
     startRoomSync(s.deps);
@@ -90,7 +112,7 @@ describe("startRoomSync", () => {
   it("stop() unsubscribes everything and ignores a pending fetch", async () => {
     let resolve!: (v: RoomState | null) => void;
     const s = setup([new Promise((r) => { resolve = r; })]);
-    const stop = startRoomSync(s.deps);
+    const { stop } = startRoomSync(s.deps);
     stop();
     expect(s.unsubs.sub).toHaveBeenCalled();
     expect(s.unsubs.rec).toHaveBeenCalled();
@@ -176,7 +198,7 @@ describe("startRoomSync", () => {
   it("does not retry after stop()", async () => {
     vi.useFakeTimers();
     const s = setup([() => Promise.reject(new Error("a")), Promise.resolve(state2)]);
-    const stop = startRoomSync(s.deps);
+    const { stop } = startRoomSync(s.deps);
     await vi.advanceTimersByTimeAsync(0);
     stop();
     await vi.advanceTimersByTimeAsync(10000);

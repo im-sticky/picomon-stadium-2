@@ -34,6 +34,8 @@ const roomState = {
   code: "K7PQ",
   you: { id: "a", slot: 1 },
   players: [{ id: "a", name: "Ash", slot: 1 }],
+  phase: "lobby",
+  typeBattle: null,
 };
 
 beforeEach(() => {

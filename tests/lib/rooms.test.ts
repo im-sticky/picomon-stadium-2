@@ -31,6 +31,8 @@ describe('rooms', () => {
       code,
       you: { id: playerId, slot: 1 },
       players: [{ id: playerId, name: 'Ash', slot: 1 }],
+      phase: 'lobby',
+      typeBattle: null,
     });
     expect(await findActivePlayer(db, secret, T0)).toEqual({ id: playerId, roomCode: code });
     expect(await findActivePlayer(db, null, T0)).toBeNull();
