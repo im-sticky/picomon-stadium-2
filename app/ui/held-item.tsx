@@ -1,5 +1,5 @@
 import Image from "next/image";
-import styles from "./crystal.module.css";
+import styles from "./crystal.module.scss";
 
 /** A Pokémon's held item: the 32px item icon, then the item name in 16px. */
 export function HeldItem({ item }: { item: string }) {

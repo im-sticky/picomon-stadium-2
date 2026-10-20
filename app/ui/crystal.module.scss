@@ -1,4 +1,5 @@
 /* Shared Crystal-style pieces. Sizes follow docs/design/README.md (1 GB px = 3 CSS px). */
+@use "../styles/mixins" as *;
 
 /* Fixed 1200×900 screen, centred in the window. */
 .viewport {
@@ -17,10 +18,7 @@
 
 /* Thick outer line, a gap, then a thin inner line. */
 .frame {
-  border: 6px solid var(--ink);
-  border-radius: 6px;
-  box-shadow: inset 0 0 0 3px var(--bg), inset 0 0 0 6px var(--ink);
-  background: var(--bg);
+  @include crystal-frame;
 }
 
 .messageBox {
@@ -30,18 +28,18 @@
   box-sizing: border-box;
   min-height: 168px;
   padding: 30px 42px;
+
+  p {
+    font-size: 24px;
+    line-height: 48px;
+    /* Keep an empty second line's height. */
+    min-height: 48px;
+  }
 }
 
 .messageLines {
   flex: 1;
   min-width: 0;
-}
-
-.messageBox p {
-  font-size: 24px;
-  line-height: 48px;
-  /* Keep an empty second line's height. */
-  min-height: 48px;
 }
 
 .label {
@@ -61,20 +59,17 @@
   font-size: 24px;
   color: var(--ink);
   text-transform: uppercase;
-  background: var(--bg);
-  border: 6px solid var(--ink);
-  border-radius: 6px;
-  box-shadow: inset 0 0 0 3px var(--bg), inset 0 0 0 6px var(--ink);
+  @include crystal-frame;
   outline: none;
-}
 
-.field::placeholder {
-  color: var(--placeholder);
-}
+  &::placeholder {
+    color: var(--placeholder);
+  }
 
-.field:focus {
-  background: var(--hover);
-  box-shadow: inset 0 0 0 3px var(--hover), inset 0 0 0 6px var(--ink);
+  &:focus {
+    background: var(--hover);
+    @include double-line($gap: var(--hover));
+  }
 }
 
 .button {
@@ -92,23 +87,20 @@
   font: inherit;
   font-size: 24px;
   color: var(--ink);
-  background: var(--bg);
-  border: 6px solid var(--ink);
-  border-radius: 6px;
-  box-shadow: inset 0 0 0 3px var(--bg), inset 0 0 0 6px var(--ink);
+  @include crystal-frame;
   cursor: pointer;
-}
 
-.button:focus-visible {
-  outline: none;
-  background: var(--hover);
+  &:focus-visible {
+    outline: none;
+    background: var(--hover);
+  }
 }
 
 .primary,
 .primary:focus-visible {
   color: var(--bg);
   background: var(--ink);
-  box-shadow: inset 0 0 0 3px var(--ink), inset 0 0 0 6px var(--bg);
+  @include double-line($line: var(--bg), $gap: var(--ink));
 }
 
 .button:disabled {
@@ -125,15 +117,15 @@
   margin-top: -12px;
   visibility: hidden;
   fill: var(--ink);
-}
 
-.primary .cursor {
-  fill: var(--bg);
-}
+  .primary & {
+    fill: var(--bg);
+  }
 
-.button:enabled:hover .cursor,
-.button:enabled:focus-visible .cursor {
-  visibility: visible;
+  .button:enabled:hover &,
+  .button:enabled:focus-visible & {
+    visibility: visible;
+  }
 }
 
 /* Radio group: one 32px row of 24px pixel-square radios, 24px apart. */
@@ -154,27 +146,26 @@
   font-size: 16px;
   line-height: 24px;
   cursor: pointer;
-}
 
-.radio input {
-  appearance: none;
-  width: 24px;
-  height: 24px;
-  margin: 0;
-  box-sizing: border-box;
-  border: 3px solid var(--ink);
-  background: var(--bg);
-  cursor: pointer;
-}
+  input {
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    margin: 0;
+    box-sizing: border-box;
+    border: 3px solid var(--ink);
+    background: var(--bg);
+    cursor: pointer;
 
-.radio input:checked {
-  background: var(--ink);
-  box-shadow: inset 0 0 0 3px var(--bg);
-}
+    &:checked {
+      background: var(--ink);
+      box-shadow: inset 0 0 0 3px var(--bg);
+    }
 
-.radio input:focus-visible {
-  outline: 3px solid var(--ink);
-  outline-offset: 3px;
+    &:focus-visible {
+      @include focus-ring;
+    }
+  }
 }
 
 .srOnly {
@@ -198,9 +189,7 @@
   line-height: 28px;
   color: var(--bg);
   text-align: center;
-  clip-path: polygon(4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px, 100% calc(100% - 4px),
-    calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 4px),
-    0 calc(100% - 4px), 0 4px, 4px 4px);
+  @include pixel-notch(4px);
 }
 
 .hpBar {
@@ -210,9 +199,7 @@
   box-sizing: border-box;
   padding: 3px 3px 3px 0;
   background: var(--ink);
-  clip-path: polygon(3px 0, calc(100% - 3px) 0, calc(100% - 3px) 3px, 100% 3px, 100% calc(100% - 3px),
-    calc(100% - 3px) calc(100% - 3px), calc(100% - 3px) 100%, 3px 100%, 3px calc(100% - 3px),
-    0 calc(100% - 3px), 0 3px, 3px 3px);
+  @include pixel-notch(3px);
 }
 
 .hpLabel {
@@ -227,6 +214,7 @@
   height: 12px;
   overflow: hidden;
   background: var(--bg);
+  /* Notched on the right only: the left edge butts against the HP label. */
   clip-path: polygon(0 0, calc(100% - 3px) 0, calc(100% - 3px) 3px, 100% 3px, 100% calc(100% - 3px),
     calc(100% - 3px) calc(100% - 3px), calc(100% - 3px) 100%, 0 100%);
 }
@@ -238,21 +226,24 @@
 
 /* Sprites: whole-number scales, pixelated. */
 .pixel {
-  display: block;
-  image-rendering: pixelated;
+  @include pixelated;
 }
 
-/* Shows the top frame of a two-frame icon. */
+/* Shows one frame of a two-frame icon at a time. */
 .icon {
   display: block;
   flex: none;
   overflow: hidden;
-}
 
-/* The sheet holds two stacked frames: show each for 200ms. */
-.icon img {
-  display: block;
-  animation: spriteFrames 400ms steps(2) infinite;
+  /* The sheet holds two stacked frames: show each for 200ms. */
+  img {
+    display: block;
+    animation: spriteFrames 400ms steps(2) infinite;
+
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+  }
 }
 
 @keyframes spriteFrames {
@@ -261,12 +252,6 @@
   }
   to {
     transform: translateY(-100%);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .icon img {
-    animation: none;
   }
 }
 
@@ -281,15 +266,14 @@
   min-width: 0;
   overflow-y: auto;
   scrollbar-width: none;
-}
 
-.scrollBox::-webkit-scrollbar {
-  display: none;
-}
+  &::-webkit-scrollbar {
+    display: none;
+  }
 
-.scrollBox:focus-visible {
-  outline: 3px solid var(--ink);
-  outline-offset: 3px;
+  &:focus-visible {
+    @include focus-ring;
+  }
 }
 
 .scrollBar {

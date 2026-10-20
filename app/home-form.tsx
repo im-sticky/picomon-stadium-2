@@ -10,7 +10,7 @@ import { Field, SectionLabel } from "./ui/field";
 import { Frame } from "./ui/frame";
 import { MessageBox, type Message } from "./ui/message-box";
 import { RadioGroup } from "./ui/radio-group";
-import styles from "./home.module.css";
+import styles from "./home.module.scss";
 
 const SIZE_OPTIONS = BATTLE_SIZES.map((n) => ({ value: n, label: `${n}V${n}` }));
 

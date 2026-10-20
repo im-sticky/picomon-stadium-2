@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import styles from "./crystal.module.css";
+import styles from "./crystal.module.scss";
 
 /** The fixed 1200×900 screen, centred in the window. `className` sets its layout. */
 export function Stage({ className, children }: { className?: string; children: ReactNode }) {

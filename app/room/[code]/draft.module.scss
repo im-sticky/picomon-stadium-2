@@ -1,4 +1,5 @@
 /* Draft (boards 2a/2c/2e) and Detail (2b/2f). Sizes follow docs/design/README.md. */
+@use "../../styles/mixins" as *;
 
 .draft {
   display: flex;
@@ -14,8 +15,7 @@
 }
 
 .pixel {
-  display: block;
-  image-rendering: pixelated;
+  @include pixelated;
 }
 
 .line {
@@ -54,9 +54,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  @include bare-list;
 }
 
 .slot {
@@ -74,12 +72,12 @@
   border: 0;
   border-radius: 4px;
   cursor: pointer;
-}
 
-.slotButton:hover,
-.slotButton:focus-visible {
-  outline: none;
-  background: var(--hover);
+  &:hover,
+  &:focus-visible {
+    outline: none;
+    background: var(--hover);
+  }
 }
 
 .emptySlot {
@@ -102,9 +100,7 @@
   display: grid;
   grid-template-columns: repeat(9, minmax(0, 1fr));
   justify-items: center;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  @include bare-list;
 }
 
 .cell {
@@ -114,10 +110,7 @@
   width: 108px;
   height: 108px;
   box-sizing: border-box;
-  padding: 0;
-  font: inherit;
-  color: inherit;
-  background: none;
+  @include bare-button;
   border: 6px solid transparent;
   border-radius: 6px;
 }
@@ -198,9 +191,7 @@ button.cell:focus-visible,
   grid-template-columns: repeat(2, minmax(0, 1fr));
   column-gap: 36px;
   row-gap: 16px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  @include bare-list;
 }
 
 .infoMove {
@@ -305,22 +296,20 @@ button.cell:focus-visible,
   flex-direction: column;
   width: 100%;
   box-sizing: border-box;
+  @include bare-button;
   padding: 2px 12px;
-  font: inherit;
-  color: inherit;
   text-align: left;
-  background: none;
   border: 0;
   border-radius: 6px;
   cursor: pointer;
-}
 
-.move:focus-visible {
-  outline: 3px solid var(--ink);
-}
+  &:focus-visible {
+    outline: 3px solid var(--ink);
+  }
 
-.move.on {
-  background: var(--hover);
+  &.on {
+    background: var(--hover);
+  }
 }
 
 .stats {
@@ -351,14 +340,11 @@ button.cell:focus-visible,
   background: var(--hover);
   border: 0;
   cursor: pointer;
-  clip-path: polygon(4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px, 100% calc(100% - 4px),
-    calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 4px),
-    0 calc(100% - 4px), 0 4px, 4px 4px);
-}
+  @include pixel-notch(4px);
 
-.seg:focus-visible {
-  outline: 3px solid var(--ink);
-  outline-offset: 2px;
+  &:focus-visible {
+    @include focus-ring(2px);
+  }
 }
 
 .segOn {
@@ -402,10 +388,10 @@ button.cell:focus-visible,
   height: 12px;
   overflow: hidden;
   background: var(--bg);
-}
 
-.bar > div {
-  height: 100%;
+  > div {
+    height: 100%;
+  }
 }
 
 .total {

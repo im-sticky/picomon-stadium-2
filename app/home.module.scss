@@ -1,3 +1,5 @@
+@use "./styles/mixins" as *;
+
 .stage {
   position: relative;
   display: flex;
@@ -17,26 +19,25 @@
   font-size: 8px;
   line-height: 14px;
   text-align: center;
-}
 
-.credits a {
-  color: inherit;
+  a {
+    color: inherit;
+  }
 }
 
 .title {
   display: flex;
   align-items: center;
   gap: 24px;
-}
 
-.title h1 {
-  font-size: 40px;
-  line-height: 48px;
+  h1 {
+    font-size: 40px;
+    line-height: 48px;
+  }
 }
 
 .pokeball {
-  display: block;
-  image-rendering: pixelated;
+  @include pixelated;
 }
 
 .form {

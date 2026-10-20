@@ -1,4 +1,4 @@
-import styles from "./crystal.module.css";
+import styles from "./crystal.module.scss";
 
 /** Crystal party-screen HP bar: the "HP" label, then a track filled to value/max. */
 export function HpBar({ value, max, className }: { value: number; max: number; className?: string }) {

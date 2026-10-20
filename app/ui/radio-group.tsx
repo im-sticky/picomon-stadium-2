@@ -1,4 +1,4 @@
-import styles from "./crystal.module.css";
+import styles from "./crystal.module.scss";
 
 export type RadioOption<T> = { value: T; label: string };
 

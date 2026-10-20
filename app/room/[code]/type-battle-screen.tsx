@@ -7,7 +7,7 @@ import { Button } from "@/app/ui/button";
 import { MessageBox, type Message } from "@/app/ui/message-box";
 import { Stage } from "@/app/ui/stage";
 import type { RoomAction } from "./room-view";
-import styles from "./room.module.css";
+import styles from "./room.module.scss";
 
 const CHOOSE: Message = ["Choose a type.", "Winner chooses the draft order."];
 const FAILED: Message = ["Something went wrong.", "Try again."];

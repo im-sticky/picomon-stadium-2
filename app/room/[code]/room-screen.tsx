@@ -9,7 +9,7 @@ import { MessageBox, type Message } from "@/app/ui/message-box";
 import { Stage } from "@/app/ui/stage";
 import { VisuallyHidden } from "@/app/ui/visually-hidden";
 import type { RoomAction } from "./room-view";
-import styles from "./room.module.css";
+import styles from "./room.module.scss";
 
 const WAITING: Message = ["Send this code to a friend.", "Waiting for PLAYER 2..."];
 const FULL_HOST: Message = ["Both players connected!", "Ready to battle?"];

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Press_Start_2P } from "next/font/google";
-import "./globals.css";
+import "./globals.scss";
 
 const pressStart = Press_Start_2P({
   weight: "400",

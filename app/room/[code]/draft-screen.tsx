@@ -15,7 +15,7 @@ import { Stage } from "@/app/ui/stage";
 import { TypeBadge } from "@/app/ui/type-badge";
 import { DetailScreen } from "./detail-screen";
 import type { RoomAction } from "./room-view";
-import styles from "./draft.module.css";
+import styles from "./draft.module.scss";
 
 const PROMPT: Message = ["Hover a POKéMON to see its moves.", "Click one to see its details."];
 const FAILED: Message = ["Something went wrong.", "Try again."];

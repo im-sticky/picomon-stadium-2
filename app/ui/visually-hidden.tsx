@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import styles from "./crystal.module.css";
+import styles from "./crystal.module.scss";
 
 /** Text for screen readers only. */
 export function VisuallyHidden({ children }: { children: ReactNode }) {

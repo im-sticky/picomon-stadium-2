@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes } from "react";
-import styles from "./crystal.module.css";
+import styles from "./crystal.module.scss";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { primary?: boolean };
 

@@ -1,5 +1,5 @@
 import type { InputHTMLAttributes, ReactNode } from "react";
-import styles from "./crystal.module.css";
+import styles from "./crystal.module.scss";
 
 /** Section label (NAME, ROOM CODE, PLAYERS…): 16px uppercase, secondary grey. */
 export function SectionLabel({ htmlFor, children }: { htmlFor?: string; children: ReactNode }) {

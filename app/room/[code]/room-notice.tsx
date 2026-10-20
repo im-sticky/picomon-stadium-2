@@ -1,6 +1,6 @@
 import { MessageBox, type Message } from "@/app/ui/message-box";
 import { Stage } from "@/app/ui/stage";
-import styles from "./room.module.css";
+import styles from "./room.module.scss";
 
 export const LOADING: Message = ["Loading...", ""];
 export const LIVE_FAILED: Message = ["Live updates unavailable.", "Refresh the page."];

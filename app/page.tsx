@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Image from "next/image";
 import { Stage } from "./ui/stage";
 import { HomeForm } from "./home-form";
-import styles from "./home.module.css";
+import styles from "./home.module.scss";
 
 async function HomeContent({
   searchParams,

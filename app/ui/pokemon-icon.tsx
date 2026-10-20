@@ -1,5 +1,5 @@
 import Image from "next/image";
-import styles from "./crystal.module.css";
+import styles from "./crystal.module.scss";
 
 /**
  * A Pokémon icon at `size` px. The sprite files are 32×64 with two stacked

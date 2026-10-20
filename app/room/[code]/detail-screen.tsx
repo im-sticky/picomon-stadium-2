@@ -10,7 +10,7 @@ import { HpBar } from "@/app/ui/hp-bar";
 import { PokemonIcon } from "@/app/ui/pokemon-icon";
 import { Stage } from "@/app/ui/stage";
 import { TypeBadge } from "@/app/ui/type-badge";
-import styles from "./draft.module.css";
+import styles from "./draft.module.scss";
 
 const LEVEL = 50;
 const STATS: { key: StatKey; base: string; calc: string }[] = [

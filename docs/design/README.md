@@ -33,7 +33,7 @@ Home and the Lobby are built (`app/page.tsx`, `app/home-form.tsx`,
 `app/room/[code]/`). Reuse their shared pieces for new screens rather than
 restyling from scratch.
 
-`app/ui/`, styled by `app/ui/crystal.module.css`:
+`app/ui/`, styled by `app/ui/crystal.module.scss`:
 
 | Component | Use |
 |---|---|
@@ -44,9 +44,22 @@ restyling from scratch.
 | `Field`, `SectionLabel` | Framed text input, and the 16px grey section label. `SectionLabel` with `htmlFor` renders a real `<label>`. |
 | `VisuallyHidden` | Text for screen readers only (e.g. the room code, whose letter cells are `aria-hidden`). |
 
-The colours are CSS variables in `app/globals.css` (`--bg`, `--ink`, `--text-2`,
+The colours are CSS variables in `app/globals.scss` (`--bg`, `--ink`, `--text-2`,
 `--placeholder`, `--hover`, `--p1`, `--p2`). Press Start 2P is loaded with
 `next/font/google` in `app/layout.tsx`.
+
+Styles are SCSS (`*.module.scss` for components), so rules can be nested. Shared
+building blocks live in `app/styles/_mixins.scss`; pull them in with
+`@use "<relative path>/styles/mixins" as *;`:
+
+| Mixin | Use |
+|---|---|
+| `crystal-frame` | The full Crystal frame: 6px border plus the inner double line. |
+| `double-line($line, $gap)` | Just the inner double line (e.g. a selected option, a focused field). |
+| `pixel-notch($n)` | Cuts an `$n` pixel block from each corner (type badges 4px, HP bar 3px). |
+| `pixelated` | `display: block` and pixelated scaling for sprites. |
+| `bare-list` / `bare-button` | Strip a list's or button's default spacing and styling. |
+| `focus-ring($offset)` | The 3px ink keyboard-focus outline. |
 
 Gotchas:
 - **CSS module order isn't guaranteed.** To override a shared class from a screen's

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Frame } from "./frame";
-import styles from "./crystal.module.css";
+import styles from "./crystal.module.scss";
 
 /** Two lines of prompt or error text, Crystal style. */
 export type Message = readonly [string, string];

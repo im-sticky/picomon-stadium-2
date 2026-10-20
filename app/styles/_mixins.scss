@@ -1,0 +1,52 @@
+// Shared Crystal-style building blocks. `@use` this from any stylesheet:
+//   @use "../styles/mixins" as *;   (path relative to the stylesheet)
+
+// The double frame: a thick outer line, a gap, then a thin inner line.
+// `$gap` is the colour between the lines (the fill colour, or the hover colour on focus).
+@mixin double-line($line: var(--ink), $gap: var(--bg)) {
+  box-shadow: inset 0 0 0 3px $gap, inset 0 0 0 6px $line;
+}
+
+// A full Crystal frame: 6px border plus the inner double line.
+@mixin crystal-frame($line: var(--ink), $fill: var(--bg)) {
+  border: 6px solid $line;
+  border-radius: 6px;
+  background: $fill;
+  @include double-line($line, $fill);
+}
+
+// Pixel-notched corners: one square block of `$n` cut from each corner.
+@mixin pixel-notch($n) {
+  clip-path: polygon(
+    $n 0, calc(100% - #{$n}) 0, calc(100% - #{$n}) $n, 100% $n, 100% calc(100% - #{$n}),
+    calc(100% - #{$n}) calc(100% - #{$n}), calc(100% - #{$n}) 100%, $n 100%, $n calc(100% - #{$n}),
+    0 calc(100% - #{$n}), 0 $n, $n $n
+  );
+}
+
+// Sprites: whole-number scales, never smoothed.
+@mixin pixelated {
+  display: block;
+  image-rendering: pixelated;
+}
+
+// A <ul>/<ol> with no bullets or spacing.
+@mixin bare-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+// A <button> that looks like plain text until styled.
+@mixin bare-button {
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  background: none;
+}
+
+// The 3px ink focus ring used on non-frame controls.
+@mixin focus-ring($offset: 3px) {
+  outline: 3px solid var(--ink);
+  outline-offset: $offset;
+}

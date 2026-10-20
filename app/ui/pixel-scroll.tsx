@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
-import styles from "./crystal.module.css";
+import styles from "./crystal.module.scss";
 
 const BUTTON = 36;
 const MIN_THUMB = 36;

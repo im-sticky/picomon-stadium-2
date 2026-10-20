@@ -1,4 +1,4 @@
-import styles from "./crystal.module.css";
+import styles from "./crystal.module.scss";
 
 /** The agreed type colours (docs/design/README.md). "???" is for unknown or typeless. */
 export const TYPE_COLOURS: Record<string, string> = {
