@@ -135,7 +135,13 @@ export function TypeBattleScreen({
         />
         <div className={styles.centre}>
           {done && winner !== null && <p>{name(winner)}</p>}
-          <p>{done ? (winner !== null ? "WINS!" : "DRAW!") : yourPick ? ". . ." : "VS"}</p>
+          {done ? (
+            <p>{winner !== null ? "WINS!" : "DRAW!"}</p>
+          ) : yourPick ? (
+            <p>. . .</p>
+          ) : (
+            <p className={styles.vs}>VS</p>
+          )}
         </div>
         <TypeColumn
           side="right"

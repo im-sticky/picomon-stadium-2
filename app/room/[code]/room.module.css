@@ -201,6 +201,12 @@ button.option:focus-visible {
   text-align: center;
 }
 
+/* The big VS matches the one on the battle order screen. */
+.centre .vs {
+  font-size: 64px;
+  line-height: 64px;
+}
+
 div.battleMessage {
   padding: 30px;
   text-align: center;
