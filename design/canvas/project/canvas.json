@@ -8,23 +8,15 @@
       "title": "2b · Pokémon detail",
       "w": 1200,
       "x": 0,
-      "y": 2409
-    },
-    "DetailMaster.dc.html": {
-      "h": 900,
-      "is_interactive": true,
-      "title": "2d · Detail with Master Ball",
-      "w": 1200,
-      "x": 1280,
-      "y": 2396
+      "y": 2422
     },
     "DetailRented.dc.html": {
       "h": 900,
       "is_interactive": true,
       "title": "2f · Detail, view only",
       "w": 1200,
-      "x": 2560,
-      "y": 2409
+      "x": 1280,
+      "y": 2422
     },
     "Draft.dc.html": {
       "h": 900,
@@ -95,6 +87,22 @@
       "w": 1200,
       "x": 1280,
       "y": 0
+    },
+    "TeamOrder.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "3a · Choose your order",
+      "w": 1200,
+      "x": 0,
+      "y": 3760
+    },
+    "TeamOrderLocked.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "3b · Locked in",
+      "w": 1200,
+      "x": 1280,
+      "y": 3760
     }
   },
   "createdOnFiles": {
@@ -129,6 +137,14 @@
       "w": 240,
       "x": 0,
       "y": 1020
+    },
+    "row3": {
+      "kind": "title1",
+      "maxW": 2480,
+      "text": "3 · Battle order",
+      "w": 240,
+      "x": 0,
+      "y": 3460
     }
   },
   "order": [
@@ -141,9 +157,10 @@
     "Draft.dc.html",
     "Detail.dc.html",
     "DraftRented.dc.html",
-    "DetailMaster.dc.html",
     "DraftDone.dc.html",
-    "DetailRented.dc.html"
+    "DetailRented.dc.html",
+    "TeamOrder.dc.html",
+    "TeamOrderLocked.dc.html"
   ],
   "pages": [],
   "title": "Picomon Stadium Layout"

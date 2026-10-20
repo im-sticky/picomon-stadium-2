@@ -39,6 +39,8 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 .btn:focus-visible{outline:none;background:#E8E8E8}
 .btn.primary{background:#181818;color:#F8F8F8;box-shadow:inset 0 0 0 3px #181818,inset 0 0 0 6px #F8F8F8}
 .btn.primary path{fill:#F8F8F8}
+a.btn{color:inherit;text-decoration:none}
+a.btn.primary{color:#F8F8F8}
 .tag{display:inline-block;width:148px;height:28px;box-sizing:border-box;text-align:center;font-size:16px;line-height:28px;color:#F8F8F8;clip-path:polygon(4px 0,calc(100% - 4px) 0,calc(100% - 4px) 4px,100% 4px,100% calc(100% - 4px),calc(100% - 4px) calc(100% - 4px),calc(100% - 4px) 100%,4px 100%,4px calc(100% - 4px),0 calc(100% - 4px),0 4px,4px 4px)}
 </style>
 </helmet>
@@ -77,7 +79,7 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
   <div style="display: flex; gap: 12px; height: 432px">
   <div class="scroller" tabindex="0" ref="{{setScroller}}" onScroll="{{onScroll}}" aria-label="Pokémon available to rent, scrollable" style="height: 432px; flex: 1; min-width: 0; overflow-y: auto">
   <div role="list" aria-label="Pokémon available to rent" style="display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); justify-items: center; gap: 0px">
-    <sc-for list="{{cells}}" as="c" hint-placeholder-count="40">
+    <sc-for list="{{cells}}" as="c" hint-placeholder-count="41">
       <div role="listitem">
         <sc-if value="{{c.free}}" hint-placeholder-val="{{ true }}">
           <a class="cell {{c.on}}" href="Detail.dc.html" onMouseEnter="{{c.hover}}" onFocus="{{c.hover}}" aria-label="{{c.aria}}">
@@ -113,24 +115,39 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
   <p style="font-size: 16px; line-height: 24px; text-align: center; color: #585858; visibility: {{hintVis}}">Hover for moves · Click for details</p>
   <div class="frame" style="flex-grow: 1; padding: 18px 36px; display: flex; flex-direction: column">
     <sc-if value="{{hasInfo}}" hint-placeholder-val="{{ true }}">
-      <div style="display: flex; align-items: center; justify-content: space-between; height: 48px">
-        <p style="font-size: 24px; line-height: 48px">{{info.name}}</p>
-        <div style="display: flex; gap: 12px">
-          <sc-for list="{{info.types}}" as="t" hint-placeholder-count="2">
-            <span class="tag" style="background: {{t.color}}">{{t.label}}</span>
-          </sc-for>
+      <div style="flex: 1; display: flex; align-items: center; gap: 48px">
+        <div style="width: 308px; flex: none; display: flex; flex-direction: column; gap: 8px">
+          <div style="display: flex; align-items: center; gap: 12px; height: 32px">
+            <img class="pix" src="{{info.ballSrc}}" alt="" style="width: 32px; height: 32px">
+            <p style="font-size: 24px; line-height: 32px">{{info.name}}</p>
+          </div>
+          <div style="display: flex; gap: 12px">
+            <sc-for list="{{info.types}}" as="t" hint-placeholder-count="2">
+              <span class="tag" style="background: {{t.color}}">{{t.label}}</span>
+            </sc-for>
+          </div>
+          <p aria-label="Ability" style="font-size: 16px; line-height: 24px">{{info.ability}}</p>
+          <div aria-label="Held item" style="display: flex; align-items: center; gap: 12px; height: 32px">
+            <img class="pix" src="/_blob/304d19156319bb03d1ef9b08ad02f23e" alt="Held item" style="width: 32px; height: 32px">
+            <span style="font-size: 16px">{{info.item}}</span>
+          </div>
+        </div>
+        <div style="flex: 1; min-width: 0">
+          <sc-if value="{{info.isTaken}}" hint-placeholder-val="{{ false }}">
+            <p style="font-size: 24px; line-height: 48px">Rented by {{info.takenBy}}.</p>
+          </sc-if>
+          <sc-if value="{{info.isFree}}" hint-placeholder-val="{{ true }}">
+            <div aria-label="Moves" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 36px; row-gap: 16px">
+              <sc-for list="{{info.moves}}" as="m" hint-placeholder-count="4">
+                <div style="display: flex; flex-direction: column">
+                  <span style="font-size: 24px; line-height: 32px">{{m.name}}</span>
+                  <span style="font-size: 16px; line-height: 24px; text-align: right">PP {{m.pp}}/{{m.pp}}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
         </div>
       </div>
-      <sc-if value="{{info.isTaken}}" hint-placeholder-val="{{ false }}">
-        <p style="font-size: 24px; line-height: 48px">Rented by {{info.takenBy}}.</p>
-      </sc-if>
-      <sc-if value="{{info.isFree}}" hint-placeholder-val="{{ true }}">
-        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 48px">
-          <sc-for list="{{info.moves}}" as="m" hint-placeholder-count="4">
-            <p style="font-size: 24px; line-height: 48px">{{m}}</p>
-          </sc-for>
-        </div>
-      </sc-if>
     </sc-if>
     <sc-if value="{{noInfo}}" hint-placeholder-val="{{ false }}">
       <p style="font-size: 24px; line-height: 48px">{{prompt1}}</p>
@@ -138,10 +155,10 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
     </sc-if>
     <sc-if value="{{done}}" hint-placeholder-val="{{ false }}">
       <div style="flex: 1; display: flex; align-items: center; justify-content: center">
-        <button type="button" class="btn primary" style="width: 384px">
+        <a class="btn primary" href="TeamOrder.dc.html" style="width: 384px">
           <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
           START BATTLE
-        </button>
+        </a>
       </div>
     </sc-if>
   </div>
@@ -239,23 +256,30 @@ class Component extends DCLogic {
       ['STEELIX', 'STEEL GROUND', '33edfe3e3a41ce86f9743189bc6e0f23'],
       ['POLITOED', 'WATER', '5b5da011ebe735480619db9be738fddf'],
       ['MANTINE', 'WATER FLYING', '4895dd543ff02fa462a8b9bedbf4a551'],
-      ['MILTANK', 'NORMAL', 'b90aa033e69727c1872aecaa302dd7bb']
+      ['MILTANK', 'NORMAL', 'b90aa033e69727c1872aecaa302dd7bb'],
+      ['ZAPDOS', 'ELECTRIC FLYING', '3caaf4f1640a8b9d31be5b3059e23bf2']
     ];
     const IDS = POOL.map((p) => p[2]);
+    // Sample: pool numbers that get a Master Ball (Dragonite, Tyranitar, Zapdos)
+    const MASTER = [19, 35, 41];
     const TYPE = {
-      NORMAL: '#6E6E4E', FIRE: '#B8461A', WATER: '#2F68C0', GRASS: '#2F7D3F', ELECTRIC: '#8C6E00',
-      ICE: '#2A7F7F', FIGHTING: '#A02820', POISON: '#8A3A8A', GROUND: '#80622A', FLYING: '#6050B0',
-      PSYCHIC: '#B82E62', BUG: '#5F6E10', ROCK: '#756628', GHOST: '#56468A', DRAGON: '#4A30B8',
-      DARK: '#4A3A30', STEEL: '#5E5E7A'
+      BUG: '#94bc4a', DARK: '#736c75', DRAGON: '#6a7baf', ELECTRIC: '#e5c531', FAIRY: '#e397d1',
+      FIGHTING: '#cb5f48', FIRE: '#ea7a3c', FLYING: '#7da6de', GHOST: '#846ab6', GRASS: '#71c558',
+      GROUND: '#cc9f4f', ICE: '#70cbd4', NORMAL: '#aab09f', POISON: '#b468b7', PSYCHIC: '#e5709b',
+      ROCK: '#b2a061', STEEL: '#89a1b0', WATER: '#539ae2', '???': '#81a596'
     };
+    // [name, PP] per move; only Venusaur has real data so far
     const MOVES = {
-      1: ['SLUDGE BOMB', 'ENERGY BALL', 'SLEEP POWDER', 'LEECH SEED']
+      1: [['SLUDGE BOMB', 10], ['ENERGY BALL', 10], ['SLEEP POWDER', 15], ['LEECH SEED', 10]]
     };
+    const ABILITY = { 1: 'Overgrow' };
     const pad = (n) => (n < 10 ? '0' : '') + n;
     const dex = (n) => ({
       name: POOL[n - 1][0],
       types: POOL[n - 1][1].split(' '),
-      moves: MOVES[n] || ['[MOVE]', '[MOVE]', '[MOVE]', '[MOVE]']
+      ability: ABILITY[n] || '[ABILITY]',
+      moves: (MOVES[n] || [['[MOVE]', '--'], ['[MOVE]', '--'], ['[MOVE]', '--'], ['[MOVE]', '--']])
+        .map(([name, pp]) => ({ name, pp }))
     });
     const parse = (s) => String(s || '').split(',').map((x) => parseInt(x, 10)).filter((x) => x > 0 && x <= IDS.length);
     const p1 = parse(this.props.p1picks);
@@ -305,6 +329,13 @@ class Component extends DCLogic {
         name: d.name,
         types: d.types.map((t) => ({ label: t, color: TYPE[t] })),
         moves: d.moves,
+        ability: d.ability,
+        // Every Pokémon holds an item; placeholder name
+        item: 'Rocky Helmet',
+        // Certain Pokémon show a Master Ball instead of a Poké Ball
+        ballSrc: MASTER.includes(h)
+          ? '/_blob/1232bfea6d5fbe714ce6f5a04bb1772c'
+          : '/_blob/42adad1d7cf5061d3889e683f8adb86c',
         isTaken: !!by,
         isFree: !by,
         takenBy: NAMES[by]

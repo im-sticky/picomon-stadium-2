@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Choose your Pokémon order</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.gb{font-family:'Press Start 2P',monospace;color:#181818;background:#F8F8F8;-webkit-font-smoothing:none}
+.gb p,.gb h1,.gb h2{margin:0;font-weight:400}
+.frame{border:6px solid #181818;border-radius:6px;box-shadow:inset 0 0 0 3px #F8F8F8,inset 0 0 0 6px #181818;background:#F8F8F8}
+.pix{image-rendering:pixelated;display:block}
+.spr{overflow:hidden;flex:none}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+button:disabled{cursor:default}
+.slot{width:64px;height:64px;display:flex;align-items:center;justify-content:center}
+.p2ball{filter:hue-rotate(235deg)}
+.pick{display:flex;align-items:center;gap:18px;height:66px;width:100%;box-sizing:border-box;padding:0 12px;text-align:left;border-radius:6px;font-size:24px}
+.pick:not(:disabled):hover,.pick:focus-visible{background:#E8E8E8;outline:none}
+.pick:disabled{opacity:.3}
+.opp{display:flex;align-items:center;justify-content:flex-end;gap:18px;height:66px;padding:0 12px;font-size:24px}
+</style>
+</helmet>
+<div class="gb" style="width: 1200px; height: 900px; box-sizing: border-box; padding: 36px 72px; display: flex; flex-direction: column; gap: 24px">
+  <h1 style="font-size: 32px; line-height: 48px; text-align: center">CHOOSE YOUR POKéMON ORDER</h1>
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-grow: 1">
+    <section aria-label="{{hostName}}" style="width: 480px; display: flex; flex-direction: column; gap: 12px">
+      <h2 style="font-size: 24px; line-height: 48px; padding-left: 12px">{{hostName}} <span style="font-size: 16px; color: #C03028">YOU</span></h2>
+      <div aria-label="Your battle order" style="display: flex; gap: 8px; padding-left: 12px; margin-bottom: 6px">
+        <sc-for list="{{mySlots}}" as="s" hint-placeholder-count="6">
+          <div class="slot">
+            <sc-if value="{{s.filled}}" hint-placeholder-val="{{ false }}">
+              <div class="spr" style="width: 64px; height: 64px"><img class="pix" src="{{s.src}}" alt="{{s.name}}" style="width: 64px; height: 128px"></div>
+            </sc-if>
+            <sc-if value="{{s.empty}}" hint-placeholder-val="{{ true }}">
+              <img class="pix" src="/_blob/42adad1d7cf5061d3889e683f8adb86c" alt="Empty slot" style="width: 32px; height: 32px; opacity: .2">
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <sc-for list="{{myTeam}}" as="m" hint-placeholder-count="6">
+          <button type="button" class="pick" onClick="{{m.pick}}" disabled="{{m.disabled}}" aria-label="{{m.aria}}">
+            <div class="spr" style="width: 64px; height: 64px"><img class="pix" src="{{m.src}}" alt="" style="width: 64px; height: 128px"></div>
+            <span>{{m.name}}</span>
+          </button>
+        </sc-for>
+      </div>
+    </section>
+    <section aria-label="{{guestName}}" style="width: 480px; display: flex; flex-direction: column; align-items: flex-end; gap: 12px">
+      <h2 style="font-size: 24px; line-height: 48px; padding-right: 12px">{{guestName}}</h2>
+      <div aria-label="Opponent's battle order" style="display: flex; gap: 8px; padding-right: 12px; margin-bottom: 6px">
+        <sc-for list="{{oppSlots}}" as="s" hint-placeholder-count="6">
+          <div class="slot">
+            <img class="pix p2ball" src="/_blob/42adad1d7cf5061d3889e683f8adb86c" alt="{{s.alt}}" style="width: 32px; height: 32px; opacity: {{s.opacity}}">
+          </div>
+        </sc-for>
+      </div>
+      <div style="align-self: stretch; display: flex; flex-direction: column; gap: 4px">
+        <sc-for list="{{oppTeam}}" as="m" hint-placeholder-count="6">
+          <div class="opp">
+            <span>{{m.name}}</span>
+            <div class="spr" style="width: 64px; height: 64px"><img class="pix" src="{{m.src}}" alt="" style="width: 64px; height: 128px"></div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </div>
+  <div class="frame" role="status" style="padding: 30px 42px; display: flex; flex-direction: column; justify-content: center; min-height: 168px; box-sizing: border-box">
+    <p style="font-size: 24px; line-height: 48px">{{msg1}}</p>
+    <p style="font-size: 24px; line-height: 48px">{{msg2}}</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"count":{"editor":"enum","options":["","3","4","6"],"default":""},"chosen":{"editor":"text","default":""},"oppFilled":{"editor":"int","min":0,"max":6,"default":2},"$preview":{"width":1200,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    // Indexes into your team, in the order they were picked
+    const start = String(props.chosen || '').split(',').map((x) => parseInt(x, 10)).filter((x) => x >= 0 && x < 6);
+    this.state = { chosen: start };
+  }
+  renderVals() {
+    // Player 1 is always the host; names come from the room
+    const NAMES = { 1: 'GOLD', 2: 'SILVER' };
+    // The teams drafted on board 2e
+    const MINE = [
+      ['VENUSAUR', '306822b5b874f91ba29da9143239f925'],
+      ['RAICHU', '12116b3c1ed02964fdf7c7c0ee361067'],
+      ['ARCANINE', 'b549b068a760cfac423e61bdb5d2cc64'],
+      ['GENGAR', 'f777e20e17c63332aea4dab6a5721cbb'],
+      ['DRAGONITE', '70fdd9aa41dfbf01ce9085c9ee344623'],
+      ['TYRANITAR', 'a0c6aad3e5c4a34d09bd20acb400ca99']
+    ];
+    const THEIRS = [
+      ['BLASTOISE', '17fbd00ba256194c1bb6229c837a8236'],
+      ['KINGDRA', '0595b79dd88b11df378d507e44c0937b'],
+      ['GYARADOS', 'db7415dad60d2c609f07bc348686093b'],
+      ['TYPHLOSION', '2ab5b35c6562ee9bc002398db8d93170'],
+      ['UMBREON', 'd9c40340fac330e0c4397407caca7eab'],
+      ['SKARMORY', '50b4118af0ef5eace503910fe0569056']
+    ];
+    // 3, 4 or 6 Pokémon go into battle: the host's choice on Home. A `count` prop
+    // overrides it; otherwise read what Home saved (prototype only, via localStorage)
+    let saved = null;
+    try { saved = parseInt(localStorage.getItem('picomon.battleSize'), 10); } catch (e) {}
+    const fromProp = parseInt(this.props.count, 10);
+    const count = [3, 4, 6].includes(fromProp) ? fromProp : [3, 4, 6].includes(saved) ? saved : 6;
+    const chosen = this.state.chosen.slice(0, count);
+    const locked = chosen.length >= count;
+    // Prototype only: in the app, each opponent pick fills one ball as it happens
+    const oppFilled = Math.min(count, Math.max(0, parseInt(this.props.oppFilled, 10) || 0));
+
+    const src = (id) => '/_blob/' + id;
+    const pick = (i) => {
+      if (locked || chosen.includes(i)) return;
+      this.setState({ chosen: chosen.concat(i) });
+    };
+
+    const mySlots = Array.from({ length: count }, (_, k) => {
+      const i = chosen[k];
+      return i != null
+        ? { filled: true, empty: false, src: src(MINE[i][1]), name: (k + 1) + '. ' + MINE[i][0] }
+        : { filled: false, empty: true };
+    });
+    const oppSlots = Array.from({ length: count }, (_, k) => ({
+      opacity: k < oppFilled ? 1 : 0.2,
+      alt: k < oppFilled ? 'Opponent pick ' + (k + 1) + ' chosen' : 'Empty slot'
+    }));
+
+    let msg1 = 'Choose the order of your team.';
+    let msg2 = '';
+    if (locked) {
+      msg1 = 'Locked in!';
+      msg2 = 'Waiting to start...';
+    }
+
+    return {
+      hostName: NAMES[1],
+      guestName: NAMES[2],
+      mySlots,
+      oppSlots,
+      myTeam: MINE.map(([name, id], i) => ({
+        name,
+        src: src(id),
+        disabled: locked || chosen.includes(i),
+        aria: 'Add ' + name + ' to your battle order',
+        pick: () => pick(i)
+      })),
+      oppTeam: THEIRS.map(([name, id]) => ({ name, src: src(id) })),
+      msg1,
+      msg2
+    };
+  }
+}
+</script>
+</body>
+</html>

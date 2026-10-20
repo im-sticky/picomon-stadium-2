@@ -45,15 +45,15 @@ a.btn{color:inherit;cursor:pointer;text-decoration:none}
   <div class="frame" style="flex-grow: 1; padding: 18px 36px; display: flex; flex-direction: column; gap: 18px">
     <div style="display: flex; align-items: center; gap: 24px">
       <div class="spr" style="width: 128px; height: 128px"><img class="pix" src="/_blob/306822b5b874f91ba29da9143239f925" alt="Venusaur" style="width: 128px; height: 256px"></div>
-      <div style="display: flex; flex-direction: column; gap: 12px">
-        
-        <div style="display: flex; align-items: center; gap: 12px">
-          <img class="pix" src="{{ballSrc}}" alt="" style="width: 32px; height: 32px">
-          <h2 style="font-size: 32px; line-height: 48px">VENUSAUR</h2>
-        </div>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <h2 style="font-size: 32px; line-height: 48px">VENUSAUR</h2>
         <div style="display: flex; gap: 12px">
-          <span class="tag" style="background: #2F7D3F">GRASS</span>
-          <span class="tag" style="background: #8A3A8A">POISON</span>
+          <span class="tag" style="background: #71c558">GRASS</span>
+          <span class="tag" style="background: #b468b7">POISON</span>
+        </div>
+        <div aria-label="Held item" style="display: flex; align-items: center; gap: 12px; height: 32px">
+          <img class="pix" src="/_blob/304d19156319bb03d1ef9b08ad02f23e" alt="Held item" style="width: 32px; height: 32px">
+          <span style="font-size: 16px">{{item}}</span>
         </div>
       </div>
       <section aria-label="Ability" style="margin-left: auto; width: 480px; display: flex; flex-direction: column; align-items: flex-start">
@@ -138,7 +138,7 @@ a.btn{color:inherit;cursor:pointer;text-decoration:none}
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"ball":{"editor":"enum","options":["poke","master"],"default":"poke"},"viewOnly":{"editor":"boolean","default":false},"rentedBy":{"editor":"text","default":"GOLD"},"$preview":{"width":1200,"height":900}}'>
+<script type="text/x-dc" data-dc-script data-props='{"viewOnly":{"editor":"boolean","default":false},"rentedBy":{"editor":"text","default":"GOLD"},"$preview":{"width":1200,"height":900}}'>
 class Component extends DCLogic {
   constructor(props) {
     super(props);
@@ -150,7 +150,7 @@ class Component extends DCLogic {
       SPECIAL: '/_blob/3ee4588b90c265212c90acc7ed0ffd95',
       STATUS: '/_blob/87ab199033fd3769fffdeae0ead39fa6'
     };
-    const TYPE = { POISON: '#8A3A8A', GRASS: '#2F7D3F' };
+    const TYPE = { POISON: '#b468b7', GRASS: '#71c558' };
     const MOVES = [
       { name: 'SLUDGE BOMB', type: 'POISON', cat: 'SPECIAL', power: '90', acc: '100', pp: '10', effect: 'May poison the target (30%).' },
       { name: 'ENERGY BALL', type: 'GRASS', cat: 'SPECIAL', power: '80', acc: '100', pp: '10', effect: 'May lower target SP.DEF (10%).' },
@@ -169,10 +169,8 @@ class Component extends DCLogic {
     return {
       title: viewOnly ? 'RENTED BY ' + String(this.props.rentedBy || 'GOLD').toUpperCase() : "GOLD'S CHOICE",
       canRent: !viewOnly,
-      // Certain Pokémon show a Master Ball next to their name instead
-      ballSrc: this.props.ball === 'master'
-        ? '/_blob/1232bfea6d5fbe714ce6f5a04bb1772c'
-        : '/_blob/42adad1d7cf5061d3889e683f8adb86c',
+      // Every Pokémon holds an item; placeholder name
+      item: 'Rocky Helmet',
       isBase: !isCalc,
       isCalc,
       segBase: isCalc ? '' : 'on',

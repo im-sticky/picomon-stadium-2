@@ -64,6 +64,7 @@ Gotchas:
 Home ──HOST──▶ Lobby (waiting) ──P2 joins──▶ Lobby (full) ──START BATTLE──▶
 Type select ──winner picks FIRST/SECOND──▶ Draft ──click a Pokémon──▶ Detail
 Detail ──RENT──▶ Draft (with the rental) · Detail ──BACK──▶ Draft
+Draft complete ──host clicks START BATTLE──▶ Battle order ──both locked in, 2s──▶ Battle
 Home ──JOIN──▶ Lobby (full)
 ```
 
@@ -78,9 +79,10 @@ Home ──JOIN──▶ Lobby (full)
 | 2a Draft | `Draft.dc.html` | Scrolling 9-column Pokémon grid, team slots, hover info box |
 | 2b Pokémon detail | `Detail.dc.html` | Sprite, types, ability, moves, stats, move box, RENT/BACK |
 | 2c Draft after rentals | `DraftRented.dc.html` | `Draft` with P1 and P2 rentals shown as pokéballs |
-| 2d Detail with Master Ball | `DetailMaster.dc.html` | `Detail` with `ball="master"` |
 | 2e Draft complete | `DraftDone.dc.html` | `Draft` with all 12 picks made: START BATTLE in the bottom box |
 | 2f Detail, view only | `DetailRented.dc.html` | `Detail` with `viewOnly` and `rentedBy="GOLD"`: opened from a team slot, BACK only |
+| 3a Choose your order | `TeamOrder.dc.html` | Both teams in columns, pick your battle order into the pokéball slots |
+| 3b Locked in | `TeamOrderLocked.dc.html` | `TeamOrder` with your full order chosen and the opponent 4 of 6 in |
 
 The `b`/`c`/`d` boards that import another file are the same screen in a different
 state, not separate screens.
@@ -99,6 +101,15 @@ sides (host on the left), the red/blue player colours and the snake order.
 - Room code field: 4 characters from `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (matches
   `lib/codes.ts`).
 - HOST (dark primary button) validates the name, then creates a room.
+- Battle size: three radio options under HOST: 3V3, 4V4 and 6V6 (6V6 selected
+  by default). They sit on one 32px row, 24px apart, grouped as "Battle size" for
+  screen readers.
+  - Each radio is a 24px pixel square with a 3px ink border. Checked fills it
+    with ink inside a 3px light inset.
+  - The host's choice sets how many Pokémon each player sends into battle, which
+    is the number of slots on the Battle order screen. It doesn't change the
+    draft: each player always drafts 6.
+  - The form's padding and gaps are 30/24px (not 36px) so the extra row fits.
 - JOIN (submit, so Enter joins) validates the name and code, then joins.
 - The message box at the bottom shows the hint or the error:
   - default: "Enter your name, then host a / room or join one with a code."
@@ -171,7 +182,22 @@ sides (host on the left), the red/blue player colours and the snake order.
     readers because the box scrolls natively.
 - Rented Pokémon become a 96px pokéball: red for P1, blue for P2. They can be hovered
   ("Rented by <NAME>.") but not opened.
-- Info box: name with type badges on the right, then four moves in two columns.
+- Info box: two columns, vertically centred, 48px apart.
+  - Left (308px, the width of two type badges), stacked 8px apart:
+    1. a 32px pokéball (`icon-pokeballball.png` at 2×) 12px left of the 24px
+       name. Certain Pokémon show a Master Ball (`icon-masterball.png`, same size
+       and place) instead; the design marks Dragonite, Tyranitar and Zapdos as
+       samples.
+    2. the type badges
+    3. the ability name (16px), e.g. "Overgrow"
+    4. the held item: 32px `icon-item.png` and the 16px item name, as on Detail
+  - Right (the rest of the width): the four moves in a 2×2 grid (36px column gap,
+    16px row gap). Each move shows its 24px name with `PP x/x` (16px)
+    right-aligned underneath, as on Detail.
+  - For a rented Pokémon, the right column shows "Rented by <NAME>." in place of
+    the moves. The left column stays the same.
+  - Heights: the left stack is 140px and the moves 128px, inside the box's 176px
+    inner height.
 - Snake order over 12 picks: `P1, P2, P2, P1, P1, P2, P2, P1, P1, P2, P2, P1`.
 - Draft complete (all 12 picks made): the title reads "DRAFT COMPLETE", and both
   team strips are full.
@@ -179,22 +205,47 @@ sides (host on the left), the red/blue player colours and the snake order.
     hovering no longer fills the info box.
   - The hint line is hidden but keeps its space.
   - The bottom box holds a single centred START BATTLE primary button (384×108)
-    instead of the info. The battle screen isn't designed yet, so the button
-    goes nowhere in the prototype.
+    instead of the info. The host clicks it to move both players to the battle
+    order screen.
+
+### Battle order (`TeamOrder.dc.html`)
+- Laid out like Type select: title "CHOOSE YOUR POKéMON ORDER", then two 480px
+  columns, your team (host) on the left and the opponent's on the right
+  (mirrored), and the message box at the bottom.
+- Each column is headed with the player's name (yours with the red YOU tag). Below
+  the name is a row of faded pokéball slots, like the draft's team strip (64px
+  slots, 32px `icon-pokeballball.png` at 20% opacity, 8px gaps). P2's balls are
+  tinted blue.
+- The number of slots is the battle size the host picked on Home: 3, 4 or 6. Each
+  player always drafted 6, so the list below always has 6 Pokémon and you pick
+  your first 3, 4 or 6 in order. A full row of 6 is 424px and fits the column
+  comfortably. In the prototype the board reads the host's Home choice (handed
+  over through `localStorage` key `picomon.battleSize`, since boards don't share
+  state); its `count` prop overrides that. The app keeps the size on the room.
+- Under the slots is that player's drafted team (all 6) as a vertical list: rows
+  66px tall with a 64px icon and the 24px name, 4px apart.
+- Your rows are buttons (light grey hover, no arrow). Clicking one puts its icon
+  in your next empty slot, and that row becomes disabled (30% opacity). The first
+  slot is the lead. The opponent's rows are display only.
+- Message box:
+  - while choosing: "Choose the order of your team." with a blank second
+    line
+  - once every slot is filled: "Locked in!" / "Waiting to start...", and all your
+    rows are disabled
+- Dev notes:
+  - When the opponent chooses a Pokémon, fill their next slot with the solid
+    (full-opacity) pokéball, never their Pokémon's sprite, so you can see their
+    progress but not their order.
+  - Once both players have locked in, the battle starts 2 seconds later.
 
 ### Detail (`Detail.dc.html`)
-- Top row: 128px sprite, then the name with a 32px pokéball (`icon-pokeballball.png`
-  at 2×, 12px gap) to its left, and the type badges below, left-aligned with the
-  ball (not indented to the name text). The ball is decorative only, because rented
-  Pokémon can't be opened. Certain Pokémon show a Master Ball (`icon-masterball.png`,
-  same size and place) instead. The design file's `ball` prop switches between the
-  two, and board 2d shows the Master Ball version.
+- Top row: 128px sprite, then the name with the type badges below it (no ball icon
+  here; that's on the draft info box).
 - Ability (top right): 480px wide, so its left edge lines up with the STATS column
   below. It has an "ABILITY" heading styled like MOVES/STATS, then the ability name
   (24px, 32px line height) and its description (16px, 24px line height).
-  - Widths are tight: sprite 128 + name block 364 (ball 44 + FERALIGATR, the longest
-    name, at 320) + ability 480 + two 24px gaps = 1020px, the frame's full inner
-    width.
+  - Widths: sprite 128 + name block 320 (FERALIGATR, the longest name) + ability
+    480 + two 24px gaps = 976px of the frame's 1020px inner width.
   - The top row is 128px tall, which fits a description of up to 2 lines (about 30
     characters per line). A longer description would make the row taller.
 - Moves (left): each row shows the name with `PP x/x` right-aligned underneath.
@@ -204,6 +255,15 @@ sides (host on the left), the red/blue player colours and the snake order.
     stats as label/value rows. Stat formula (same in Gen 3–6) at level 50, 31 IVs, 0 EVs, neutral
     nature: HP = ⌊(2B+31)·50/100⌋+60, others = ⌊(2B+31)·50/100⌋+5.
   - BASE: label, value and a coloured bar (bar length = value / 160), plus a total.
+- Held item (top row, under the type badges): `icon-item.png` at 2× (32px) with
+  the item name in 16px, 12px apart, on a 32px row. The name block's rows are 8px
+  apart so name, badges and item fit the 128px sprite height.
+  - The held item is per-Pokémon data. Each Pokémon in the pool has its own held
+    item, and the name shown is that Pokémon's item. Items don't have to be unique;
+    several Pokémon can hold the same one. Every Pokémon has an item, so the row is
+    always shown.
+  - The designs show "Rocky Helmet" for every Pokémon only as a placeholder. Don't
+    hard-code it. The same applies to the item row in the draft info box.
 - Move box (bottom): category icon, type badge and `90P/100%` (power `---` for status
   moves) on one line, with the effect text below.
 - Buttons: RENT (dark) and BACK, centred.
@@ -230,19 +290,23 @@ sides (host on the left), the red/blue player colours and the snake order.
 | Player 1 | `#C03028` |
 | Player 2 | `#2860B8` |
 
-Type badge colours (white text):
+Type badge colours (white text). These are the agreed type colours; use them for
+every type badge:
 
 | Type | Colour | Type | Colour |
 |---|---|---|---|
-| NORMAL | `#6E6E4E` | FLYING | `#6050B0` |
-| FIRE | `#B8461A` | PSYCHIC | `#B82E62` |
-| WATER | `#2F68C0` | BUG | `#5F6E10` |
-| GRASS | `#2F7D3F` | ROCK | `#756628` |
-| ELECTRIC | `#8C6E00` | GHOST | `#56468A` |
-| ICE | `#2A7F7F` | DRAGON | `#4A30B8` |
-| FIGHTING | `#A02820` | DARK | `#4A3A30` |
-| POISON | `#8A3A8A` | STEEL | `#5E5E7A` |
-| GROUND | `#80622A` | | |
+| BUG | `#94bc4a` | GROUND | `#cc9f4f` |
+| DARK | `#736c75` | ICE | `#70cbd4` |
+| DRAGON | `#6a7baf` | NORMAL | `#aab09f` |
+| ELECTRIC | `#e5c531` | POISON | `#b468b7` |
+| FAIRY | `#e397d1` | PSYCHIC | `#e5709b` |
+| FIGHTING | `#cb5f48` | ROCK | `#b2a061` |
+| FIRE | `#ea7a3c` | STEEL | `#89a1b0` |
+| FLYING | `#7da6de` | WATER | `#539ae2` |
+| GHOST | `#846ab6` | ??? | `#81a596` |
+| GRASS | `#71c558` | | |
+
+The `???` type is the badge for an unknown or typeless move or Pokémon.
 
 Base stat bar colour by value:
 
@@ -344,6 +408,7 @@ The design files reference sprites by canvas id. These are the matching repo fil
 | icon-special.png | `3ee4588b90c265212c90acc7ed0ffd95` |
 | icon-status.png | `87ab199033fd3769fffdeae0ead39fa6` |
 | icon-masterball.png | `1232bfea6d5fbe714ce6f5a04bb1772c` |
+| icon-item.png | `304d19156319bb03d1ef9b08ad02f23e` |
 
 `public/sprites/pokemon-icons/` (the draft pool, in grid order):
 
@@ -369,6 +434,7 @@ The design files reference sprites by canvas id. These are the matching repo fil
 | 18 | snorlax.png | `8eca4cdf0e562954f2b141182ad432f5` | 38 | politoed.png | `5b5da011ebe735480619db9be738fddf` |
 | 19 | dragonite.png | `70fdd9aa41dfbf01ce9085c9ee344623` | 39 | mantine.png | `4895dd543ff02fa462a8b9bedbf4a551` |
 | 20 | aerodactyl.png | `80dddd5a92082476f68d053262f6fda3` | 40 | miltank.png | `b90aa033e69727c1872aecaa302dd7bb` |
+| | | | 41 | zapdos.png | `3caaf4f1640a8b9d31be5b3059e23bf2` |
 
 The PICO-8 sprites in `public/sprites/pokemon/` (01–38) were uploaded to the canvas
 early on but are no longer used.
