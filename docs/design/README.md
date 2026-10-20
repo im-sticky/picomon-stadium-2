@@ -33,7 +33,7 @@ Home and the Lobby are built (`app/page.tsx`, `app/home-form.tsx`,
 `app/room/[code]/`). Reuse their shared pieces for new screens rather than
 restyling from scratch.
 
-`app/ui/`, styled by `app/ui/crystal.module.css`:
+`app/ui/`, styled by `app/ui/crystal.module.scss`:
 
 | Component | Use |
 |---|---|
@@ -44,9 +44,37 @@ restyling from scratch.
 | `Field`, `SectionLabel` | Framed text input, and the 16px grey section label. `SectionLabel` with `htmlFor` renders a real `<label>`. |
 | `VisuallyHidden` | Text for screen readers only (e.g. the room code, whose letter cells are `aria-hidden`). |
 
-The colours are CSS variables in `app/globals.css` (`--bg`, `--ink`, `--text-2`,
+The colours are CSS variables in `app/globals.scss` (`--bg`, `--ink`, `--text-2`,
 `--placeholder`, `--hover`, `--p1`, `--p2`). Press Start 2P is loaded with
 `next/font/google` in `app/layout.tsx`.
+
+Styles are SCSS (`*.module.scss` for components), so rules can be nested.
+
+Class names follow **BEM**: one block per component or screen (`lobby`,
+`typeBattle`, `draft`, `detail`, `button`, …), elements as `block__element` and
+modifiers as `block--modifier` / `block__element--modifier`. Each part is camelCase
+so blocks and elements can be read as `styles.draft__cell`; modifiers contain `--`, so
+use `styles["draft__cell--active"]`. In SCSS, nest them with `&__element` and
+`&--modifier`. Each screen has its own stylesheet next to it (`lobby.module.scss`,
+`type-battle.module.scss`, `draft.module.scss`, `detail.module.scss`,
+`room-notice.module.scss`).
+
+When a screen overrides a shared component's styles (e.g. a wider `Button`), the
+override is tag-qualified (`button.lobby__copy`) so it outranks the component's own
+class whatever order the stylesheets load in.
+
+Shared building blocks live in `app/styles/_mixins.scss`; pull them in with
+`@use "<relative path>/styles/mixins" as *;`:
+
+| Mixin | Use |
+|---|---|
+| `crystal-frame` | The full Crystal frame: 6px border plus the inner double line. |
+| `double-line($line, $gap)` | Just the inner double line (e.g. a selected option, a focused field). |
+| `pixel-notch($n)` | Cuts an `$n` pixel block from each corner (type badges 4px, HP bar 3px). |
+| `pixelated` | `display: block` and pixelated scaling for sprites. |
+| `bare-list` / `bare-button` | Strip a list's or button's default spacing and styling. |
+| `focus-ring($offset)` | The 3px ink keyboard-focus outline. |
+| `screen-title` | The 32px centred title at the top of a screen. |
 
 Gotchas:
 - **CSS module order isn't guaranteed.** To override a shared class from a screen's
@@ -92,7 +120,9 @@ state, not separate screens.
 **Player names:** screens never say "Player 1" / "Player 2". They show the names
 the players entered on Home, in uppercase (GOLD and SILVER in the designs). Player
 1 is always the host and Player 2 the guest. That still decides column and strip
-sides (host on the left), the red/blue player colours and the snake order.
+sides (host on the left), the red/blue player colours and the snake order. The one
+exception is the lobby's players list, which keeps short red P1 / blue P2 labels
+beside the names.
 
 ### Home (`Home.dc.html`)
 - Name field: 1–10 characters, shown uppercase. The cap is 10 so the longest
@@ -126,8 +156,10 @@ sides (host on the left), the red/blue player colours and the snake order.
   COPY button that copies the code and shows "COPIED!" for 1.5s. The app shows
   "COPIED!" only once the copy succeeds. COPY is 300px wide so it fits "COPIED!"
   without resizing.
-- Players list: the host's name with a HOST tag, then the guest's name, shown as
-  `- - - - - -` until someone joins. There are no P1/P2 labels.
+- Players list: a red `P1` label (`#C03028`, 48px wide) then the host's name with a
+  HOST tag, and a blue `P2` label (`#2860B8`) then the guest's name, shown as
+  `- - - - - -` until someone joins. The labels appear only in this list (0c and
+  0d), nowhere else.
 - Message: "Send this code to a friend. / Waiting for an opponent..."
 - Full: title "ROOM <code>", the COPY button is hidden, and the guest's name is shown.
   - Host: the message reads "Both players connected! / Ready to battle?" and a
@@ -141,7 +173,7 @@ sides (host on the left), the red/blue player colours and the snake order.
   red YOU tag) is clickable. Hovering an option gives it a light grey background.
   Picking one frames it and dims the others.
 - The opponent's column stays dimmed until both have picked, then their choice is
-  framed. The centre shows `VS` → `. . .` (waiting) → the winner's name
+  framed. The centre shows `VS` (64px, same as the battle order screen) → `. . .` (waiting) → the winner's name
   above `WINS!` (both 32px), or `DRAW!`. The centre gap is 336px, which fits the
   10-character name cap at 32px.
 - Option frames are a fixed 288×156 so they're the same size whatever the label.
@@ -154,7 +186,16 @@ sides (host on the left), the red/blue player colours and the snake order.
 ### Draft (`Draft.dc.html`)
 - Title: "<NAME>'S CHOICE" with the name of whoever's turn it is.
 - Team strip: six 64px slots per player (P1 left, P2 right). Picked slots show the
-  Pokémon's icon, empty slots a faint pokéball. The centre shows picks left this turn.
+  Pokémon's icon, empty slots a faint pokéball.
+  - Above the strip of whoever's turn it is, "N PICKS" (or "1 PICK") shows how
+    many picks they have left this turn: 16px `#585858`, left-aligned over P1's
+    strip or right-aligned over P2's. The other side's line is hidden but keeps its
+    space. No line shows once the draft is complete.
+  - The centre, between the strips, shows the battle format the host chose on
+    Home ("3V3", "4V4" or "6V6") in 32px ink. It's display only; the draft is
+    always 6 each. The prototype reads it from Home through `localStorage`; the
+    app reads it from the room.
+  - The strip row is 92px tall (24px label line, 4px gap, 64px slots).
   - Drafted Pokémon in either team strip are clickable (hover gives a light grey
     background). Clicking one opens its Detail screen in a view-only state (board
     2f). That works during the draft and after it's complete, for both players'
@@ -196,8 +237,8 @@ sides (host on the left), the red/blue player colours and the snake order.
     right-aligned underneath, as on Detail.
   - For a rented Pokémon, the right column shows "Rented by <NAME>." in place of
     the moves. The left column stays the same.
-  - Heights: the left stack is 140px and the moves 128px, inside the box's 176px
-    inner height.
+  - Heights: the left stack is 140px and the moves 128px, inside the box's 148px
+    inner height (the taller team strip row takes the rest).
 - Snake order over 12 picks: `P1, P2, P2, P1, P1, P2, P2, P1, P1, P2, P2, P1`.
 - Draft complete (all 12 picks made): the title reads "DRAFT COMPLETE", and both
   team strips are full.
@@ -216,6 +257,12 @@ sides (host on the left), the red/blue player colours and the snake order.
   the name is a row of faded pokéball slots, like the draft's team strip (64px
   slots, 32px `icon-pokeballball.png` at 20% opacity, 8px gaps). P2's balls are
   tinted blue.
+- Between the two rows of pokéball slots, centred in the 96px gap between the
+  columns, is the battle format ("3V3", "4V4" or "6V6") in 32px ink, the same as
+  on the draft screen.
+- Below the format, a big "VS" (64px ink) sits centred in the same gap, level
+  with the middle of the two team lists. It's 128px wide, so it overhangs the
+  96px gap slightly into the empty inner edges of both columns.
 - The number of slots is the battle size the host picked on Home: 3, 4 or 6. Each
   player always drafted 6, so the list below always has 6 Pokémon and you pick
   your first 3, 4 or 6 in order. A full row of 6 is 424px and fits the column

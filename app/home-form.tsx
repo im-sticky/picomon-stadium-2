@@ -4,11 +4,15 @@ import { useEffect, useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { normalizeCode } from "@/lib/codes";
 import { MAX_NAME_LENGTH, normalizeName } from "@/lib/names";
+import { BATTLE_SIZES, DEFAULT_BATTLE_SIZE, type BattleSize } from "@/lib/types";
 import { Button } from "./ui/button";
 import { Field, SectionLabel } from "./ui/field";
 import { Frame } from "./ui/frame";
 import { MessageBox, type Message } from "./ui/message-box";
-import styles from "./home.module.css";
+import { RadioGroup } from "./ui/radio-group";
+import styles from "./home.module.scss";
+
+const SIZE_OPTIONS = BATTLE_SIZES.map((n) => ({ value: n, label: `${n}V${n}` }));
 
 const HINT: Message = ["Enter your name, then host a", "room or join one with a code."];
 const BAD_NAME: Message = ["Enter a name.", `It can be 1-${MAX_NAME_LENGTH} characters.`];
@@ -23,6 +27,7 @@ export function HomeForm({ initialError }: { initialError?: "not-found" }) {
   const initialMessage = initialError === "not-found" ? NOT_FOUND : undefined;
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
+  const [battleSize, setBattleSize] = useState<BattleSize>(DEFAULT_BATTLE_SIZE);
   const [error, setError] = useState<Message | undefined>(initialMessage);
   const [busy, setBusy] = useState(false);
 
@@ -37,7 +42,7 @@ export function HomeForm({ initialError }: { initialError?: "not-found" }) {
   // clear a stale busy flag then (it would otherwise stay disabled when re-shown).
   useEffect(() => () => setBusy(false), []);
 
-  async function submit(url: string, body: { name: string }) {
+  async function submit(url: string, body: { name: string; battleSize?: BattleSize }) {
     setBusy(true);
     setError(undefined);
     try {
@@ -63,7 +68,7 @@ export function HomeForm({ initialError }: { initialError?: "not-found" }) {
   function host() {
     const n = normalizeName(name);
     if (!n) return setError(BAD_NAME);
-    void submit("/api/rooms", { name: n });
+    void submit("/api/rooms", { name: n, battleSize });
   }
 
   function join() {
@@ -80,7 +85,7 @@ export function HomeForm({ initialError }: { initialError?: "not-found" }) {
     <>
       <Frame
         as="form"
-        className={styles.form}
+        className={styles.homeForm}
         onSubmit={(e) => {
           e.preventDefault();
           if (!busy) join();
@@ -97,22 +102,29 @@ export function HomeForm({ initialError }: { initialError?: "not-found" }) {
             autoComplete="off"
           />
         </div>
-        <div className={styles.columns}>
-          <div className={styles.column}>
+        <div className={styles.homeForm__columns}>
+          <div className={styles.homeForm__column}>
             <div>
               <SectionLabel>NEW ROOM</SectionLabel>
-              <p className={styles.blurb}>Host a room and share its code.</p>
+              <p className={styles.homeForm__blurb}>Host a room and share its code.</p>
             </div>
             <Button primary disabled={busy} onClick={host}>
               HOST
             </Button>
+            <RadioGroup
+              label="Battle size"
+              name="battle-size"
+              options={SIZE_OPTIONS}
+              value={battleSize}
+              onChange={setBattleSize}
+            />
           </div>
-          <div className={styles.column}>
+          <div className={styles.homeForm__column}>
             <div>
               <SectionLabel htmlFor={codeId}>ROOM CODE</SectionLabel>
               <Field
                 id={codeId}
-                className={styles.code}
+                className={styles.homeForm__code}
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 maxLength={4}
@@ -126,7 +138,7 @@ export function HomeForm({ initialError }: { initialError?: "not-found" }) {
           </div>
         </div>
       </Frame>
-      <MessageBox className={styles.message} message={error ?? HINT} />
+      <MessageBox className={styles.homeForm__message} message={error ?? HINT} />
     </>
   );
 }

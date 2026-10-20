@@ -61,3 +61,8 @@ Both windows should show each other's names without a refresh.
 3. Deploy.
 
 Vercel does not run migrations during build. Run `npm run db:migrate` against the Turso database once before using a new deployment.
+
+## Credits
+
+- **[Polished Crystal](https://github.com/Rangi42/polishedcrystal)** by Rangi42 and contributors: Pokémon sprites, and modifications to Pokémon data.
+- Pokémon is © Nintendo, Creatures Inc. and GAME FREAK inc. This is an unofficial fan project and is not affiliated with or endorsed by them.

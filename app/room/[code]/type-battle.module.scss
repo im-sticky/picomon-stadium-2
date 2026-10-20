@@ -1,0 +1,148 @@
+/* Type battle, "Who picks first" (boards 1a/1b). BEM block `typeBattle`. */
+@use "../../styles/mixins" as *;
+
+.typeBattle {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 36px 72px;
+
+  &__title {
+    @include screen-title;
+  }
+
+  &__row {
+    display: flex;
+    flex-grow: 1;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  &__column {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 360px;
+
+    &--right {
+      align-items: flex-end;
+    }
+  }
+
+  &__columnName {
+    padding-left: 24px;
+    font-size: 24px;
+    line-height: 48px;
+  }
+
+  &__column--right &__columnName {
+    padding-right: 24px;
+    padding-left: 0;
+  }
+
+  &__you {
+    font-size: 16px;
+    color: var(--p1);
+  }
+
+  /* Fixed 288×156 whatever the label. */
+  &__option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 288px;
+    box-sizing: border-box;
+    padding: 24px;
+    font: inherit;
+    font-size: 24px;
+    color: inherit;
+    text-align: left;
+    background: none;
+    border: 6px solid transparent;
+    border-radius: 6px;
+
+    &--right {
+      flex-direction: row-reverse;
+    }
+  }
+
+  /* Only the viewer's own column renders its options as buttons. */
+  @at-root button#{&}__option {
+    cursor: pointer;
+
+    &:disabled {
+      cursor: default;
+    }
+
+    &:enabled:hover,
+    &:focus-visible {
+      outline: none;
+      background: var(--hover);
+    }
+  }
+
+  &__option--selected {
+    border-color: var(--ink);
+    @include double-line;
+  }
+
+  &__option--dim {
+    opacity: 0.3;
+  }
+
+  &__badge {
+    @include pixelated;
+  }
+
+  &__centre {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-self: center;
+    align-items: center;
+    padding-top: 48px;
+    font-size: 32px;
+    line-height: 48px;
+    text-align: center;
+  }
+
+  /* The big VS matches the one on the battle order screen. */
+  &__vs {
+    font-size: 64px;
+    line-height: 64px;
+  }
+
+  /* The shared message box, centred. Tag-qualified to outrank its own padding. */
+  @at-root div#{&}__message {
+    padding: 30px;
+    text-align: center;
+
+    p {
+      white-space: nowrap;
+    }
+  }
+
+  /* FIRST/SECOND need the room: see orderButton. */
+  @at-root div#{&}__message--order {
+    padding: 30px 12px;
+  }
+
+  &__orderButtons {
+    display: flex;
+    flex: none;
+    gap: 12px;
+  }
+
+  /* FIRST/SECOND are 240px (the button minimum; the canvas has 216px) and the box's
+     side padding drops to 12px, so "Pick FIRST or SECOND?" fits beside them. To fit
+     SECOND, the side padding is 42px and the cursor sits 12px in (not 30px), which
+     still leaves a 6px gap between cursor and label. */
+  @at-root button#{&}__orderButton {
+    width: 240px;
+    padding: 36px 42px;
+
+    svg {
+      left: 12px;
+    }
+  }
+}

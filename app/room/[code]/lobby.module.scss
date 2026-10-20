@@ -1,0 +1,91 @@
+/* Lobby: waiting room and both-players-in (boards 0c/0d). BEM block `lobby`. */
+@use "../../styles/mixins" as *;
+
+.lobby {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 24px 72px;
+
+  &__title {
+    @include screen-title;
+  }
+
+  &__panel {
+    padding: 30px 42px;
+  }
+
+  &__codeRow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  &__codeCell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 96px;
+    height: 120px;
+    box-sizing: border-box;
+    padding-left: 6px;
+    font-size: 64px;
+    line-height: 64px;
+  }
+
+  /* Wide enough for "COPIED!" so the button doesn't resize when the label changes.
+     Tag-qualified so it outranks the shared button styles. */
+  @at-root button#{&}__copy {
+    min-width: 300px;
+    margin-left: auto;
+  }
+
+  &__players {
+    @include bare-list;
+  }
+
+  &__player {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    height: 48px;
+    font-size: 24px;
+  }
+
+  /* The P1 / P2 label. */
+  &__slot {
+    width: 48px;
+
+    &--p1 {
+      color: var(--p1);
+    }
+
+    &--p2 {
+      color: var(--p2);
+    }
+  }
+
+  &__name {
+    flex: 1;
+    text-transform: uppercase;
+
+    &--empty {
+      color: var(--placeholder);
+    }
+  }
+
+  &__tag {
+    font-size: 16px;
+    color: var(--text-2);
+  }
+
+  &__start {
+    display: flex;
+    justify-content: center;
+  }
+
+  @at-root button#{&}__startButton {
+    min-width: 384px;
+  }
+}

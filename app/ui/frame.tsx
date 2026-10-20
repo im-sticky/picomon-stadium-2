@@ -1,5 +1,5 @@
 import type { HTMLAttributes } from "react";
-import styles from "./crystal.module.css";
+import styles from "./crystal.module.scss";
 
 type FrameProps = HTMLAttributes<HTMLElement> & { as?: "div" | "section" | "form" | "span" };
 
