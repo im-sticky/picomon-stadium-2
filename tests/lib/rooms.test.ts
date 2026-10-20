@@ -23,6 +23,15 @@ import {
 const T0 = 1_000_000;
 
 describe('rooms', () => {
+  it('createRoom stores the battle size and both players read it', async () => {
+    const db = await createTestDb();
+    const { code, secret } = await createRoom(db, 'Ash', T0, 3);
+    const joined = await joinRoom(db, code, 'Misty', T0, null);
+    if (joined.kind !== 'joined') throw new Error(joined.kind);
+    expect((await getRoomState(db, code, secret, T0))?.battleSize).toBe(3);
+    expect((await getRoomState(db, code, joined.secret, T0))?.battleSize).toBe(3);
+  });
+
   it('createRoom returns a valid code and the host can read the room', async () => {
     const db = await createTestDb();
     const { code, secret, playerId } = await createRoom(db, 'Ash', T0);
@@ -32,6 +41,7 @@ describe('rooms', () => {
       you: { id: playerId, slot: 1 },
       players: [{ id: playerId, name: 'Ash', slot: 1 }],
       phase: 'lobby',
+      battleSize: 6,
       typeBattle: null,
     });
     expect(await findActivePlayer(db, secret, T0)).toEqual({ id: playerId, roomCode: code });

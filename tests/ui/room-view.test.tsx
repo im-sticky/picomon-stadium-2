@@ -35,6 +35,7 @@ const roomState = {
   you: { id: "a", slot: 1 },
   players: [{ id: "a", name: "Ash", slot: 1 }],
   phase: "lobby",
+  battleSize: 6,
   typeBattle: null,
 };
 

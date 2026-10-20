@@ -4,6 +4,8 @@ export const rooms = sqliteTable('rooms', {
   code: text('code').primaryKey(),
   createdAt: integer('created_at').notNull(),
   expiresAt: integer('expires_at').notNull(),
+  // Pokémon each player sends into battle (3, 4 or 6), chosen by the host.
+  battleSize: integer('battle_size').notNull().default(6),
   // 'lobby' until the host starts the battle, then 'type-battle'.
   phase: text('phase').notNull().default('lobby'),
   // Current type battle round (0 in the lobby, 1 once started, +1 after each draw).

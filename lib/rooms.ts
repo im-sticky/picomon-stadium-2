@@ -3,7 +3,8 @@ import type { Db } from '@/db/client';
 import { players, rooms, typePicks } from '@/db/schema';
 import { generateCode } from '@/lib/codes';
 import { typeBattleWinner } from '@/lib/type-battle';
-import type { Phase, PublicPlayer, RoomState, Slot, TypeBattleView, TypeChoice } from '@/lib/types';
+import { DEFAULT_BATTLE_SIZE } from '@/lib/types';
+import type { BattleSize, Phase, PublicPlayer, RoomState, Slot, TypeBattleView, TypeChoice } from '@/lib/types';
 
 export const WAITING_TTL_MS = 30 * 60 * 1000;
 export const FULL_TTL_MS = 24 * 60 * 60 * 1000;
@@ -45,6 +46,7 @@ export async function createRoom(
   db: Db,
   name: string,
   now: number,
+  battleSize: BattleSize = DEFAULT_BATTLE_SIZE,
 ): Promise<{ code: string; secret: string; playerId: string }> {
   await deleteExpired(db, now);
   const secret = crypto.randomUUID();
@@ -53,7 +55,9 @@ export async function createRoom(
     const code = generateCode();
     try {
       await db.transaction(async (tx) => {
-        await tx.insert(rooms).values({ code, createdAt: now, expiresAt: now + WAITING_TTL_MS });
+        await tx
+          .insert(rooms)
+          .values({ code, createdAt: now, expiresAt: now + WAITING_TTL_MS, battleSize });
         await tx.insert(players).values({
           id: playerId,
           secret,
@@ -167,6 +171,7 @@ export async function getRoomState(
     you: me,
     players: list,
     phase,
+    battleSize: room.battleSize as BattleSize,
     typeBattle: phase === 'type-battle' ? await typeBattleView(db, room, me.slot) : null,
   };
 }
@@ -174,6 +179,7 @@ export async function getRoomState(
 type LiveRoom = {
   code: string;
   phase: string;
+  battleSize: number;
   typeRound: number;
   typeWinner: number | null;
   firstDrafter: number | null;
@@ -184,6 +190,7 @@ async function findLiveRoom(db: Pick<Db, 'select'>, code: string, now: number): 
     .select({
       code: rooms.code,
       phase: rooms.phase,
+      battleSize: rooms.battleSize,
       typeRound: rooms.typeRound,
       typeWinner: rooms.typeWinner,
       firstDrafter: rooms.firstDrafter,

@@ -89,6 +89,18 @@ describe("HomeForm", () => {
     await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/room/K7PQ"));
   });
 
+  it("hosts with the chosen battle size, 6V6 by default", async () => {
+    const fetchFn = mockFetch(201, { code: "K7PQ" });
+    render(<HomeForm />);
+    expect(screen.getByRole("radio", { name: "6V6" })).toBeChecked();
+    await userEvent.type(screen.getByLabelText("NAME"), "Ash");
+    await userEvent.click(screen.getByRole("radio", { name: "4V4" }));
+    await userEvent.click(screen.getByRole("button", { name: "HOST" }));
+    await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/room/K7PQ"));
+    const [, init] = fetchFn.mock.calls[0] as unknown as [string, RequestInit];
+    expect(JSON.parse(init.body as string)).toEqual({ name: "Ash", battleSize: 4 });
+  });
+
   it('shows "Room not found." from a 404', async () => {
     mockFetch(404, { error: "Room not found." });
     render(<HomeForm />);

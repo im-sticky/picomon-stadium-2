@@ -1,0 +1,1 @@
+ALTER TABLE `rooms` ADD `battle_size` integer DEFAULT 6 NOT NULL;

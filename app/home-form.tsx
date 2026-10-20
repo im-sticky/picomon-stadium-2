@@ -4,11 +4,15 @@ import { useEffect, useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { normalizeCode } from "@/lib/codes";
 import { MAX_NAME_LENGTH, normalizeName } from "@/lib/names";
+import { BATTLE_SIZES, DEFAULT_BATTLE_SIZE, type BattleSize } from "@/lib/types";
 import { Button } from "./ui/button";
 import { Field, SectionLabel } from "./ui/field";
 import { Frame } from "./ui/frame";
 import { MessageBox, type Message } from "./ui/message-box";
+import { RadioGroup } from "./ui/radio-group";
 import styles from "./home.module.css";
+
+const SIZE_OPTIONS = BATTLE_SIZES.map((n) => ({ value: n, label: `${n}V${n}` }));
 
 const HINT: Message = ["Enter your name, then host a", "room or join one with a code."];
 const BAD_NAME: Message = ["Enter a name.", `It can be 1-${MAX_NAME_LENGTH} characters.`];
@@ -23,6 +27,7 @@ export function HomeForm({ initialError }: { initialError?: "not-found" }) {
   const initialMessage = initialError === "not-found" ? NOT_FOUND : undefined;
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
+  const [battleSize, setBattleSize] = useState<BattleSize>(DEFAULT_BATTLE_SIZE);
   const [error, setError] = useState<Message | undefined>(initialMessage);
   const [busy, setBusy] = useState(false);
 
@@ -37,7 +42,7 @@ export function HomeForm({ initialError }: { initialError?: "not-found" }) {
   // clear a stale busy flag then (it would otherwise stay disabled when re-shown).
   useEffect(() => () => setBusy(false), []);
 
-  async function submit(url: string, body: { name: string }) {
+  async function submit(url: string, body: { name: string; battleSize?: BattleSize }) {
     setBusy(true);
     setError(undefined);
     try {
@@ -63,7 +68,7 @@ export function HomeForm({ initialError }: { initialError?: "not-found" }) {
   function host() {
     const n = normalizeName(name);
     if (!n) return setError(BAD_NAME);
-    void submit("/api/rooms", { name: n });
+    void submit("/api/rooms", { name: n, battleSize });
   }
 
   function join() {
@@ -106,6 +111,13 @@ export function HomeForm({ initialError }: { initialError?: "not-found" }) {
             <Button primary disabled={busy} onClick={host}>
               HOST
             </Button>
+            <RadioGroup
+              label="Battle size"
+              name="battle-size"
+              options={SIZE_OPTIONS}
+              value={battleSize}
+              onChange={setBattleSize}
+            />
           </div>
           <div className={styles.column}>
             <div>

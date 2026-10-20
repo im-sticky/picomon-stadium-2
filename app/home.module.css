@@ -25,10 +25,10 @@
 .form {
   display: flex;
   flex-direction: column;
-  gap: 36px;
+  gap: 24px;
   width: 768px;
   box-sizing: border-box;
-  padding: 36px 42px;
+  padding: 30px 42px;
 }
 
 .columns {
