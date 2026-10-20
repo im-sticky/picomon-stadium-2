@@ -11,7 +11,7 @@ export type PoolMove = {
   power: number | null;
   /** Null for moves that never miss. */
   accuracy: number | null;
-  /** Max PP in battle (the engine gives every move 3 PP Ups). */
+  /** Base PP (no PP Ups). */
   pp: number;
   effect: string;
 };
@@ -28,11 +28,6 @@ export type PoolPokemon = {
   baseStats: Record<StatKey, number>;
   moves: PoolMove[];
 };
-
-/** Max PP as the engine sets it up for a battle: 3 PP Ups, except where they don't apply. */
-function battlePP(move: { id: string; pp: number; noPPBoosts?: boolean }): number {
-  return move.noPPBoosts || move.id === "trumpcard" ? move.pp : Math.floor((move.pp * 8) / 5);
-}
 
 /**
  * Every Pokémon in `POKEMON`, read from the patched dex so the screens show what the
@@ -61,7 +56,7 @@ export function draftPool(): PoolPokemon[] {
             category: move.category,
             power: move.category === "Status" || !move.basePower ? null : move.basePower,
             accuracy: move.accuracy === true ? null : move.accuracy,
-            pp: battlePP(move),
+            pp: move.pp,
             effect: move.shortDesc,
           },
         ];
