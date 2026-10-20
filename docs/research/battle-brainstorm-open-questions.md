@@ -12,6 +12,7 @@ Background research: [Gen 6 battle mechanics](2026-10-19-gen6-battle-mechanics.m
 - **Engine:** use Pokémon Showdown's ready-made engine from npm (`@pkmn/sim`, with `@pkmn/dex` / `@pkmn/data` for data; all MIT) in its **gen6** mode. Don't write a custom engine.
 - **Fidelity:** where Showdown and the original cartridge differ, match Showdown. The npm package data is trusted as-is, with no extra cross-checking against Bulbapedia.
 - **Authority model (from the room-join PoC):** the server resolves turns with server-side randomness, stores state in Turso and publishes results over Ably. Clients only send their chosen action.
+- **Base PP, no PP Ups (must do when building the battle).** The draft and Detail screens show each move's **base** PP (e.g. Sludge Bomb 10/10). Showdown's engine gives every move **3 PP Ups by default** (Sludge Bomb would have 16 PP). When the server builds each team for the engine, it must set PP Ups to 0 for every move, so the battle matches what players saw. *Decided 2026-10-20.*
 
 ## Open questions
 

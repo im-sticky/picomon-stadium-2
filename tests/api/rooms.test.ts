@@ -29,6 +29,8 @@ import { POST as startRoute } from '@/app/api/rooms/[code]/start/route';
 import { POST as pickRoute } from '@/app/api/rooms/[code]/type-pick/route';
 import { POST as againRoute } from '@/app/api/rooms/[code]/again/route';
 import { POST as orderRoute } from '@/app/api/rooms/[code]/order/route';
+import { POST as draftPickRoute } from '@/app/api/rooms/[code]/draft-pick/route';
+import { POKEMON } from '@/data/pokemon';
 
 const CODE_RE = /^[A-HJKMNP-Z2-9]{4}$/;
 
@@ -307,7 +309,29 @@ describe('type battle API', () => {
 
     expect((await order(guest, 'first')).status).toBe(200);
     expect(notifyRoomUpdated).toHaveBeenCalledTimes(1);
-    expect((await getState(code, hostCookie)).typeBattle).toMatchObject({ winner: 2, firstDrafter: 2 });
+    expect((await getState(code, hostCookie)).draft).toEqual({ firstDrafter: 2, picks: [] });
     expect((await order(guest, 'second')).status).toBe(409);
+  });
+
+  it('a draft pick from the player on turn is stored and broadcast', async () => {
+    const { code, host: hostCookie, guest } = await started();
+    await pick(code, hostCookie, 'grass');
+    await pick(code, guest, 'fire');
+    await orderRoute(req(`/api/rooms/${code}/order`, 'POST', { order: 'second' }, guest), ctx(code));
+    vi.mocked(notifyRoomUpdated).mockClear();
+
+    const draftPick = (cookie: string, pokemonId: unknown) =>
+      draftPickRoute(req(`/api/rooms/${code}/draft-pick`, 'POST', { pokemonId }, cookie), ctx(code));
+    const [first, second] = POKEMON.filter((p) => !p.isUber).map((p) => p.id);
+    expect((await draftPick(guest, first)).status).toBe(403);
+    expect((await draftPick(hostCookie, 42)).status).toBe(400);
+    expect((await draftPick(hostCookie, 'missingno')).status).toBe(400);
+    expect(notifyRoomUpdated).not.toHaveBeenCalled();
+
+    expect((await draftPick(hostCookie, first)).status).toBe(200);
+    expect(notifyRoomUpdated).toHaveBeenCalledTimes(1);
+    expect((await draftPick(guest, first)).status).toBe(409);
+    expect((await getState(code, guest)).draft).toEqual({ firstDrafter: 1, picks: [{ slot: 1, pokemonId: first }] });
+    expect((await draftPick(guest, second)).status).toBe(200);
   });
 });

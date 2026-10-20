@@ -1,10 +1,22 @@
 import { and, asc, eq, inArray, isNull, lte, gt } from 'drizzle-orm';
 import type { Db } from '@/db/client';
-import { players, rooms, typePicks } from '@/db/schema';
+import { draftPicks, players, rooms, typePicks } from '@/db/schema';
 import { generateCode } from '@/lib/codes';
+import { draftPickError, TOTAL_PICKS, type DraftPickError } from '@/lib/draft';
+import { getPokemon } from '@/lib/pokemon-dex';
 import { typeBattleWinner } from '@/lib/type-battle';
 import { DEFAULT_BATTLE_SIZE } from '@/lib/types';
-import type { BattleSize, Phase, PublicPlayer, RoomState, Slot, TypeBattleView, TypeChoice } from '@/lib/types';
+import type {
+  BattleSize,
+  DraftPick,
+  DraftView,
+  Phase,
+  PublicPlayer,
+  RoomState,
+  Slot,
+  TypeBattleView,
+  TypeChoice,
+} from '@/lib/types';
 
 export const WAITING_TTL_MS = 30 * 60 * 1000;
 export const FULL_TTL_MS = 24 * 60 * 60 * 1000;
@@ -38,6 +50,7 @@ async function deleteExpired(db: Db, now: number): Promise<void> {
   // Players first: foreign keys may not be enforced, so don't rely on cascade.
   const expired = db.select({ code: rooms.code }).from(rooms).where(lte(rooms.expiresAt, now));
   await db.delete(typePicks).where(inArray(typePicks.roomCode, expired));
+  await db.delete(draftPicks).where(inArray(draftPicks.roomCode, expired));
   await db.delete(players).where(inArray(players.roomCode, expired));
   await db.delete(rooms).where(lte(rooms.expiresAt, now));
 }
@@ -173,6 +186,7 @@ export async function getRoomState(
     phase,
     battleSize: room.battleSize as BattleSize,
     typeBattle: phase === 'type-battle' ? await typeBattleView(db, room, me.slot) : null,
+    draft: phase === 'draft' ? await draftView(db, room) : null,
   };
 }
 
@@ -235,6 +249,20 @@ async function typeBattleView(db: Db, room: LiveRoom, slot: Slot): Promise<TypeB
     winner: room.typeWinner as Slot | null,
     firstDrafter: room.firstDrafter as Slot | null,
   };
+}
+
+async function listDraftPicks(db: Pick<Db, 'select'>, code: string): Promise<DraftPick[]> {
+  const rows = await db
+    .select({ slot: draftPicks.slot, pokemonId: draftPicks.pokemonId })
+    .from(draftPicks)
+    .where(eq(draftPicks.roomCode, code))
+    .orderBy(asc(draftPicks.pickIndex));
+  return rows.map((r) => ({ slot: r.slot as Slot, pokemonId: r.pokemonId }));
+}
+
+/** The draft is public: both players see every pick. */
+async function draftView(db: Db, room: LiveRoom): Promise<DraftView> {
+  return { firstDrafter: room.firstDrafter as Slot, picks: await listDraftPicks(db, room.code) };
 }
 
 export async function findActivePlayer(
@@ -374,7 +402,7 @@ export type OrderResult =
   | { kind: 'not-decided' }
   | { kind: 'not-found' };
 
-/** The type battle winner chooses to draft first or second. */
+/** The type battle winner chooses to draft first or second, which starts the draft. */
 export async function chooseDraftOrder(
   db: Db,
   code: string,
@@ -388,15 +416,65 @@ export async function chooseDraftOrder(
       const room = await findLiveRoom(tx, code, now);
       const me = room && (await findMember(tx, code, secret));
       if (!room || !me) return { kind: 'not-found' };
+      if (room.phase === 'draft') return { kind: 'already-chosen' };
       if (room.phase !== 'type-battle' || room.typeWinner === null) return { kind: 'not-decided' };
       if (room.typeWinner !== me.slot) return { kind: 'not-winner' };
-      if (room.firstDrafter !== null) return { kind: 'already-chosen' };
       const firstDrafter: Slot = order === 'first' ? me.slot : me.slot === 1 ? 2 : 1;
       await tx
         .update(rooms)
-        .set({ firstDrafter })
+        .set({ firstDrafter, phase: 'draft' })
         .where(and(eq(rooms.code, code), isNull(rooms.firstDrafter)));
       return { kind: 'chosen', firstDrafter };
     }),
   );
+}
+
+export type DraftPickResult =
+  | { kind: 'picked'; complete: boolean }
+  | { kind: DraftPickError }
+  | { kind: 'not-drafting' }
+  | { kind: 'not-found' };
+
+const isUber = (id: string) => {
+  const entry = getPokemon(id);
+  return entry && (entry.isUber ?? false);
+};
+
+/**
+ * Rents `pokemonId` for the player whose turn it is. The rules are in `lib/draft.ts`;
+ * the keys on `draft_picks` also reject a second pick for the same turn or Pokémon,
+ * if two requests race. `complete` is true when this was the last pick.
+ */
+export async function pickPokemon(
+  db: Db,
+  code: string,
+  secret: string | null,
+  pokemonId: string,
+  now: number,
+): Promise<DraftPickResult> {
+  if (!secret) return { kind: 'not-found' };
+  try {
+    return await withBusyRetry(() =>
+      db.transaction(async (tx): Promise<DraftPickResult> => {
+        const room = await findLiveRoom(tx, code, now);
+        const me = room && (await findMember(tx, code, secret));
+        if (!room || !me) return { kind: 'not-found' };
+        if (room.phase !== 'draft' || room.firstDrafter === null) return { kind: 'not-drafting' };
+
+        const picks = await listDraftPicks(tx, code);
+        const error = draftPickError(room.firstDrafter as Slot, picks, me.slot, pokemonId, isUber);
+        if (error) return { kind: error };
+
+        await tx
+          .insert(draftPicks)
+          .values({ roomCode: code, pickIndex: picks.length, slot: me.slot, pokemonId, pickedAt: now });
+        return { kind: 'picked', complete: picks.length + 1 === TOTAL_PICKS };
+      }),
+    );
+  } catch (err) {
+    // A racing request got this turn or this Pokémon first. Either way the pick
+    // is stale, and the client refetches.
+    if (isConstraintError(err)) return { kind: 'taken' };
+    throw err;
+  }
 }

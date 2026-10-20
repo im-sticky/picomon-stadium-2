@@ -3,16 +3,19 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import * as Ably from "ably";
+import type { PoolPokemon } from "@/lib/draft-pool";
 import { startRoomSync, type RoomSync } from "@/lib/room-sync";
 import type { PublicPlayer, RoomState } from "@/lib/types";
 import { LIVE_FAILED, LOADING, RoomNotice } from "./room-notice";
+import { DraftScreen } from "./draft-screen";
 import { RoomScreen } from "./room-screen";
 import { TypeBattleScreen } from "./type-battle-screen";
 
 /** POSTs a room action (`/api/rooms/<code>/<action>`); resolves to whether it succeeded. */
 export type RoomAction = (action: string, body?: object) => Promise<boolean>;
 
-export function RoomView({ code }: { code: string }) {
+/** `pool` is every Pokémon in the draft, built on the server from the patched dex. */
+export function RoomView({ code, pool }: { code: string; pool: readonly PoolPokemon[] }) {
   const router = useRouter();
   const [state, setState] = useState<RoomState | null>(null);
   const [liveFailed, setLiveFailed] = useState(false);
@@ -116,6 +119,9 @@ export function RoomView({ code }: { code: string }) {
   );
 
   const notice = liveFailed ? LIVE_FAILED : undefined;
+  if (state?.draft) {
+    return <DraftScreen state={state} draft={state.draft} pool={pool} notice={notice} onAction={onAction} />;
+  }
   if (state?.typeBattle) {
     return (
       <TypeBattleScreen
