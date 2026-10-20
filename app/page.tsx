@@ -42,6 +42,19 @@ export default function Home({
         <Suspense fallback={null}>
           <HomeContent searchParams={searchParams} />
         </Suspense>
+        <footer className={styles.credits}>
+          <p>
+            Sprites and Pokémon data changes from{" "}
+            <a href="https://github.com/Rangi42/polishedcrystal" target="_blank" rel="noreferrer">
+              Polished Crystal
+            </a>{" "}
+            by Rangi42 and contributors.
+          </p>
+          <p>
+            Pokémon is © Nintendo, Creatures Inc. and GAME FREAK inc. Unofficial fan project, not
+            affiliated with or endorsed by them.
+          </p>
+        </footer>
       </Stage>
     </main>
   );
