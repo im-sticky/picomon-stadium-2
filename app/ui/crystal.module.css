@@ -249,10 +249,10 @@
   overflow: hidden;
 }
 
-/* The sheet holds two stacked frames: show each for 1000ms. */
+/* The sheet holds two stacked frames: show each for 200ms. */
 .icon img {
   display: block;
-  animation: spriteFrames 2000ms steps(2) infinite;
+  animation: spriteFrames 400ms steps(2) infinite;
 }
 
 @keyframes spriteFrames {
