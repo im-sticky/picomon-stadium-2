@@ -49,7 +49,7 @@ button:disabled{cursor:default}
         <sc-if value="{{hasStatusName}}" hint-placeholder-val="{{ false }}">
           <p style="font-size: 32px; line-height: 48px">{{statusName}}</p>
         </sc-if>
-        <p style="font-size: 32px; line-height: 48px">{{status}}</p>
+        <p style="font-size: {{statusSize}}; line-height: {{statusLine}}">{{status}}</p>
       </div>
     </div>
     <section aria-label="{{guestName}}" style="display: flex; flex-direction: column; align-items: flex-end; gap: 12px; width: 360px">
@@ -174,6 +174,9 @@ class Component extends DCLogic {
       guestName: NAMES[2],
       statusName,
       hasStatusName: !!statusName,
+      // The big VS matches the one on the battle order screen
+      statusSize: status === 'VS' ? '64px' : '32px',
+      statusLine: status === 'VS' ? '64px' : '48px',
       setGo: (el) => { this.go = el; },
       showRetry: winner === 0,
       showOrder: winner === 1

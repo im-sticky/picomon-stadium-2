@@ -46,7 +46,9 @@ a.btn.primary{color:#F8F8F8}
 </helmet>
 <div class="gb" style="width: 1200px; height: 900px; box-sizing: border-box; padding: 24px 60px; display: flex; flex-direction: column; gap: 12px">
   <h1 style="font-size: 32px; line-height: 48px; text-align: center">{{title}}</h1>
-  <div style="display: flex; align-items: center; justify-content: space-between; gap: 24px; height: 64px; margin-bottom: 12px">
+  <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; height: 92px; margin-bottom: 12px">
+    <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px">
+    <p style="font-size: 16px; line-height: 24px; color: #585858; visibility: {{p1leftVis}}">{{left}}</p>
     <div aria-label="Player 1 team" style="display: flex; align-items: center; gap: 8px">
       <sc-for list="{{p1team}}" as="s" hint-placeholder-count="6">
         <div class="slot">
@@ -59,10 +61,10 @@ a.btn.primary{color:#F8F8F8}
         </div>
       </sc-for>
     </div>
-    <div style="text-align: center; display: flex; flex-direction: column; gap: 8px">
-      
-      <p style="font-size: 16px; line-height: 24px; color: #585858">{{left}}</p>
     </div>
+    <p aria-label="Battle format" style="align-self: center; font-size: 32px; line-height: 48px; text-align: center">{{format}}</p>
+    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px">
+    <p style="font-size: 16px; line-height: 24px; color: #585858; visibility: {{p2leftVis}}">{{left}}</p>
     <div aria-label="Player 2 team" style="display: flex; align-items: center; gap: 8px">
       <sc-for list="{{p2team}}" as="s" hint-placeholder-count="6">
         <div class="slot">
@@ -74,6 +76,7 @@ a.btn.primary{color:#F8F8F8}
           </sc-if>
         </div>
       </sc-for>
+    </div>
     </div>
   </div>
   <div style="display: flex; gap: 12px; height: 432px">
@@ -288,6 +291,14 @@ class Component extends DCLogic {
 
     // Player 1 is always the host; names come from the room
     const NAMES = { 1: 'GOLD', 2: 'SILVER' };
+    // Battle format the host chose on Home (prototype only: read from localStorage;
+    // the app keeps it on the room). The draft is always 6 each regardless.
+    let size = 6;
+    try {
+      const saved = parseInt(localStorage.getItem('picomon.battleSize'), 10);
+      if ([3, 4, 6].includes(saved)) size = saved;
+    } catch (e) {}
+    const format = size + 'V' + size;
 
     // Snake order: P1, P2 P2, P1 P1, ... P1
     const ORDER = [1, 2, 2, 1, 1, 2, 2, 1, 1, 2, 2, 1];
@@ -346,6 +357,9 @@ class Component extends DCLogic {
       title: turn ? NAMES[turn] + "'S CHOICE" : 'DRAFT COMPLETE',
       pickNo: Math.min(n + 1, 12),
       left: turn ? left + (left === 1 ? ' PICK' : ' PICKS') : '',
+      p1leftVis: turn === 1 ? 'visible' : 'hidden',
+      p2leftVis: turn === 2 ? 'visible' : 'hidden',
+      format,
       p1team: team(p1),
       p2team: team(p2),
       cells,

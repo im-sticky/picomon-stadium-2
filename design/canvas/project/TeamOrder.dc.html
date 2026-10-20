@@ -53,6 +53,10 @@ button:disabled{cursor:default}
         </sc-for>
       </div>
     </section>
+    <div style="width: 96px; flex: none; align-self: stretch; display: flex; flex-direction: column; align-items: center">
+      <p aria-label="Battle format" style="margin-top: 60px; font-size: 32px; line-height: 64px; text-align: center">{{format}}</p>
+      <p aria-hidden="true" style="flex: 1; display: flex; align-items: center; font-size: 64px; line-height: 64px; white-space: nowrap">VS</p>
+    </div>
     <section aria-label="{{guestName}}" style="width: 480px; display: flex; flex-direction: column; align-items: flex-end; gap: 12px">
       <h2 style="font-size: 24px; line-height: 48px; padding-right: 12px">{{guestName}}</h2>
       <div aria-label="Opponent's battle order" style="display: flex; gap: 8px; padding-right: 12px; margin-bottom: 6px">
@@ -142,6 +146,7 @@ class Component extends DCLogic {
     }
 
     return {
+      format: count + 'V' + count,
       hostName: NAMES[1],
       guestName: NAMES[2],
       mySlots,

@@ -145,7 +145,7 @@ beside the names.
   red YOU tag) is clickable. Hovering an option gives it a light grey background.
   Picking one frames it and dims the others.
 - The opponent's column stays dimmed until both have picked, then their choice is
-  framed. The centre shows `VS` → `. . .` (waiting) → the winner's name
+  framed. The centre shows `VS` (64px, same as the battle order screen) → `. . .` (waiting) → the winner's name
   above `WINS!` (both 32px), or `DRAW!`. The centre gap is 336px, which fits the
   10-character name cap at 32px.
 - Option frames are a fixed 288×156 so they're the same size whatever the label.
@@ -229,6 +229,12 @@ beside the names.
   the name is a row of faded pokéball slots, like the draft's team strip (64px
   slots, 32px `icon-pokeballball.png` at 20% opacity, 8px gaps). P2's balls are
   tinted blue.
+- Between the two rows of pokéball slots, centred in the 96px gap between the
+  columns, is the battle format ("3V3", "4V4" or "6V6") in 32px ink, the same as
+  on the draft screen.
+- Below the format, a big "VS" (64px ink) sits centred in the same gap, level
+  with the middle of the two team lists. It's 128px wide, so it overhangs the
+  96px gap slightly into the empty inner edges of both columns.
 - The number of slots is the battle size the host picked on Home: 3, 4 or 6. Each
   player always drafted 6, so the list below always has 6 Pokémon and you pick
   your first 3, 4 or 6 in order. A full row of 6 is 424px and fits the column
