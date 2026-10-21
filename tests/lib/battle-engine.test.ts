@@ -39,6 +39,7 @@ const set = (species: string, moves: string[], more: Partial<PokemonSet> = {}): 
   level: 50,
   ...more,
 });
+const WALL = { hp: 252, atk: 0, def: 252, spa: 0, spd: 0, spe: 0 };
 const bench = Array.from({ length: 5 }, () => set('Snorlax', ['Splash']));
 const sets = (...lead: PokemonSet[]) => [...lead, ...bench].slice(0, 6);
 
@@ -283,7 +284,7 @@ describe('defaults', () => {
   it('forced switch: the first healthy bench Pokémon', () => {
     const engine = duel(
       [set('Golem', ['Explosion']), set('Chansey', ['Splash'])],
-      [set('Blissey', ['Splash'], { evs: { hp: 252, atk: 0, def: 252, spa: 0, spd: 0, spe: 0 } })],
+      [set('Blissey', ['Splash'], { evs: WALL })],
     );
     turn(engine, 'move 1', 'move 1');
     expect([asked(engine.battle, 1), asked(engine.battle, 2)]).toEqual(['switch', null]);
@@ -302,7 +303,7 @@ describe('defaults', () => {
 
 describe('faint replacements', () => {
   it('a single faint asks only that side to switch', () => {
-    const engine = duel([set('Golem', ['Explosion'])], [set('Blissey', ['Splash'], { evs: { hp: 252, atk: 0, def: 252, spa: 0, spd: 0, spe: 0 } })]);
+    const engine = duel([set('Golem', ['Explosion'])], [set('Blissey', ['Splash'], { evs: WALL })]);
     turn(engine, 'move 1', 'move 1');
     expect(engine.battle.p2.active[0].fainted).toBe(false);
     expect([asked(engine.battle, 1), asked(engine.battle, 2)]).toEqual(['switch', null]);

@@ -57,7 +57,8 @@ export function createBattle(opts: { size: BattleSize; seed?: string; teams: { 1
       if (!entry) throw new Error(`unknown Pokémon "${id}"`);
       return toSet(entry);
     });
-  return createBattleFromSets({ size: opts.size, seed: opts.seed, sets: { 1: sets(opts.teams[1]), 2: sets(opts.teams[2]) } });
+  const { size, seed, teams } = opts;
+  return createBattleFromSets({ size, seed, sets: { 1: sets(teams[1]), 2: sets(teams[2]) } });
 }
 
 /**
