@@ -18,7 +18,11 @@ export type TestRoom = { code: string; 1: string; 2: string };
  */
 export async function draftedRoom(
   db: Db,
-  { size = 3, picks = TOTAL_PICKS }: { size?: BattleSize; picks?: number } = {},
+  {
+    size = 3,
+    picks = TOTAL_PICKS,
+    teams = { 1: TEAM1, 2: TEAM2 },
+  }: { size?: BattleSize; picks?: number; teams?: { 1: string[]; 2: string[] } } = {},
 ): Promise<TestRoom> {
   const host = await createRoom(db, 'Ash', T0, size);
   const joined = await joinRoom(db, host.code, 'Misty', T0, null);
@@ -28,7 +32,7 @@ export async function draftedRoom(
   await pickType(db, room.code, room[1], 'fire', T0);
   await pickType(db, room.code, room[2], 'grass', T0);
   await chooseDraftOrder(db, room.code, room[1], 'first', T0);
-  const queues = { 1: [...TEAM1], 2: [...TEAM2] };
+  const queues = { 1: [...teams[1]], 2: [...teams[2]] };
   for (let i = 0; i < picks; i++) {
     const slot = draftTurn(1, i)!;
     const result = await pickPokemon(db, room.code, room[slot], queues[slot].shift()!, T0);

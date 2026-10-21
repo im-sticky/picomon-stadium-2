@@ -21,6 +21,7 @@ import {
   GRACE_MS,
   MAX_TIMEOUTS,
   TIMER_MS,
+  type Asked,
   type BattleChoice,
   type BattleEvent,
   type BattleResult,
@@ -98,7 +99,7 @@ function recordStep(
   saved: Saved,
   start: number,
   now: number,
-  wasAsked: { 1: unknown; 2: unknown },
+  wasAsked: { 1: Asked; 2: Asked },
   timedOut: Slot[],
   reason: EndReason,
 ): BattleEvent {
@@ -164,7 +165,25 @@ function applyDueTimeouts(
   } else {
     for (const slot of timedOut) applyDefault(engine, slot);
   }
-  if (battle.log.length === start) throw new Error('timeouts did not resolve the step');
+  if (battle.log.length === start) {
+    // A stuck battle: log enough to diagnose it (never the snapshot itself).
+    console.error('timeouts did not resolve the step', {
+      step: saved.step,
+      stage: saved.stage,
+      requestState: battle.requestState,
+      timedOut,
+      sides: SLOTS.map((slot) => {
+        const request = battle.sides[slot - 1].activeRequest;
+        return {
+          slot,
+          asked: wasAsked[slot],
+          request: request && Object.keys(request).filter((key) => key !== 'side'),
+          actions: battle.sides[slot - 1].choice.actions.length,
+        };
+      }),
+    });
+    throw new Error('timeouts did not resolve the step');
+  }
   const event = recordStep(engine, next, start, now, wasAsked, timedOut, reason);
   return { save: true, events: [event], saved: next };
 }
@@ -211,10 +230,11 @@ function buildView(
 type Context = { engine: Engine; saved: Saved; slot: Slot; size: BattleSize };
 
 /**
- * What a mutation did. `reject`: discard its engine and fields (a rejected `choose`
- * still changes the engine). Otherwise `save` says whether it changed anything.
+ * What a mutation did. `reject`: discard its fields, and its engine too when
+ * `touched` (a rejected `choose` still changes the engine). Otherwise `save` says
+ * whether it changed anything.
  */
-type Mutation<T> = { outcome: T; save: boolean; events?: BattleEvent[]; reject?: boolean };
+type Mutation<T> = { outcome: T; save: boolean; events?: BattleEvent[]; reject?: boolean; touched?: boolean };
 
 type WithBattleResult<T> =
   | { kind: 'not-found' }
@@ -222,7 +242,10 @@ type WithBattleResult<T> =
   | { kind: 'busy' }
   | { kind: 'done'; outcome: T; events: BattleEvent[]; view: (from: number) => BattleView };
 
-/** Test hooks: `beforeWrite` runs between the load and the compare-and-swap update. */
+/**
+ * Test-only hook: tests set `beforeWrite` to run between the load and the
+ * compare-and-swap update, to make an attempt lose the race. Never set in app code.
+ */
 export const casHooks: { beforeWrite?: () => Promise<void> } = {};
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -266,7 +289,7 @@ async function withBattle<T>(
     let saved = timed.saved;
     let events = timed.events;
     if (m.reject) {
-      engine = restoreBattle(base);
+      if (m.touched) engine = restoreBattle(base);
       if (timed.save) state = base;
     } else if (m.save) {
       state = serialize(engine);
@@ -405,8 +428,7 @@ export async function triggerTimeout(
 export type OrderOutcome = 'progressed' | 'unchanged' | 'invalid-order' | 'order-conflict' | 'not-ordering';
 
 export type SubmitOrderResult =
-  | { kind: 'progressed' | 'unchanged'; events: BattleEvent[]; view: BattleView }
-  | { kind: 'order-conflict' | 'not-ordering'; events: BattleEvent[]; view: BattleView }
+  | { kind: 'progressed' | 'unchanged' | 'order-conflict' | 'not-ordering'; events: BattleEvent[]; view: BattleView }
   | { kind: 'invalid-order'; events: BattleEvent[] }
   | { kind: 'not-found' }
   | { kind: 'no-battle' }
@@ -477,7 +499,8 @@ export async function submitChoice(
 ): Promise<SubmitChoiceResult> {
   const result = await withBattle<ChoiceOutcome>(db, code, secret, now, ({ engine, saved, slot, size }) => {
     const { battle } = engine;
-    const reject = (outcome: ChoiceOutcome): Mutation<ChoiceOutcome> => ({ outcome, save: false, reject: true });
+    let touched = false;
+    const reject = (outcome: ChoiceOutcome): Mutation<ChoiceOutcome> => ({ outcome, save: false, reject: true, touched });
     if (step !== saved.step) return reject({ kind: 'stale-step' });
     if (saved.stage === 'ended') return reject({ kind: 'ended' });
     const want = asked(battle, slot);
@@ -497,6 +520,7 @@ export async function submitChoice(
 
     const start = battle.log.length;
     const wasAsked = askedBoth(engine);
+    touched = true;
     const chosen = choose(engine, slot, toChoiceString(choice));
     if (!chosen.ok) return reject({ kind: 'rejected', message: chosen.message });
     if (battle.log.length === start) return { outcome: { kind: 'chosen' }, save: true };

@@ -353,6 +353,35 @@ describe('timeouts', () => {
     expect(result.view.request?.team.map((m) => m.pokemonId)).toEqual(TEAM1.slice(0, 3));
   });
 
+  it('a double faint asks both; each side is struck only if it misses the replacement', async () => {
+    // With this seed, Gengar's Shadow Ball and Arcanine's Flare Blitz recoil faint both on turn 1.
+    const teams = {
+      1: ['gengar', 'aerodactyl', 'alakazam', 'ampharos', 'arbok', 'azumarill'],
+      2: ['arcanine', 'ariados', 'beedrill', 'blissey', 'ambipom', 'crobat'],
+    };
+    const db = await createTestDb();
+    const room = await draftedRoom(db, { teams });
+    await startBattle(db, room.code, room[1], T0, { seed: SEED });
+    await submitOrder(db, room.code, room[1], [1, 2, 3], T0);
+    await submitOrder(db, room.code, room[2], [1, 2, 3], T0);
+    // Both time out on turn 1; the defaults (move 1 each) cause the double faint.
+    const faint = await triggerTimeout(db, room.code, room[1], 1, DUE);
+    expect(faint).toMatchObject({ events: [{ step: 2, asked: { 1: 'switch', 2: 'switch' }, timeouts: { 1: 1, 2: 1 } }] });
+
+    expect(await choice(db, room, 1, 2, { kind: 'switch', slot: 2 }, DUE)).toMatchObject({ kind: 'chosen', events: [] });
+    const result = await triggerTimeout(db, room.code, room[2], 2, DUE + TIMER_MS + GRACE_MS);
+    expect(result).toMatchObject({ events: [{ step: 3, timedOut: [2], timeouts: { 1: 0, 2: 2 } }] });
+    expect(await row(db, room.code)).toMatchObject({ p1Timeouts: 0, p2Timeouts: 2 });
+  });
+
+  it('a GET with nothing due writes nothing', async () => {
+    const db = await createTestDb();
+    const room = await inProgress(db);
+    const { version } = await row(db, room.code);
+    expect(await getBattleView(db, room.code, room[1], 0, DUE - 1)).toMatchObject({ kind: 'view', events: [] });
+    expect((await row(db, room.code)).version).toBe(version);
+  });
+
   it('a choice after the deadline is stale; the timeout it triggered is saved', async () => {
     const db = await createTestDb();
     const room = await inProgress(db);

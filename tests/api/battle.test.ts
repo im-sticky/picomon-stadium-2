@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { setDbForTests, type Db } from '@/db/client';
 import { battles, rooms } from '@/db/schema';
 import { createTestDb } from '@/tests/helpers/test-db';
@@ -33,6 +33,7 @@ vi.mock('@/lib/battle-engine', async (importOriginal) => {
 });
 
 import { notifyRoomEvent } from '@/lib/ably-server';
+import { casHooks } from '@/lib/battle';
 import { linesFor, restoreBattle } from '@/lib/battle-engine';
 import type { BattleChoice, BattleEvent, BattleView } from '@/lib/battle-types';
 import { GET as viewRoute, POST as startRoute } from '@/app/api/rooms/[code]/battle/route';
@@ -119,6 +120,7 @@ beforeEach(async () => {
 
 afterEach(() => {
   huge.on = false;
+  casHooks.beforeWrite = undefined;
   vi.restoreAllMocks();
 });
 
@@ -341,6 +343,22 @@ describe('POST battle/choice', () => {
   });
 });
 
+describe('busy', () => {
+  it('a compare-and-swap that keeps losing is 503', async () => {
+    const c = await inProgress();
+    casHooks.beforeWrite = async () => {
+      await db
+        .update(battles)
+        .set({ version: sql`${battles.version} + 1` })
+        .where(eq(battles.roomCode, c[1].code));
+    };
+    const res = await choose(c[1], { step: 1, choice: { kind: 'move', move: 1 } });
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ error: 'Busy, try again.' });
+    expect(notifyRoomEvent).not.toHaveBeenCalled();
+  });
+});
+
 describe('POST battle/timeout', () => {
   it('validates, then applies due timeouts once', async () => {
     const c = await inProgress();
@@ -409,11 +427,18 @@ describe('publishing', () => {
       }
     }
     const row = await battleRow(c[1].code);
-    expect(row.stage).toBe('ended');
+    // An all-fainted win: the result is saved with the last step, and published with it.
+    const { battle } = restoreBattle(row.state);
+    const winner = battle.winner === 'P1' ? 1 : 2;
+    expect(['P1', 'P2']).toContain(battle.winner);
+    expect(row).toMatchObject({ stage: 'ended', winner, endReason: 'normal', deadline: null });
+    const last = published().at(-1) as BattleEvent;
+    expect(last).toMatchObject({ kind: 'battle-step', step: row.step, deadline: null, result: { winner, reason: 'normal' } });
+    expect((last as { lines: string[] }).lines).toContain(`|win|P${winner}`);
     for (const event of published()) {
       expect(Buffer.byteLength(JSON.stringify(event), 'utf8')).toBeLessThan(64 * 1024);
     }
-    const turns = restoreBattle(row.state).battle.turn;
+    const turns = battle.turn;
     expect((row.state.length - firstState) / turns).toBeLessThan(2048);
   });
 });
