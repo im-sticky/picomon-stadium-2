@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/db/client';
-import { notifyRoomUpdated } from '@/lib/ably-server';
+import { notifyRoomEvent } from '@/lib/ably-server';
 import { normalizeCode } from '@/lib/codes';
 import { startTypeBattle } from '@/lib/rooms';
+import type { RoomEvent } from '@/lib/room-events';
 import { readSessionSecret } from '@/lib/session';
 
 /** The host starts the type battle. */
@@ -20,8 +21,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ cod
       return NextResponse.json({ error: 'Waiting for an opponent.' }, { status: 409 });
     case 'already-started':
       return NextResponse.json({ ok: true });
-    case 'started':
-      await notifyRoomUpdated(code);
-      return NextResponse.json({ ok: true });
+    case 'started': {
+      const event: RoomEvent = { kind: 'type-battle-started', round: 1 };
+      await notifyRoomEvent(code, event);
+      return NextResponse.json({ ok: true, event });
+    }
   }
 }

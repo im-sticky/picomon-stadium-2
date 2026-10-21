@@ -4,7 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import * as Ably from "ably";
 import type { PoolPokemon } from "@/lib/draft-pool";
+import { parseRoomEvent, type SyncEvent } from "@/lib/room-events";
 import { startRoomSync, type RoomSync } from "@/lib/room-sync";
+import { isTypeChoice } from "@/lib/type-battle";
 import type { PublicPlayer, RoomState } from "@/lib/types";
 import { LIVE_FAILED, LOADING, RoomNotice } from "./room-notice";
 import { DraftScreen } from "./draft-screen";
@@ -38,10 +40,14 @@ export function RoomView({ code, pool }: { code: string; pool: readonly PoolPoke
 
     const roomSync = startRoomSync({
       subscribe(onEvent) {
-        // Every event means "something changed"; only player-joined carries data.
+        // A message that isn't a known event (like room-updated) just means "refetch".
         const listener = (msg: Ably.Message) => {
           const players = msg.data?.players as PublicPlayer[] | undefined;
-          onEvent(msg.name === "player-joined" && Array.isArray(players) ? players : undefined);
+          if (msg.name === "player-joined") {
+            onEvent(Array.isArray(players) ? { kind: "player-joined", players } : null);
+          } else {
+            onEvent(parseRoomEvent(msg.data));
+          }
         };
         subscribed = channel.subscribe(listener).catch((err) => {
           // Closing the client on unmount rejects a pending attach; that's expected, not a failure.
@@ -76,6 +82,7 @@ export function RoomView({ code, pool }: { code: string; pool: readonly PoolPoke
         document.addEventListener("visibilitychange", handler);
         return () => document.removeEventListener("visibilitychange", handler);
       },
+      isVisible: () => document.visibilityState === "visible",
       async fetchState() {
         const res = await fetch("/api/rooms/" + code);
         if (res.status === 404) return null;
@@ -83,7 +90,6 @@ export function RoomView({ code, pool }: { code: string; pool: readonly PoolPoke
         return (await res.json()) as RoomState;
       },
       onState: setState,
-      onPlayers: (players) => setState((prev) => (prev ? { ...prev, players } : prev)),
       onGone: () => router.replace("/?error=not-found"),
     });
 
@@ -101,18 +107,22 @@ export function RoomView({ code, pool }: { code: string; pool: readonly PoolPoke
 
   const onAction: RoomAction = useCallback(
     async (action, body = {}) => {
+      let event: SyncEvent | null = null;
       try {
         const res = await fetch(`/api/rooms/${code}/${action}`, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(body),
         });
+        if (res.ok) event = ownEvent((await res.json().catch(() => null))?.event);
         return res.ok;
       } catch {
         return false;
       } finally {
-        // Our own actions aren't always broadcast (a first pick isn't), so refetch.
-        sync.current?.refetch();
+        // Apply the result now rather than waiting for the Ably echo. Without one
+        // (an error, or nothing changed) refetch instead.
+        if (event) sync.current?.apply(event);
+        else sync.current?.refetch();
       }
     },
     [code],
@@ -135,4 +145,13 @@ export function RoomView({ code, pool }: { code: string; pool: readonly PoolPoke
   }
   if (state) return <RoomScreen state={state} notice={notice} onAction={onAction} />;
   return notice ? <RoomNotice message={notice} role="alert" /> : <RoomNotice message={LOADING} />;
+}
+
+/** The event in this player's own POST response: a shared one, or their secret type pick. */
+function ownEvent(data: unknown): SyncEvent | null {
+  const d = data as { kind?: unknown; round?: unknown; type?: unknown } | null;
+  if (d?.kind === "own-type-pick" && Number.isInteger(d.round) && isTypeChoice(d.type)) {
+    return { kind: "own-type-pick", round: d.round as number, type: d.type };
+  }
+  return parseRoomEvent(data);
 }

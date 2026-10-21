@@ -69,12 +69,18 @@ describe('type battle', () => {
   it("hides the opponent's pick until both have picked", async () => {
     const db = await createTestDb();
     const room = await startedRoom(db);
-    expect(await pickType(db, room.code, room.host, 'fire', T0)).toEqual({ kind: 'picked', resolved: false });
+    expect(await pickType(db, room.code, room.host, 'fire', T0)).toEqual({ kind: 'picked', round: 1, resolved: false });
 
     expect(await view(db, room.code, room.host)).toMatchObject({ yourPick: 'fire', opponentPick: null });
     expect(await view(db, room.code, room.guest)).toMatchObject({ yourPick: null, opponentPick: null });
 
-    expect(await pickType(db, room.code, room.guest, 'grass', T0)).toEqual({ kind: 'picked', resolved: true });
+    expect(await pickType(db, room.code, room.guest, 'grass', T0)).toEqual({
+      kind: 'picked',
+      round: 1,
+      resolved: true,
+      picks: { 1: 'fire', 2: 'grass' },
+      winner: 1,
+    });
     expect(await view(db, room.code, room.host)).toMatchObject({ yourPick: 'fire', opponentPick: 'grass', winner: 1 });
     expect(await view(db, room.code, room.guest)).toMatchObject({ yourPick: 'grass', opponentPick: 'fire', winner: 1 });
   });
@@ -109,7 +115,7 @@ describe('type battle', () => {
       winner: null,
     });
 
-    expect(await playTypeBattleAgain(db, room.code, room.guest, 1, T0)).toEqual({ kind: 'new-round' });
+    expect(await playTypeBattleAgain(db, room.code, room.guest, 1, T0)).toEqual({ kind: 'new-round', round: 2 });
     // Both clients ask for the next round; the second request doesn't skip another round.
     expect(await playTypeBattleAgain(db, room.code, room.host, 1, T0)).toEqual({ kind: 'already-new-round' });
     expect(await view(db, room.code, room.host)).toMatchObject({ round: 2, yourPick: null, opponentPick: null });
@@ -117,8 +123,14 @@ describe('type battle', () => {
     expect(await playTypeBattleAgain(db, room.code, room.guest, 1, T0)).toEqual({ kind: 'already-new-round' });
     expect(await view(db, room.code, room.host)).toMatchObject({ round: 2 });
 
-    expect(await pickType(db, room.code, room.host, 'fire', T0)).toEqual({ kind: 'picked', resolved: false });
-    expect(await pickType(db, room.code, room.guest, 'water', T0)).toEqual({ kind: 'picked', resolved: true });
+    expect(await pickType(db, room.code, room.host, 'fire', T0)).toEqual({ kind: 'picked', round: 2, resolved: false });
+    expect(await pickType(db, room.code, room.guest, 'water', T0)).toEqual({
+      kind: 'picked',
+      round: 2,
+      resolved: true,
+      picks: { 1: 'fire', 2: 'water' },
+      winner: 2,
+    });
     expect(await view(db, room.code, room.host)).toMatchObject({ round: 2, winner: 2 });
   });
 

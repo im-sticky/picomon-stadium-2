@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/db/client';
-import { notifyRoomUpdated } from '@/lib/ably-server';
+import { notifyRoomEvent } from '@/lib/ably-server';
 import { normalizeCode } from '@/lib/codes';
 import { chooseDraftOrder } from '@/lib/rooms';
+import type { RoomEvent } from '@/lib/room-events';
 import { readSessionSecret } from '@/lib/session';
 
 /** The type battle winner chooses to draft FIRST or SECOND. */
@@ -26,8 +27,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ cod
       return NextResponse.json({ error: 'No winner yet.' }, { status: 409 });
     case 'already-chosen':
       return NextResponse.json({ error: 'The order is already chosen.' }, { status: 409 });
-    case 'chosen':
-      await notifyRoomUpdated(code);
-      return NextResponse.json({ ok: true });
+    case 'chosen': {
+      const event: RoomEvent = { kind: 'draft-started', firstDrafter: result.firstDrafter };
+      await notifyRoomEvent(code, event);
+      return NextResponse.json({ ok: true, event });
+    }
   }
 }

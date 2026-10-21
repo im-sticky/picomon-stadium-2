@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/db/client';
-import { notifyRoomUpdated } from '@/lib/ably-server';
+import { notifyRoomEvent } from '@/lib/ably-server';
 import { normalizeCode } from '@/lib/codes';
 import { pickPokemon } from '@/lib/rooms';
+import type { RoomEvent } from '@/lib/room-events';
 import { readSessionSecret } from '@/lib/session';
 
 /** Rents a Pokémon for the player whose turn it is in the draft. */
@@ -30,8 +31,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ cod
       return NextResponse.json({ error: 'Already rented.' }, { status: 409 });
     case 'uber-limit':
       return NextResponse.json({ error: 'Only one uber each.' }, { status: 409 });
-    case 'picked':
-      await notifyRoomUpdated(code);
-      return NextResponse.json({ ok: true });
+    case 'picked': {
+      const event: RoomEvent = { kind: 'draft-picked', pickIndex: result.pickIndex, slot: result.slot, pokemonId };
+      await notifyRoomEvent(code, event);
+      return NextResponse.json({ ok: true, event });
+    }
   }
 }
