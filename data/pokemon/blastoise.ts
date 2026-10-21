@@ -4,6 +4,7 @@ export default {
   id: "blastoise",
   sprite: "/sprites/pokemon-icons/blastoise.png",
   ability: "Torrent",
+  types: ["Water", "Steel"],
   set: {
     moves: ["Surf", "Ice Beam", "Toxic", "Protect"],
     item: "Leftovers",
