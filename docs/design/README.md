@@ -257,6 +257,13 @@ beside the names.
   the name is a row of faded pokéball slots, like the draft's team strip (64px
   slots, 32px `icon-pokeballball.png` at 20% opacity, 8px gaps). P2's balls are
   tinted blue.
+- Timer: a 75-second countdown ("1:15" → "0:00", 32px ink, turning red
+  `#C03028` at 0:15 and below) sits at the top of
+  the centre gap, level with the player names, below the title and above the
+  format. It's the deadline for choosing an order. The app should drive it from the
+  server's deadline, not a local clock. What happens when it reaches 0:00 follows
+  the battle server's timeout handling. In the prototype it counts down locally and
+  stops once you're locked in (3b shows it stopped at 0:42).
 - Between the two rows of pokéball slots, centred in the 96px gap between the
   columns, is the battle format ("3V3", "4V4" or "6V6") in 32px ink, the same as
   on the draft screen.
