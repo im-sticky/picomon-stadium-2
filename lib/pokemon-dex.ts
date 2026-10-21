@@ -1,4 +1,4 @@
-import { Dex, toID, type ModdedDex, type PokemonSet } from "@pkmn/sim";
+import { Dex, toID, type Battle, type ModdedDex, type Pokemon, type PokemonSet } from "@pkmn/sim";
 import { MOVE_CHANGES } from "@/data/moves";
 import { POKEMON } from "@/data/pokemon";
 import type { PokemonEntry } from "@/data/pokemon/types";
@@ -58,6 +58,16 @@ function buildDex(): ModdedDex {
     Scripts: { inherit: "gen6" },
     Pokedex: pokedex,
     Moves: moves,
+    Conditions: {
+      // Hail gives Ice types 1.5× Def, like Sandstorm's SpD boost for Rock types (§17.5 of the gen6 research doc).
+      hail: {
+        inherit: true,
+        onModifyDefPriority: 10,
+        onModifyDef(this: Battle, def: number, pokemon: Pokemon) {
+          if (pokemon.hasType("Ice") && pokemon.effectiveWeather() === "hail") return this.modify(def, 1.5);
+        },
+      },
+    },
   } as Parameters<typeof Dex.mod>[1]);
 
   // Battles find their data through the format's mod in the engine's global
