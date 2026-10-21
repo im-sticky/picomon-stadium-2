@@ -56,6 +56,8 @@ describe('draft', () => {
         expect(await pickPokemon(db, room.code, room[slot], ids[i], T0)).toEqual({
           kind: 'picked',
           complete: i === TOTAL_PICKS - 1,
+          pickIndex: i,
+          slot,
         });
       }
       const { draft } = await state(db, room.code, room[1]);

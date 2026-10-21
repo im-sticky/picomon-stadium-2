@@ -15,12 +15,12 @@ vi.mock('@/lib/ably-server', async (importOriginal) => {
   return {
     ...actual,
     publishPlayerJoined: vi.fn().mockResolvedValue(undefined),
-    notifyRoomUpdated: vi.fn().mockResolvedValue(undefined),
+    notifyRoomEvent: vi.fn().mockResolvedValue(undefined),
     createTokenRequestFor: vi.fn().mockResolvedValue({ keyName: 'k' }),
   };
 });
 
-import { publishPlayerJoined, notifyRoomUpdated, createTokenRequestFor } from '@/lib/ably-server';
+import { publishPlayerJoined, notifyRoomEvent, createTokenRequestFor } from '@/lib/ably-server';
 import { POST as createRoomRoute } from '@/app/api/rooms/route';
 import { POST as joinRoute } from '@/app/api/rooms/[code]/join/route';
 import { GET as stateRoute } from '@/app/api/rooms/[code]/route';
@@ -231,7 +231,7 @@ describe('type battle API', () => {
     const guest = cookieOf(joined);
     const res = await startRoute(req(`/api/rooms/${h.code}/start`, 'POST', {}, h.cookie), ctx(h.code));
     expect(res.status).toBe(200);
-    vi.mocked(notifyRoomUpdated).mockClear();
+    vi.mocked(notifyRoomEvent).mockClear();
     return { code: h.code, host: h.cookie, guest };
   }
   const pick = (code: string, cookie: string, type: unknown) =>
@@ -245,19 +245,23 @@ describe('type battle API', () => {
     const guest = cookieOf(joined);
     const asGuest = await startRoute(req(`/api/rooms/${h.code}/start`, 'POST', {}, guest), ctx(h.code));
     expect(asGuest.status).toBe(403);
-    expect(notifyRoomUpdated).not.toHaveBeenCalled();
+    expect(notifyRoomEvent).not.toHaveBeenCalled();
 
     const res = await startRoute(req(`/api/rooms/${h.code}/start`, 'POST', {}, h.cookie), ctx(h.code));
     expect(res.status).toBe(200);
-    expect(notifyRoomUpdated).toHaveBeenCalledWith(h.code);
+    const event = { kind: 'type-battle-started', round: 1 };
+    expect(notifyRoomEvent).toHaveBeenCalledWith(h.code, event);
+    expect(await res.json()).toEqual({ ok: true, event });
     expect((await getState(h.code, guest)).phase).toBe('type-battle');
   });
 
   it("GET never includes the opponent's pick before both have picked", async () => {
     const { code, host: hostCookie, guest } = await started();
-    expect((await pick(code, hostCookie, 'fire')).status).toBe(200);
-    // The first pick is not broadcast at all.
-    expect(notifyRoomUpdated).not.toHaveBeenCalled();
+    const first = await pick(code, hostCookie, 'fire');
+    expect(first.status).toBe(200);
+    // The first pick is not broadcast at all, only returned to its picker.
+    expect(notifyRoomEvent).not.toHaveBeenCalled();
+    expect(await first.json()).toEqual({ ok: true, event: { kind: 'own-type-pick', round: 1, type: 'fire' } });
 
     const guestRes = await stateRoute(req(`/api/rooms/${code}`, 'GET', undefined, guest), ctx(code));
     const raw = await guestRes.text();
@@ -265,8 +269,12 @@ describe('type battle API', () => {
     expect(JSON.parse(raw).typeBattle).toMatchObject({ yourPick: null, opponentPick: null, winner: null });
     expect((await getState(code, hostCookie)).typeBattle).toMatchObject({ yourPick: 'fire', opponentPick: null });
 
-    expect((await pick(code, guest, 'grass')).status).toBe(200);
-    expect(notifyRoomUpdated).toHaveBeenCalledTimes(1);
+    const second = await pick(code, guest, 'grass');
+    expect(second.status).toBe(200);
+    const event = { kind: 'type-round-resolved', round: 1, picks: { 1: 'fire', 2: 'grass' }, winner: 1 };
+    expect(notifyRoomEvent).toHaveBeenCalledTimes(1);
+    expect(notifyRoomEvent).toHaveBeenCalledWith(code, event);
+    expect(await second.json()).toEqual({ ok: true, event });
     expect((await getState(code, guest)).typeBattle).toMatchObject({
       yourPick: 'grass',
       opponentPick: 'fire',
@@ -287,11 +295,12 @@ describe('type battle API', () => {
     const { code, host: hostCookie, guest } = await started();
     await pick(code, hostCookie, 'water');
     await pick(code, guest, 'water');
-    vi.mocked(notifyRoomUpdated).mockClear();
+    vi.mocked(notifyRoomEvent).mockClear();
 
     const res = await againRoute(req(`/api/rooms/${code}/again`, 'POST', { round: 1 }, guest), ctx(code));
     expect(res.status).toBe(200);
-    expect(notifyRoomUpdated).toHaveBeenCalledTimes(1);
+    expect(notifyRoomEvent).toHaveBeenCalledTimes(1);
+    expect(notifyRoomEvent).toHaveBeenCalledWith(code, { kind: 'type-round-started', round: 2 });
     expect((await getState(code, hostCookie)).typeBattle).toMatchObject({ round: 2, yourPick: null, opponentPick: null });
   });
 
@@ -299,16 +308,17 @@ describe('type battle API', () => {
     const { code, host: hostCookie, guest } = await started();
     await pick(code, hostCookie, 'grass');
     await pick(code, guest, 'fire');
-    vi.mocked(notifyRoomUpdated).mockClear();
+    vi.mocked(notifyRoomEvent).mockClear();
 
     const order = (cookie: string, value: unknown) =>
       orderRoute(req(`/api/rooms/${code}/order`, 'POST', { order: value }, cookie), ctx(code));
     expect((await order(hostCookie, 'first')).status).toBe(403);
     expect((await order(guest, 'last')).status).toBe(400);
-    expect(notifyRoomUpdated).not.toHaveBeenCalled();
+    expect(notifyRoomEvent).not.toHaveBeenCalled();
 
     expect((await order(guest, 'first')).status).toBe(200);
-    expect(notifyRoomUpdated).toHaveBeenCalledTimes(1);
+    expect(notifyRoomEvent).toHaveBeenCalledTimes(1);
+    expect(notifyRoomEvent).toHaveBeenCalledWith(code, { kind: 'draft-started', firstDrafter: 2 });
     expect((await getState(code, hostCookie)).draft).toEqual({ firstDrafter: 2, picks: [] });
     expect((await order(guest, 'second')).status).toBe(409);
   });
@@ -318,7 +328,7 @@ describe('type battle API', () => {
     await pick(code, hostCookie, 'grass');
     await pick(code, guest, 'fire');
     await orderRoute(req(`/api/rooms/${code}/order`, 'POST', { order: 'second' }, guest), ctx(code));
-    vi.mocked(notifyRoomUpdated).mockClear();
+    vi.mocked(notifyRoomEvent).mockClear();
 
     const draftPick = (cookie: string, pokemonId: unknown) =>
       draftPickRoute(req(`/api/rooms/${code}/draft-pick`, 'POST', { pokemonId }, cookie), ctx(code));
@@ -326,10 +336,14 @@ describe('type battle API', () => {
     expect((await draftPick(guest, first)).status).toBe(403);
     expect((await draftPick(hostCookie, 42)).status).toBe(400);
     expect((await draftPick(hostCookie, 'missingno')).status).toBe(400);
-    expect(notifyRoomUpdated).not.toHaveBeenCalled();
+    expect(notifyRoomEvent).not.toHaveBeenCalled();
 
-    expect((await draftPick(hostCookie, first)).status).toBe(200);
-    expect(notifyRoomUpdated).toHaveBeenCalledTimes(1);
+    const picked = await draftPick(hostCookie, first);
+    expect(picked.status).toBe(200);
+    const event = { kind: 'draft-picked', pickIndex: 0, slot: 1, pokemonId: first };
+    expect(notifyRoomEvent).toHaveBeenCalledTimes(1);
+    expect(notifyRoomEvent).toHaveBeenCalledWith(code, event);
+    expect(await picked.json()).toEqual({ ok: true, event });
     expect((await draftPick(guest, first)).status).toBe(409);
     expect((await getState(code, guest)).draft).toEqual({ firstDrafter: 1, picks: [{ slot: 1, pokemonId: first }] });
     expect((await draftPick(guest, second)).status).toBe(200);

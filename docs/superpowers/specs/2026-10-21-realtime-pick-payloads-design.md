@@ -91,7 +91,7 @@ No new database reads and no schema change.
 The `POST` response body includes the same event, plus the picker's own view where it differs:
 
 - `draft-pick`: `{ ok: true, event: { kind: 'draft-picked', ... } }`
-- `type-pick`, first pick: `{ ok: true, yourPick: 'fire', round }` (there is no event to share yet)
+- `type-pick`, first pick: `{ ok: true, event: { kind: 'own-type-pick', round, type } }`. This event is only ever in the picker's own response, never on Ably, because the pick is secret until the reveal.
 - `type-pick`, resolving pick: `{ ok: true, event: { kind: 'type-round-resolved', ... } }`
 - `start`, `again`, `order`: `{ ok: true, event }`
 

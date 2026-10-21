@@ -309,7 +309,8 @@ export async function startTypeBattle(
 }
 
 export type PickResult =
-  | { kind: 'picked'; resolved: boolean }
+  | { kind: 'picked'; round: number; resolved: false }
+  | { kind: 'picked'; round: number; resolved: true; picks: { 1: TypeChoice; 2: TypeChoice }; winner: Slot | null }
   | { kind: 'already-picked' }
   | { kind: 'not-picking' }
   | { kind: 'not-found' };
@@ -317,7 +318,8 @@ export type PickResult =
 /**
  * Records the player's pick for the current round. The pick that completes the
  * round also decides it, in the same transaction, so only one resolution happens.
- * `resolved` is true when this pick completed the round (a win or a draw).
+ * `resolved` is true when this pick completed the round (a win or a draw); then
+ * the result also carries both picks and the winner, for the reveal.
  */
 export async function pickType(
   db: Db,
@@ -340,8 +342,9 @@ export async function pickType(
           .insert(typePicks)
           .values({ roomCode: code, round: room.typeRound, slot: me.slot, type, pickedAt: now });
 
-        const picks = await roundPicks(tx, code, room.typeRound);
-        if (picks[1] === null || picks[2] === null) return { kind: 'picked', resolved: false };
+        const round = room.typeRound;
+        const picks = await roundPicks(tx, code, round);
+        if (picks[1] === null || picks[2] === null) return { kind: 'picked', round, resolved: false };
         const winner = typeBattleWinner(picks[1], picks[2]);
         if (winner !== null) {
           await tx
@@ -349,7 +352,7 @@ export async function pickType(
             .set({ typeWinner: winner })
             .where(and(eq(rooms.code, code), isNull(rooms.typeWinner)));
         }
-        return { kind: 'picked', resolved: true };
+        return { kind: 'picked', round, resolved: true, picks: { 1: picks[1], 2: picks[2] }, winner };
       }),
     );
   } catch (err) {
@@ -359,7 +362,7 @@ export async function pickType(
 }
 
 export type AgainResult =
-  | { kind: 'new-round' }
+  | { kind: 'new-round'; round: number }
   | { kind: 'already-new-round' }
   | { kind: 'not-draw' }
   | { kind: 'not-found' };
@@ -390,7 +393,7 @@ export async function playTypeBattleAgain(
         .update(rooms)
         .set({ typeRound: round + 1 })
         .where(and(eq(rooms.code, code), eq(rooms.typeRound, round)));
-      return { kind: 'new-round' };
+      return { kind: 'new-round', round: round + 1 };
     }),
   );
 }
@@ -430,7 +433,7 @@ export async function chooseDraftOrder(
 }
 
 export type DraftPickResult =
-  | { kind: 'picked'; complete: boolean }
+  | { kind: 'picked'; complete: boolean; pickIndex: number; slot: Slot }
   | { kind: DraftPickError }
   | { kind: 'not-drafting' }
   | { kind: 'not-found' };
@@ -468,7 +471,7 @@ export async function pickPokemon(
         await tx
           .insert(draftPicks)
           .values({ roomCode: code, pickIndex: picks.length, slot: me.slot, pokemonId, pickedAt: now });
-        return { kind: 'picked', complete: picks.length + 1 === TOTAL_PICKS };
+        return { kind: 'picked', complete: picks.length + 1 === TOTAL_PICKS, pickIndex: picks.length, slot: me.slot };
       }),
     );
   } catch (err) {
