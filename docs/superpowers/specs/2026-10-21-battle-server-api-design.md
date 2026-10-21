@@ -257,8 +257,8 @@ The API never takes a raw choice string. Bodies are structured, and `toChoiceStr
 - `switch N` refers to the position in **this step's** `request.team`. The engine reorders `side.pokemon` as Pokémon switch, which is why every choice names its step (§8.3).
 - **Mismatched kinds** are checked by the server and never reach the engine:
   - a `move` when `asked === 'switch'` is 409 `not-asked` with `{ error: 'Must switch.' }`;
-  - a `switch` when the request's `canSwitch` is false (no healthy bench) is 409 `not-asked` too;
-  - a switch while trapped reaches the engine, which returns 422 (§7.2, `maybeTrapped`).
+  - a `switch` when the bench has no healthy Pokémon is 409 `not-asked` too. This checks the bench only, not `canSwitch`, which is also false when trapped;
+  - a switch while trapped (or `maybeTrapped`) reaches the engine, which returns 422 (§7.2).
 - The engine has the last word. If `choose` returns false (disabled move, trapped, fainted or active target, a locked move), the server **throws away that engine object** (a rejected `choose` still changes `side.choice.error`, §3) and returns 422 with the engine's message. Nothing is saved for the action. Any due timeouts were already applied in a separate step, and §11 says what happens to them. A Struggle-only or locked request has one move, and `move 1` picks it.
 - `default` is used only by the timeout path (§10).
 
@@ -429,7 +429,7 @@ Every route returns 404 `{ error: 'Room not found.' }` for an unknown or expired
 | `resolved` (this choice completed the step) | 200 | `{ ok: true, events: [battle-step], view }`, published |
 | `invalid-body` | 400 | `{ error: 'invalid-choice' }` |
 | `stale-step` (`step` ≠ current, e.g. a timeout got there first) | 409 | `{ error: 'stale-step', events, view }`. `events` are the timeout's events, which are also published. |
-| `not-asked` (your request is `wait`, the stage is `team-order`, or the kind doesn't match, §6.4) | 409 | `{ error: 'Not your turn.', view }` |
+| `not-asked` (your request is `wait`, the stage is `team-order`, or the kind doesn't match, §6.4) | 409 | `{ error: 'Not your turn.', view }`, or `{ error: 'Must switch.', view }` for a `move` sent when a switch is due |
 | `already-chosen` | 409 | `{ error: 'Already chosen.', view }` |
 | `ended` | 409 | `{ error: 'The battle is over.', view }` |
 | `rejected` (the engine returned false) | 422 | `{ error: 'invalid-choice', message: '<engine text>', view }` |
@@ -719,7 +719,7 @@ These follow the existing style: Vitest with `// @vitest-environment node`, an i
 - **Base PP:** Sludge Bomb has `maxpp` 10 in the request, both straight after creation and after a restore.
 - **Cold restore:**
   - `restoreBattle` of a saved snapshot gives `gen === 6` and mod `picomon`;
-  - with the sized format removed from `Dex.formats` (test only, restored afterwards), `restoreBattle` throws instead of returning a gen 9 battle.
+  - with `formatid` in a saved snapshot edited to an unregistered id, `restoreBattle` throws instead of returning a gen 9 battle.
 - **`asked` and `hasChosen`:**
   - a waiting side is `null`;
   - reading `asked` and `hasChosen` doesn't change the serialised engine (compare `serialize` before and after).
@@ -807,7 +807,12 @@ These were settled in review and are recorded here so they aren't reopened:
 - **After the battle, on the server:** the room keeps its TTL. The battle stays at `ended` until the room expires.
 - **Manual forfeit:** a new feature, already a non-goal (§2). It's not an open question for this spec.
 
-For the user. Neither blocks the server work:
+For the user. Neither blocks the server work. **Answered 2026-10-21:**
+
+- **(1) Animation time: deferred to the frontend spec.** The server keeps a deadline of 75 s + 1 s grace from step resolution (§10.1).
+- **(2) After the battle: decided later.** For now the room keeps its normal TTL and the result stays readable (§12).
+
+The questions as asked:
 
 1. **Animation time and the 75 s.** The server ships with a deadline of commit + 75 s and a 1 s latency grace (§10.1), so the time a client spends animating the turn counts toward the 75 s. Should the countdown pause during animations? That would need a longer server deadline, for example commit + 75 s + the animation's length. The question belongs in the frontend spec, which knows how long animations take.
 2. **After the battle, in the product.** Is a rematch (same teams, or a new draft) or a "back to Home" flow wanted? It would be its own spec.
