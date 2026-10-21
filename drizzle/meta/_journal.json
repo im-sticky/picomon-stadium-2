@@ -29,6 +29,13 @@
       "when": 1792520982890,
       "tag": "0003_panoramic_leader",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1792607871705,
+      "tag": "0004_mixed_glorian",
+      "breakpoints": true
     }
   ]
 }
