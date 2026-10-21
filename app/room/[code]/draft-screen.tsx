@@ -74,9 +74,9 @@ export function DraftScreen({
   const yourItems = new Set(team(you.slot).map((id) => byId.get(id)?.item));
   /** Why one of your team's limits rules `p` out, or null. */
   const limitReason = (p: PoolPokemon): string | null => {
-    if (p.isUber && youHaveUber) return "Only one uber allowed.";
-    if (p.isStrong && youHaveStrong) return "Only one strong allowed.";
-    if (yourItems.has(p.item)) return "Item already on team.";
+    if (p.isUber && youHaveUber) return "Only one uber pokemon allowed.";
+    if (p.isStrong && youHaveStrong) return "Only one strong pokemon allowed.";
+    if (yourItems.has(p.item)) return "Item already used on team.";
     return null;
   };
   const blocked = (p: PoolPokemon) => limitReason(p) !== null;
