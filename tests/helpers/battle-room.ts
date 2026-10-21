@@ -1,6 +1,7 @@
 import type { Db } from '@/db/client';
+import { draftPicks } from '@/db/schema';
 import { draftTurn, TOTAL_PICKS } from '@/lib/draft';
-import { chooseDraftOrder, createRoom, joinRoom, pickPokemon, pickType, startTypeBattle } from '@/lib/rooms';
+import { chooseDraftOrder, createRoom, joinRoom, pickType, startTypeBattle } from '@/lib/rooms';
 import type { BattleSize } from '@/lib/types';
 
 export const T0 = 1_000_000;
@@ -32,11 +33,20 @@ export async function draftedRoom(
   await pickType(db, room.code, room[1], 'fire', T0);
   await pickType(db, room.code, room[2], 'grass', T0);
   await chooseDraftOrder(db, room.code, room[1], 'first', T0);
+  // The picks are written directly, in snake order, instead of through pickPokemon.
+  // These battle tests need fixed teams (a Choice Band lead, a U-turn user, Wobbuffet),
+  // and the draft's own limits (one uber, one strong, each item once per team) would
+  // reject some of them. Those limits have their own tests in rooms-draft.test.ts.
   const queues = { 1: [...teams[1]], 2: [...teams[2]] };
   for (let i = 0; i < picks; i++) {
     const slot = draftTurn(1, i)!;
-    const result = await pickPokemon(db, room.code, room[slot], queues[slot].shift()!, T0);
-    if (result.kind !== 'picked') throw new Error(result.kind);
+    await db.insert(draftPicks).values({
+      roomCode: room.code,
+      pickIndex: i,
+      slot,
+      pokemonId: queues[slot].shift()!,
+      pickedAt: T0,
+    });
   }
   return room;
 }
