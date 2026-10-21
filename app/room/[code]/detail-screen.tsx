@@ -48,6 +48,7 @@ export function DetailScreen({
   title,
   viewOnly,
   canRent,
+  notRentable,
   onRent,
   onBack,
 }: {
@@ -55,6 +56,8 @@ export function DetailScreen({
   title: string;
   viewOnly: boolean;
   canRent: boolean;
+  /** Why RENT is disabled, shown beside it. */
+  notRentable?: string | null;
   onRent: () => void;
   onBack: () => void;
 }) {
@@ -196,6 +199,11 @@ export function DetailScreen({
       </Frame>
 
       <div className={styles.detail__buttons}>
+        {notRentable && (
+          <p className={styles.detail__notRentable} role="status">
+            {notRentable}
+          </p>
+        )}
         {!viewOnly && (
           <Button primary disabled={!canRent} onClick={onRent}>
             RENT

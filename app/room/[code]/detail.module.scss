@@ -237,8 +237,22 @@
   }
 
   &__buttons {
+    position: relative;
     display: flex;
     justify-content: center;
     gap: 48px;
+  }
+
+  /* Why RENT is disabled: in the space left of the (still centred) buttons. */
+  &__notRentable {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 264px;
+    transform: translateY(-50%);
+    font-size: 24px;
+    line-height: 36px;
+    text-align: right;
+    color: var(--error);
   }
 }

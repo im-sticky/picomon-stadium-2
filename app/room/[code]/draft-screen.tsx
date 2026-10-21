@@ -72,6 +72,14 @@ export function DraftScreen({
   const youHaveUber = team(you.slot).some((id) => byId.get(id)?.isUber);
   const youHaveStrong = team(you.slot).some((id) => byId.get(id)?.isStrong);
   const blocked = (p: PoolPokemon) => (p.isUber && youHaveUber) || (p.isStrong && youHaveStrong);
+  /** Why the open Pokémon can't be rented, shown by RENT. Null while it can be (or mid-rent). */
+  const notRentable = (p: PoolPokemon): string | null => {
+    if (rentedBy.has(p.id)) return "Already drafted.";
+    if (turn !== you.slot) return "Not your turn.";
+    if (p.isUber && youHaveUber) return "Only one uber allowed.";
+    if (p.isStrong && youHaveStrong) return "Only one strong allowed.";
+    return null;
+  };
   const title = turn ? `${name(turn)}'S CHOICE` : "DRAFT COMPLETE";
 
   async function rent(id: string) {
@@ -89,15 +97,15 @@ export function DraftScreen({
   const opened = open && byId.get(open.id);
   if (open && opened) {
     const owner = rentedBy.get(opened.id);
-    const canRent =
-      !open.viewOnly && !busy && turn === you.slot && owner === undefined && !blocked(opened);
+    const reason = open.viewOnly ? null : notRentable(opened);
     return (
       <DetailScreen
         key={opened.id}
         pokemon={opened}
         title={open.viewOnly && owner ? `RENTED BY ${name(owner)}` : title}
         viewOnly={open.viewOnly}
-        canRent={canRent}
+        canRent={!open.viewOnly && !busy && reason === null}
+        notRentable={reason}
         onRent={() => void rent(opened.id)}
         onBack={() => setOpen(null)}
       />
