@@ -100,6 +100,13 @@ export function DraftScreen({
     }
   }
 
+  async function startBattle() {
+    setBusy(true);
+    // On success stay busy: the room moves to the Battle order and this screen goes away.
+    // The done box only holds the button, so a failure just lets the host try again.
+    if (!(await onAction("battle"))) setBusy(false);
+  }
+
   const opened = open && byId.get(open.id);
   if (open && opened) {
     const owner = rentedBy.get(opened.id);
@@ -230,8 +237,9 @@ export function DraftScreen({
       <Frame className={styles.draft__info}>
         {done && you.slot === 1 ? (
           <div className={styles.draft__done}>
-            {/* The battle order screen isn't built yet, so this has no action. */}
-            <Button primary>START BATTLE</Button>
+            <Button primary disabled={busy} onClick={() => void startBattle()}>
+              START BATTLE
+            </Button>
           </div>
         ) : done ? (
           <div role="status">

@@ -3,11 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import * as Ably from "ably";
+import type { BattleEvent } from "@/lib/battle-types";
 import type { PoolPokemon } from "@/lib/draft-pool";
 import { parseRoomEvent, type SyncEvent } from "@/lib/room-events";
 import { startRoomSync, type RoomSync } from "@/lib/room-sync";
 import { isTypeChoice } from "@/lib/type-battle";
 import type { PublicPlayer, RoomState } from "@/lib/types";
+import { BattleOrderScreen, parseOrderProgress } from "./battle-order-screen";
 import { LIVE_FAILED, LOADING, RoomNotice } from "./room-notice";
 import { DraftScreen } from "./draft-screen";
 import { RoomScreen } from "./room-screen";
@@ -16,12 +18,20 @@ import { TypeBattleScreen } from "./type-battle-screen";
 /** POSTs a room action (`/api/rooms/<code>/<action>`); resolves to whether it succeeded. */
 export type RoomAction = (action: string, body?: object) => Promise<boolean>;
 
+/**
+ * Battle screens listen here for the battle events room sync doesn't route. Null
+ * means "you may have missed some" (the channel reattached or the tab came back).
+ */
+export type BattleListener = (event: BattleEvent | null) => void;
+export type SubscribeBattle = (listener: BattleListener) => () => void;
+
 /** `pool` is every Pokémon in the draft, built on the server from the patched dex. */
 export function RoomView({ code, pool }: { code: string; pool: readonly PoolPokemon[] }) {
   const router = useRouter();
   const [state, setState] = useState<RoomState | null>(null);
   const [liveFailed, setLiveFailed] = useState(false);
   const sync = useRef<RoomSync | null>(null);
+  const battleListeners = useRef(new Set<BattleListener>());
 
   useEffect(() => {
     const realtime = new Ably.Realtime({ authUrl: "/api/ably-token" });
@@ -38,12 +48,18 @@ export function RoomView({ code, pool }: { code: string; pool: readonly PoolPoke
     realtime.connection.on(["failed", "suspended"], onConnectionProblem);
     realtime.connection.on("connected", onConnected);
 
+    const toBattle = (event: BattleEvent | null) => battleListeners.current.forEach((l) => l(event));
+
     const roomSync = startRoomSync({
       subscribe(onEvent) {
         // A message that isn't a known event (like room-updated) just means "refetch".
         const listener = (msg: Ably.Message) => {
           const players = msg.data?.players as PublicPlayer[] | undefined;
-          if (msg.name === "player-joined") {
+          const progress = parseOrderProgress(msg.data);
+          if (progress) {
+            // Only the Battle order screen needs it; the room state doesn't change.
+            toBattle(progress);
+          } else if (msg.name === "player-joined") {
             onEvent(Array.isArray(players) ? { kind: "player-joined", players } : null);
           } else {
             onEvent(parseRoomEvent(msg.data));
@@ -63,7 +79,9 @@ export function RoomView({ code, pool }: { code: string; pool: readonly PoolPoke
         let first = true;
         // Events before the channel attaches are lost: refetch once it has.
         void subscribed.then(() => {
-          if (!closed) cb();
+          if (closed) return;
+          cb();
+          toBattle(null);
         });
         const handler = () => {
           if (first) {
@@ -71,13 +89,16 @@ export function RoomView({ code, pool }: { code: string; pool: readonly PoolPoke
             return;
           }
           cb();
+          toBattle(null);
         };
         realtime.connection.on("connected", handler);
         return () => realtime.connection.off("connected", handler);
       },
       onVisible(cb) {
         const handler = () => {
-          if (document.visibilityState === "visible") cb();
+          if (document.visibilityState !== "visible") return;
+          cb();
+          toBattle(null);
         };
         document.addEventListener("visibilitychange", handler);
         return () => document.removeEventListener("visibilitychange", handler);
@@ -128,7 +149,25 @@ export function RoomView({ code, pool }: { code: string; pool: readonly PoolPoke
     [code],
   );
 
+  const subscribeBattle: SubscribeBattle = useCallback((listener) => {
+    const listeners = battleListeners.current;
+    listeners.add(listener);
+    return () => listeners.delete(listener);
+  }, []);
+
   const notice = liveFailed ? LIVE_FAILED : undefined;
+  // The battle screen itself isn't built yet, so the Battle order stays up for the whole battle phase.
+  if (state?.phase === "battle" && state.draft) {
+    return (
+      <BattleOrderScreen
+        state={state}
+        draft={state.draft}
+        pool={pool}
+        notice={notice}
+        subscribeBattle={subscribeBattle}
+      />
+    );
+  }
   if (state?.draft) {
     return <DraftScreen state={state} draft={state.draft} pool={pool} notice={notice} onAction={onAction} />;
   }
