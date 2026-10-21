@@ -3,7 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "mewtwo",
   sprite: "/sprites/pokemon-icons/mewtwo.png",
-  isUber: true,
+  isMaster: true,
   ability: "Unnerve",
   set: {
     moves: ["Psystrike", "Aura Sphere", "Ice Beam", "Recover"],

@@ -4,15 +4,15 @@ import type { DraftPick, Slot } from '@/lib/types';
 
 const order = (first: Slot) => Array.from({ length: TOTAL_PICKS }, (_, i) => draftTurn(first, i));
 
-// A made-up pool: two ubers, two strong ones, two holding Life Orb and plenty of
+// A made-up pool: two masters, two ultra ones, two holding Life Orb and plenty of
 // others. Every other Pokémon holds an item of its own.
-const UBERS = ['uberA', 'uberB'];
-const STRONG = ['strongA', 'strongB'];
+const MASTERS = ['masterA', 'masterB'];
+const ULTRA = ['ultraA', 'ultraB'];
 const ORBS = ['orbA', 'orbB'];
-const POOL = [...UBERS, ...STRONG, ...ORBS, 'a', 'b', 'c'];
+const POOL = [...MASTERS, ...ULTRA, ...ORBS, 'a', 'b', 'c'];
 const limits = (id: string) =>
   POOL.includes(id)
-    ? { isUber: UBERS.includes(id), isStrong: STRONG.includes(id), item: ORBS.includes(id) ? 'Life Orb' : id }
+    ? { isMaster: MASTERS.includes(id), isUltra: ULTRA.includes(id), item: ORBS.includes(id) ? 'Life Orb' : id }
     : undefined;
 
 describe('draft turn order', () => {
@@ -53,20 +53,20 @@ describe('draft pick rules', () => {
     expect(draftPickError(1, host, 2, 'a', limits)).toBe('taken');
   });
 
-  it('allows one uber per player', () => {
-    const picks: DraftPick[] = [{ slot: 1, pokemonId: 'uberA' }, { slot: 2, pokemonId: 'a' }];
-    expect(draftPickError(1, picks, 2, 'uberB', limits)).toBeNull();
+  it('allows one master per player', () => {
+    const picks: DraftPick[] = [{ slot: 1, pokemonId: 'masterA' }, { slot: 2, pokemonId: 'a' }];
+    expect(draftPickError(1, picks, 2, 'masterB', limits)).toBeNull();
     const more: DraftPick[] = [...picks, { slot: 2, pokemonId: 'b' }];
-    expect(draftPickError(1, more, 1, 'uberB', limits)).toBe('uber-limit');
+    expect(draftPickError(1, more, 1, 'masterB', limits)).toBe('master-limit');
     expect(draftPickError(1, more, 1, 'c', limits)).toBeNull();
   });
 
-  it('allows one strong per player, on top of one uber', () => {
-    const picks: DraftPick[] = [{ slot: 1, pokemonId: 'strongA' }, { slot: 2, pokemonId: 'a' }];
-    expect(draftPickError(1, picks, 2, 'strongB', limits)).toBeNull();
+  it('allows one ultra per player, on top of one master', () => {
+    const picks: DraftPick[] = [{ slot: 1, pokemonId: 'ultraA' }, { slot: 2, pokemonId: 'a' }];
+    expect(draftPickError(1, picks, 2, 'ultraB', limits)).toBeNull();
     const more: DraftPick[] = [...picks, { slot: 2, pokemonId: 'b' }];
-    expect(draftPickError(1, more, 1, 'strongB', limits)).toBe('strong-limit');
-    expect(draftPickError(1, more, 1, 'uberA', limits)).toBeNull();
+    expect(draftPickError(1, more, 1, 'ultraB', limits)).toBe('ultra-limit');
+    expect(draftPickError(1, more, 1, 'masterA', limits)).toBeNull();
   });
 
   it('allows each item once per player', () => {

@@ -3,7 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "articuno",
   sprite: "/sprites/pokemon-icons/articuno.png",
-  isStrong: true,
+  isUltra: true,
   ability: "Snow Warning",
   set: {
     moves: ["Blizzard", "Hurricane", "Freeze-Dry", "Roost"],

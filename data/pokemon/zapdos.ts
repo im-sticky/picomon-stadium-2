@@ -3,7 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "zapdos",
   sprite: "/sprites/pokemon-icons/zapdos.png",
-  isStrong: true,
+  isUltra: true,
   ability: "Drizzle",
   set: {
     moves: ["Thunder", "Heat Wave", "Volt Switch", "Roost"],

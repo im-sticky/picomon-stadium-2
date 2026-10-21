@@ -35,7 +35,7 @@ export async function draftedRoom(
   await chooseDraftOrder(db, room.code, room[1], 'first', T0);
   // The picks are written directly, in snake order, instead of through pickPokemon.
   // These battle tests need fixed teams (a Choice Band lead, a U-turn user, Wobbuffet),
-  // and the draft's own limits (one uber, one strong, each item once per team) would
+  // and the draft's own limits (one master, one ultra, each item once per team) would
   // reject some of them. Those limits have their own tests in rooms-draft.test.ts.
   const queues = { 1: [...teams[1]], 2: [...teams[2]] };
   for (let i = 0; i < picks; i++) {

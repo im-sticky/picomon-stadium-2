@@ -332,7 +332,7 @@ describe('type battle API', () => {
 
     const draftPick = (cookie: string, pokemonId: unknown) =>
       draftPickRoute(req(`/api/rooms/${code}/draft-pick`, 'POST', { pokemonId }, cookie), ctx(code));
-    const [first, second] = POKEMON.filter((p) => !p.isUber).map((p) => p.id);
+    const [first, second] = POKEMON.filter((p) => !p.isMaster).map((p) => p.id);
     expect((await draftPick(guest, first)).status).toBe(403);
     expect((await draftPick(hostCookie, 42)).status).toBe(400);
     expect((await draftPick(hostCookie, 'missingno')).status).toBe(400);

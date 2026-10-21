@@ -21,8 +21,8 @@ export type PoolPokemon = {
   id: string;
   name: string;
   sprite: string;
-  isUber: boolean;
-  isStrong: boolean;
+  isMaster: boolean;
+  isUltra: boolean;
   types: string[];
   ability: { name: string; description: string };
   item: string;
@@ -42,8 +42,8 @@ export function draftPool(): PoolPokemon[] {
       id: entry.id,
       name: species.name,
       sprite: entry.sprite,
-      isUber: entry.isUber ?? false,
-      isStrong: entry.isStrong ?? false,
+      isMaster: entry.isMaster ?? false,
+      isUltra: entry.isUltra ?? false,
       types: [...species.types],
       ability: { name: ability.name, description: ability.shortDesc },
       item: dex.items.get(entry.set.item).name,

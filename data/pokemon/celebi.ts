@@ -3,7 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "celebi",
   sprite: "/sprites/pokemon-icons/celebi.png",
-  isStrong: true,
+  isUltra: true,
   ability: "Natural Cure",
   types: ["Grass", "Fairy"],
   set: {

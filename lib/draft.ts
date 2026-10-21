@@ -28,12 +28,12 @@ export type DraftPickError =
   | "not-your-turn"
   | "unknown-pokemon"
   | "taken"
-  | "uber-limit"
-  | "strong-limit"
+  | "master-limit"
+  | "ultra-limit"
   | "item-limit";
 
 /** The one-each limits a Pokémon counts towards. No two on a team may hold the same item. */
-export type DraftLimits = { isUber: boolean; isStrong: boolean; item: string };
+export type DraftLimits = { isMaster: boolean; isUltra: boolean; item: string };
 
 /**
  * Why `slot` can't rent `pokemonId` now, or null if it can. `limits` looks a
@@ -53,8 +53,8 @@ export function draftPickError(
   if (pokemon === undefined) return "unknown-pokemon";
   if (picks.some((p) => p.pokemonId === pokemonId)) return "taken";
   const mine = picks.filter((p) => p.slot === slot).map((p) => limits(p.pokemonId));
-  if (pokemon.isUber && mine.some((p) => p?.isUber)) return "uber-limit";
-  if (pokemon.isStrong && mine.some((p) => p?.isStrong)) return "strong-limit";
+  if (pokemon.isMaster && mine.some((p) => p?.isMaster)) return "master-limit";
+  if (pokemon.isUltra && mine.some((p) => p?.isUltra)) return "ultra-limit";
   if (mine.some((p) => p?.item === pokemon.item)) return "item-limit";
   return null;
 }

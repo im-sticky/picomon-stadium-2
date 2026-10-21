@@ -19,7 +19,7 @@ Background research: [Gen 6 battle mechanics](2026-10-19-gen6-battle-mechanics.m
 - **Level 50.** Already set by the data loader (`LEVEL` in `lib/pokemon-dex.ts`) and shown as LV.50 on Detail.
 - **Team size: draft 6, bring 3, 4 or 6.** The host picks the battle size on Home. Each player drafts 6, then chooses which to bring, and in what order, on the Battle order screen. Both teams are visible there, so that screen is the team preview.
 - **Team source: the draft.** Players rent Pokémon from a hand-picked pool with fixed sets (moves, item, nature, EVs from `data/pokemon/`). Players can't edit sets.
-- **Species pool: hand-picked**, from whatever is in `data/pokemon/`. Legendaries allowed, with at most one uber and one strong Pokémon (base stat total 580–600) per player, and no two on a team holding the same item (enforced in the draft).
+- **Species pool: hand-picked**, from whatever is in `data/pokemon/`. Legendaries allowed, with at most one master and one ultra Pokémon (base stat total 580–600) per player, and no two on a team holding the same item (enforced in the draft).
 - **Learnsets and X/Y vs ORAS: no longer an issue.** Sets are written by hand and not checked against learnsets, so the data files are the only control over which moves a Pokémon gets.
 - **Clauses:**
   - Turn on **Sleep Clause** and **Endless Battle Clause** in the engine.

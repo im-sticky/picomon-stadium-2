@@ -69,13 +69,13 @@ export function DraftScreen({
   const turn = draftTurn(firstDrafter, picks.length);
   const done = picks.length >= TOTAL_PICKS;
   const left = picksLeftInTurn(firstDrafter, picks.length);
-  const youHaveUber = team(you.slot).some((id) => byId.get(id)?.isUber);
-  const youHaveStrong = team(you.slot).some((id) => byId.get(id)?.isStrong);
+  const youHaveMaster = team(you.slot).some((id) => byId.get(id)?.isMaster);
+  const youHaveUltra = team(you.slot).some((id) => byId.get(id)?.isUltra);
   const yourItems = new Set(team(you.slot).map((id) => byId.get(id)?.item));
   /** Why one of your team's limits rules `p` out, or null. */
   const limitReason = (p: PoolPokemon): string | null => {
-    if (p.isUber && youHaveUber) return "Only one uber pokemon allowed.";
-    if (p.isStrong && youHaveStrong) return "Only one strong pokemon allowed.";
+    if (p.isMaster && youHaveMaster) return "Only 1 master pokemon allowed.";
+    if (p.isUltra && youHaveUltra) return "Only 1 ultra pokemon allowed.";
     if (yourItems.has(p.item)) return "Item already used on team.";
     return null;
   };
@@ -249,9 +249,9 @@ export function DraftScreen({
               <div className={styles.draft__infoLeft}>
                 <div className={styles.draft__infoName}>
                   <Image
-                    className={`${styles.draft__infoIcon} ${hovered.isStrong ? styles["draft__infoIcon--strong"] : ""}`}
-                    src={hovered.isUber ? MASTER_BALL_ICON : BALL_ICON}
-                    alt={hovered.isUber ? "Uber" : hovered.isStrong ? "Strong" : ""}
+                    className={`${styles.draft__infoIcon} ${hovered.isUltra ? styles["draft__infoIcon--ultra"] : ""}`}
+                    src={hovered.isMaster ? MASTER_BALL_ICON : BALL_ICON}
+                    alt={hovered.isMaster ? "Master" : hovered.isUltra ? "Ultra" : ""}
                     width={32}
                     height={32}
                     unoptimized

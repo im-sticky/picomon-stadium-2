@@ -129,7 +129,7 @@
     background: var(--hover);
   }
 
-  /* Ruled out by a team limit (uber, strong, item): it can be looked at but not rented. */
+  /* Ruled out by a team limit (master, ultra, item): it can be looked at but not rented. */
   &__cell--blocked {
     opacity: 0.3;
   }
@@ -180,7 +180,7 @@
   }
 
   /* Stand-in Ultra Ball until its icon exists: the Poké Ball turned yellow. */
-  &__infoIcon--strong {
+  &__infoIcon--ultra {
     filter: hue-rotate(85deg) brightness(3);
   }
 

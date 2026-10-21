@@ -456,7 +456,7 @@ export type DraftPickResult =
 
 const draftLimits = (id: string) => {
   const entry = getPokemon(id);
-  return entry && { isUber: entry.isUber ?? false, isStrong: entry.isStrong ?? false, item: entry.set.item };
+  return entry && { isMaster: entry.isMaster ?? false, isUltra: entry.isUltra ?? false, item: entry.set.item };
 };
 
 /**

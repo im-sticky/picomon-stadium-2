@@ -3,7 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "hooh",
   sprite: "/sprites/pokemon-icons/ho_oh.png",
-  isUber: true,
+  isMaster: true,
   ability: "Regenerator",
   set: {
     moves: ["Sacred Fire", "Brave Bird", "Earthquake", "Roost"],
