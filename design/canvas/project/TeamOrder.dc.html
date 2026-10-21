@@ -54,7 +54,8 @@ button:disabled{cursor:default}
       </div>
     </section>
     <div style="width: 96px; flex: none; align-self: stretch; display: flex; flex-direction: column; align-items: center">
-      <p aria-label="Battle format" style="margin-top: 60px; font-size: 32px; line-height: 64px; text-align: center">{{format}}</p>
+      <p role="timer" aria-label="Time left {{timer}}" style="font-size: 32px; line-height: 48px; white-space: nowrap; color: {{timerColor}}">{{timer}}</p>
+      <p aria-label="Battle format" style="margin-top: 12px; font-size: 32px; line-height: 64px; text-align: center">{{format}}</p>
       <p aria-hidden="true" style="flex: 1; display: flex; align-items: center; font-size: 64px; line-height: 64px; white-space: nowrap">VS</p>
     </div>
     <section aria-label="{{guestName}}" style="width: 480px; display: flex; flex-direction: column; align-items: flex-end; gap: 12px">
@@ -82,13 +83,24 @@ button:disabled{cursor:default}
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"count":{"editor":"enum","options":["","3","4","6"],"default":""},"chosen":{"editor":"text","default":""},"oppFilled":{"editor":"int","min":0,"max":6,"default":2},"$preview":{"width":1200,"height":900}}'>
+<script type="text/x-dc" data-dc-script data-props='{"count":{"editor":"enum","options":["","3","4","6"],"default":""},"chosen":{"editor":"text","default":""},"oppFilled":{"editor":"int","min":0,"max":6,"default":2},"timeLeft":{"editor":"int","min":0,"max":75,"default":75},"$preview":{"width":1200,"height":900}}'>
 class Component extends DCLogic {
   constructor(props) {
     super(props);
     // Indexes into your team, in the order they were picked
     const start = String(props.chosen || '').split(',').map((x) => parseInt(x, 10)).filter((x) => x >= 0 && x < 6);
-    this.state = { chosen: start };
+    // 75-second order timer (prototype counts down locally; the app uses the server's deadline)
+    const t = parseInt(props.timeLeft, 10);
+    this.state = { chosen: start, left: t >= 0 && t <= 75 ? t : 75 };
+  }
+  componentDidMount() {
+    this.tick = setInterval(() => {
+      if (this.locked || this.state.left <= 0) return;
+      this.setState({ left: this.state.left - 1 });
+    }, 1000);
+  }
+  componentWillUnmount() {
+    clearInterval(this.tick);
   }
   renderVals() {
     // Player 1 is always the host; names come from the room
@@ -118,6 +130,9 @@ class Component extends DCLogic {
     const count = [3, 4, 6].includes(fromProp) ? fromProp : [3, 4, 6].includes(saved) ? saved : 6;
     const chosen = this.state.chosen.slice(0, count);
     const locked = chosen.length >= count;
+    this.locked = locked;
+    const left = this.state.left;
+    const timer = Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0');
     // Prototype only: in the app, each opponent pick fills one ball as it happens
     const oppFilled = Math.min(count, Math.max(0, parseInt(this.props.oppFilled, 10) || 0));
 
@@ -146,6 +161,9 @@ class Component extends DCLogic {
     }
 
     return {
+      timer,
+      // Red for the last 15 seconds
+      timerColor: left <= 15 ? '#C03028' : '#181818',
       format: count + 'V' + count,
       hostName: NAMES[1],
       guestName: NAMES[2],
