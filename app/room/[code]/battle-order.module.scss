@@ -125,7 +125,8 @@
     }
   }
 
-  /* The 96px gap between the columns: the format level with the slots, VS below. */
+  /* The 96px gap between the columns: the timer level with the names, the format
+     level with the slots, VS below. */
   &__centre {
     display: flex;
     flex: none;
@@ -135,8 +136,19 @@
     width: 96px;
   }
 
+  /* The 75-second order deadline, red for the last 15 seconds. */
+  &__timer {
+    font-size: 32px;
+    line-height: 48px;
+    white-space: nowrap;
+
+    &--warn {
+      color: var(--p1);
+    }
+  }
+
   &__format {
-    margin-top: 60px;
+    margin-top: 12px;
     font-size: 32px;
     line-height: 64px;
     text-align: center;

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import type { BattleEvent, BattleView } from "@/lib/battle-types";
+import { GRACE_MS, type BattleEvent, type BattleView } from "@/lib/battle-types";
 import type { PoolPokemon } from "@/lib/draft-pool";
 import type { DraftView, RoomState, Slot } from "@/lib/types";
 import { MessageBox, type Message } from "@/app/ui/message-box";
@@ -15,6 +15,20 @@ const CHOOSING: Message = ["Choose the order of your team.", ""];
 const LOCKED: Message = ["Locked in!", "Waiting to start..."];
 const FAILED: Message = ["Something went wrong.", "Try again."];
 const BALL_ICON = "/sprites/misc/icon-pokeballball.png";
+/** The timer turns red at this many seconds left. */
+const WARN_SECONDS = 15;
+/** How often the countdown redraws. */
+const TICK_MS = 250;
+/** Ask the server this long after the deadline plus its grace, so the timeout is due. */
+const CHECK_DELAY_MS = GRACE_MS + 250;
+/** At most one timeout check this often. */
+const CHECK_EVERY_MS = 2000;
+
+/**
+ * The order deadline in server time, and server time minus local time when the
+ * last view arrived. `live` is false once the server has moved past the Battle order.
+ */
+type Clock = { deadline: number; offset: number; live: boolean };
 
 type OrderProgress = Extract<BattleEvent, { kind: "battle-order-progress" }>;
 
@@ -61,6 +75,9 @@ export function BattleOrderScreen({
   const order = useRef<number[]>([]);
   const confirmed = useRef<number[]>([]);
   const sending = useRef(false);
+  const [clock, setClock] = useState<Clock | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const lastCheck = useRef(0);
 
   const setOrder = (next: number[]) => {
     order.current = next;
@@ -76,6 +93,12 @@ export function BattleOrderScreen({
       const theirs = view.order ? view.order.opponentCount : battleSize;
       setOpponentCount((count) => Math.max(count, theirs));
       setLoaded(true);
+      // Every view re-arms the countdown from the server's clock, which corrects any drift.
+      if (view.stage === "team-order" && view.deadline !== null) {
+        setClock({ deadline: view.deadline, offset: view.serverNow - Date.now(), live: true });
+      } else {
+        setClock((c) => c && { ...c, live: false });
+      }
     },
     [draft, you.slot, battleSize],
   );
@@ -121,6 +144,7 @@ export function BattleOrderScreen({
         const body = (await res.json().catch(() => null)) as { view?: BattleView } | null;
         if (res.ok) {
           confirmed.current = sent;
+          if (body?.view) applyView(body.view);
           continue;
         }
         // order-conflict / not-ordering carry the server's view; anything else, fetch it.
@@ -141,6 +165,41 @@ export function BattleOrderScreen({
 
   // Past the Battle order (both locked in, or the deadline passed) there's nothing left to pick.
   const locked = yours.length >= battleSize || (state.battle !== null && state.battle.stage !== "team-order");
+
+  // The countdown stops once you're locked in (board 3b shows it stopped).
+  useEffect(() => {
+    if (!clock?.live || locked) return;
+    const id = setInterval(() => setNow(Date.now()), TICK_MS);
+    return () => clearInterval(id);
+  }, [clock, locked]);
+
+  // When the deadline passes, ask the server to apply the timeout, even once you're
+  // locked in (the opponent may be gone). Its view re-arms the clock: if the server
+  // says it isn't due yet, the countdown resyncs to the server's time.
+  useEffect(() => {
+    if (!clock?.live) return;
+    let timer: ReturnType<typeof setTimeout>;
+    const check = () => {
+      lastCheck.current = Date.now();
+      fetch(`/api/rooms/${code}/battle/timeout`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ step: 0 }),
+      })
+        .then((res) => (res.ok ? (res.json() as Promise<{ view: BattleView }>) : null))
+        .then((body) => body && applyView(body.view))
+        .catch(() => {});
+      // Until a view re-arms this effect, check again every few seconds.
+      timer = setTimeout(check, CHECK_EVERY_MS);
+    };
+    const due = clock.deadline + CHECK_DELAY_MS - clock.offset;
+    const wait = Math.max(due - Date.now(), lastCheck.current + CHECK_EVERY_MS - Date.now(), 0);
+    timer = setTimeout(check, wait);
+    return () => clearTimeout(timer);
+  }, [clock, code, applyView]);
+
+  const secondsLeft = clock && Math.max(0, Math.ceil((clock.deadline - (now + clock.offset)) / 1000));
+  const timerText = `${Math.floor((secondsLeft ?? 0) / 60)}:${String((secondsLeft ?? 0) % 60).padStart(2, "0")}`;
 
   function pick(position: number) {
     if (!loaded || locked || order.current.includes(position)) return;
@@ -228,6 +287,14 @@ export function BattleOrderScreen({
       <div className={styles.battleOrder__columns}>
         {column(1)}
         <div className={styles.battleOrder__centre}>
+          <p
+            role="timer"
+            aria-label={`Time left ${timerText}`}
+            className={`${styles.battleOrder__timer} ${secondsLeft !== null && secondsLeft <= WARN_SECONDS ? styles["battleOrder__timer--warn"] : ""}`}
+            style={{ visibility: clock ? "visible" : "hidden" }}
+          >
+            {timerText}
+          </p>
           <p className={styles.battleOrder__format} aria-label="Battle format">
             {battleSize}V{battleSize}
           </p>
