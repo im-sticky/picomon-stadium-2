@@ -28,7 +28,7 @@ Background research: [Gen 6 battle mechanics](2026-10-19-gen6-battle-mechanics.m
   - **Species Clause** is already guaranteed by the draft (each Pokémon can be rented once).
 - **IP posture: real Pokémon names, data and sprites.** Free, never charged for, credited as an unofficial fan project (as on Home today).
 - **Turn timer: 75 seconds for every choice**, both moves and faint replacements, with a visible countdown.
-  - On timeout, the server picks a random legal move, or sends in a random healthy Pokémon for a replacement.
+  - On timeout, the server submits the engine's own `default` choice: the first usable move, the first healthy bench Pokémon for a replacement, or the team in draft order on the Battle order screen. *Changed 2026-10-21 from a random choice.*
   - **Three timeouts in a row and that player forfeits.**
   - Disconnects need no separate handling: a disconnected player just doesn't choose, so the timer covers it. Refreshing puts them back in the battle.
 - **Faint replacements** follow the engine (Gen 5+ rules):

@@ -71,7 +71,7 @@
   - fixed rental sets from the hand-picked pool in `data/pokemon/`, at most one uber per player;
   - the project's own format `[Gen 6] Picomon` (`lib/pokemon-dex.ts`) with **Sleep Clause Mod** and **Endless Battle Clause** as the only clauses; `Picked Team Size` is set per battle (§18.1);
   - **base PP, no PP Ups** (the engine hard-codes 3 PP Ups; §18.2 shows the tested fix);
-  - **75 seconds per choice**, a random legal choice on timeout, and a forfeit after three timeouts in a row (§18.4);
+  - **75 seconds per choice**, the engine's own `default` choice on timeout, and a forfeit after three timeouts in a row (§18.4);
   - the engine's `toJSON()` snapshot saved in **one `battles` row per room**, overwritten every turn, with no choice log (§18.6);
   - real Pokémon names, data and sprites in a free, non-commercial fan project (§14.5);
   - no Mega Stones, Primal orbs or terrain moves in any set;
@@ -133,7 +133,7 @@ Answered on 2026-10-21 (details and implementation in §18):
 | Learnsets / XY vs ORAS | **Not checked.** The data files are the only control over which moves a Pokémon gets. |
 | Clauses | **Sleep Clause Mod** and **Endless Battle Clause** in the engine. **No Item Clause.** OHKO, Evasion and Self-KO moves are kept out of the sets instead. Species Clause is guaranteed by the draft (each Pokémon can be rented once). |
 | Base PP | **No PP Ups** (decided 2026-10-20). See §18.2. |
-| Turn timer | **75 seconds for every choice**, random legal choice on timeout, forfeit after 3 timeouts in a row (§18.4). |
+| Turn timer | **75 seconds for every choice**, the engine's `default` choice on timeout, forfeit after 3 timeouts in a row (§18.4). |
 | Faint replacements | As the engine does them (§18.5), on the same timer. |
 | Saving battles | **One `battles` row per room** holding the latest `toJSON()` snapshot; **no choice log** for now (§18.6). |
 | IP posture | Real names, data and sprites; free and non-commercial, credited as an unofficial fan project (§14.5). |
@@ -1265,7 +1265,7 @@ Updated 2026-10-21 to match the answered questions. §18 is the spec for each it
 - authenticate the player (the existing room cookie);
 - reject any choice with a `mega` suffix;
 - call `battle.choose(side, choice)` and reject a `false` result;
-- the 75-second timer, random timeout choices and the three-timeout forfeit (§18.4);
+- the 75-second timer, the `default` choice on timeout and the three-timeout forfeit (§18.4);
 - turning the protocol into Crystal-style UI events;
 - giving each player only their own view (`sideupdate` / `|split|`), never the saved snapshot.
 
@@ -1629,18 +1629,20 @@ battle.setPlayer('p2', { name, team });
 **Rules (decided):**
 
 - **75 seconds** for every choice the battle asks for: team order (Battle order screen), each turn's move or switch, and faint replacements. The countdown is visible to both players.
-- **On timeout,** the server makes a **random legal choice** for that player.
+- **On timeout,** the server submits the engine's own **`default`** choice for that player (decided 2026-10-21; not a random choice).
 - **Three timeouts in a row** and that player **forfeits**. Choosing in time resets their count to 0.
 - **Disconnects** are not handled separately. A disconnected player simply doesn't choose, so the timer covers them; refreshing restores the battle from the server.
 
-**Random legal choice.** The engine's own `default` choice is **not** random: `side.autoChoose()` → `chooseMove()` takes the **first** usable move, and `chooseSwitch()` the first healthy bench Pokémon. So the server builds the random choice from the player's current request (`side.activeRequest`, §14.4):
+**The timeout choice.** The server calls `battle.choose(side, 'default')`. The engine handles it in `side.choose()` (`case 'default'` → `side.autoChoose()`) and makes a fixed, predictable choice from the player's current request (§14.4):
 
-| Request | Random choice |
+| Request | What `default` does |
 |---|---|
-| `teamPreview` | `team` + a random order of the 6, first N used |
-| `active` (a normal turn) | `move i` for a random move with `disabled: false`. If no move is usable, the request offers Struggle as the only move, and `move 1` picks it. Switching is not chosen at random (**design**: a timed-out player attacks rather than retreats). |
-| `forceSwitch` | `switch i` for a random bench Pokémon with HP > 0 |
-| `wait` | nothing (this player isn't being asked) |
+| `teamPreview` | `chooseTeam()` with no order: the first N Pokémon in team order (draft order), the first one leading |
+| `active` (a normal turn) | `chooseMove()` with no move: the **first move that isn't disabled**. If every move is out of PP, the request only offers Struggle, so Struggle is used. It never switches. |
+| `forceSwitch` | `chooseSwitch()` with no slot: the **first healthy bench Pokémon** |
+| `wait` | Nothing: this player isn't being asked |
+
+No server-side choice logic is needed. The same input always produces the same choice, which also makes timeouts easy to test.
 
 **Forfeit.** **[tested]** `battle.forceWin('p2')` ends the battle immediately with `|win|<p2 name>` in the log and `battle.ended === true`. To forfeit p1, call `forceWin('p2')`, and vice versa.
 
@@ -1657,7 +1659,7 @@ The engine already follows the Gen 5+ rule:
 
 - At the end of a turn, only a side that lost its active Pokémon gets a `forceSwitch` request. The other side gets `wait`, and its screen shows "Waiting for <NAME> to choose a POKéMON...".
 - If both active Pokémon fainted, both sides get `forceSwitch` and choose at the same time. Neither player sees the other's choice until both are in.
-- Same 75-second timer. On timeout, a random healthy bench Pokémon is sent in (§18.4), and it counts toward the three-timeout forfeit.
+- Same 75-second timer. On timeout, `default` sends in the first healthy bench Pokémon (§18.4), and it counts toward the three-timeout forfeit.
 
 ### 18.6 Saving battles
 
@@ -1696,7 +1698,7 @@ The engine already follows the Gen 5+ rule:
   - `sim/pokemon.ts` hard-codes 3 PP Ups per move. Overriding `battle.calculatePP` before `setPlayer` gives base PP (Sludge Bomb 10, not 16), and it survives `toJSON` / `fromJSON`.
   - `@@@Picked Team Size = N` brings exactly 3, 4 or 6 after team preview. It conflicts with a `Picked Team Size` already in the base ruleset.
   - `battle.forceWin(side)` ends the battle with a `|win|` line.
-  - `side.autoChoose()` picks the first usable move or healthy bench Pokémon, not a random one.
+  - `side.autoChoose()` (the `default` choice) picks the first usable move, the first healthy bench Pokémon, or the team in its listed order. The project uses it as the timeout choice.
 
 - **`pokemon-showdown@0.11.11`** (npm, TypeScript source included):
   - `sim/battle-actions.ts`: `getDamage`, `modifyDamage`, `getConfusionDamage`, `canMegaEvo`, `runMegaEvo`, `hitStepAccuracy`, the Gen ≤ 6 hit-step swap, multi-hit odds, `calcRecoilDamage`.
