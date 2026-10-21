@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { applyEvent, isWaitingOnOpponent, parseRoomEvent, progress, type SyncEvent } from "@/lib/room-events";
+import { applyEvent, isWaitingOnOpponent, parseRoomEvent, progress, stateKey, type SyncEvent } from "@/lib/room-events";
 import type { DraftPick, PublicPlayer, RoomState, TypeBattleView } from "@/lib/types";
 
 const players: PublicPlayer[] = [
@@ -14,6 +14,7 @@ const lobby: RoomState = {
   battleSize: 6,
   typeBattle: null,
   draft: null,
+  battle: null,
 };
 const round = (r: number, more: Partial<TypeBattleView> = {}): RoomState => ({
   ...lobby,
@@ -26,6 +27,19 @@ const drafting = (picks: DraftPick[] = []): RoomState => ({
   phase: "draft",
   draft: { firstDrafter: 1, picks },
 });
+
+// A full draft (snake order from the host), then the battle on top of it.
+const fullDraft: DraftPick[] = [1, 2, 2, 1, 1, 2, 2, 1, 1, 2, 2, 1].map((slot, i) => ({
+  slot: slot as 1 | 2,
+  pokemonId: `mon${i}`,
+}));
+type Battle = NonNullable<RoomState["battle"]>;
+const battling = (stage: Battle["stage"] = "team-order", result: Battle["result"] = null): RoomState => ({
+  ...drafting(fullDraft),
+  phase: "battle",
+  battle: { stage, result },
+});
+const battleStarted: SyncEvent = { kind: "battle-started", battleSize: 6, deadline: 2_000, at: 1_000 };
 
 const resolved = (r: number, winner: 1 | 2 | null = 1): SyncEvent => ({
   kind: "type-round-resolved",
@@ -138,6 +152,50 @@ describe("applyEvent", () => {
       expect(applyEvent(drafting(), picked(0, 2, "lugia"))).toEqual({ refetch: "conflict" });
     });
   });
+
+  describe("battle", () => {
+    it("every type battle event is stale", () => {
+      const events: SyncEvent[] = [
+        { kind: "type-battle-started", round: 1 },
+        resolved(1),
+        { kind: "type-round-started", round: 2 },
+        { kind: "own-type-pick", round: 1, type: "fire" },
+      ];
+      for (const event of events) expect(applyEvent(battling(), event)).toEqual({ same: true });
+    });
+
+    it("draft events match the held draft, or conflict", () => {
+      expect(applyEvent(battling(), { kind: "draft-started", firstDrafter: 1 })).toEqual({ same: true });
+      expect(applyEvent(battling(), { kind: "draft-started", firstDrafter: 2 })).toEqual({ refetch: "conflict" });
+      expect(applyEvent(battling(), picked(11, 1, "mon11"))).toEqual({ same: true });
+      expect(applyEvent(battling(), picked(11, 1, "lugia"))).toEqual({ refetch: "conflict" });
+      expect(applyEvent(battling(), picked(12, 2, "lugia"))).toEqual({ refetch: "conflict" });
+    });
+
+    it("battle-started moves a full draft into the battle, keeping the draft", () => {
+      expect(applyEvent(drafting(fullDraft), battleStarted)).toEqual({ next: battling() });
+      expect(applyEvent(battling(), battleStarted)).toEqual({ same: true });
+      expect(applyEvent(battling("ended", { winner: 2, reason: "normal" }), battleStarted)).toEqual({ same: true });
+    });
+
+    it("battle-started waits for a late pick, or a draft not yet started", () => {
+      expect(applyEvent(drafting(fullDraft.slice(0, 11)), battleStarted)).toEqual({ hold: true });
+      expect(applyEvent(lobby, battleStarted)).toEqual({ hold: true });
+      expect(applyEvent(round(2), battleStarted)).toEqual({ hold: true });
+    });
+
+    it("stateKey tells battle stages and results apart", () => {
+      const keys = [
+        battling(),
+        battling("in-progress"),
+        battling("ended", { winner: 1, reason: "normal" }),
+        battling("ended", { winner: 2, reason: "normal" }),
+        battling("ended", { winner: 2, reason: "forfeit" }),
+        battling("ended", { winner: null, reason: "abandoned" }),
+      ].map(stateKey);
+      expect(new Set(keys).size).toBe(keys.length);
+    });
+  });
 });
 
 describe("parseRoomEvent", () => {
@@ -148,6 +206,7 @@ describe("parseRoomEvent", () => {
       { kind: "type-round-started", round: 2 },
       { kind: "draft-started", firstDrafter: 2 },
       picked(4, 1, "snorlax"),
+      battleStarted,
     ];
     for (const e of events) expect(parseRoomEvent(JSON.parse(JSON.stringify(e)))).toEqual(e);
     expect(parseRoomEvent({})).toBeNull();
@@ -156,6 +215,10 @@ describe("parseRoomEvent", () => {
     expect(parseRoomEvent({ kind: "type-round-resolved", round: 1, picks: { 1: "fire", 2: "rock" }, winner: 1 })).toBeNull();
     // Your own secret pick is never accepted from a shared message.
     expect(parseRoomEvent({ kind: "own-type-pick", round: 1, type: "fire" })).toBeNull();
+    expect(parseRoomEvent({ kind: "battle-started", battleSize: 5, deadline: 2_000, at: 1_000 })).toBeNull();
+    // Battle events stay a generic "something changed" until the battle client routes them.
+    expect(parseRoomEvent({ kind: "battle-order-progress", slot: 1, count: 2 })).toBeNull();
+    expect(parseRoomEvent({ kind: "battle-step", step: 1, lines: [], asked: { 1: "move", 2: "move" } })).toBeNull();
   });
 });
 
@@ -170,6 +233,10 @@ describe("progress and isWaitingOnOpponent", () => {
       round(2),
       drafting(),
       drafting([{ slot: 1, pokemonId: "lugia" }]),
+      drafting(fullDraft),
+      battling(),
+      battling("in-progress"),
+      battling("ended", { winner: 1, reason: "normal" }),
     ];
     const values = steps.map(progress);
     expect([...values].sort((a, b) => a - b)).toEqual(values);

@@ -1,6 +1,6 @@
-import { draftTurn } from "@/lib/draft";
+import { draftTurn, TOTAL_PICKS } from "@/lib/draft";
 import { isTypeChoice } from "@/lib/type-battle";
-import type { PublicPlayer, RoomState, Slot, TypeChoice } from "@/lib/types";
+import { BATTLE_SIZES, type BattleSize, type PublicPlayer, type RoomState, type Slot, type TypeChoice } from "@/lib/types";
 
 /**
  * What changed in a room, published on Ably after the write commits. Each carries
@@ -11,7 +11,8 @@ export type RoomEvent =
   | { kind: "type-round-resolved"; round: number; picks: { 1: TypeChoice; 2: TypeChoice }; winner: Slot | null }
   | { kind: "type-round-started"; round: number }
   | { kind: "draft-started"; firstDrafter: Slot }
-  | { kind: "draft-picked"; pickIndex: number; slot: Slot; pokemonId: string };
+  | { kind: "draft-picked"; pickIndex: number; slot: Slot; pokemonId: string }
+  | { kind: "battle-started"; battleSize: BattleSize; deadline: number; at: number };
 
 /**
  * Events a client can apply. `player-joined` is the existing Ably message; your own
@@ -38,8 +39,13 @@ const CONFLICT = { refetch: "conflict" } as const;
 
 const isSlot = (v: unknown): v is Slot => v === 1 || v === 2;
 const isRound = (v: unknown): v is number => Number.isInteger(v) && (v as number) >= 1;
+const isBattleSize = (v: unknown): v is BattleSize => BATTLE_SIZES.includes(v as BattleSize);
 
-/** The event in an Ably message's data, or null if it isn't one this client knows. */
+/**
+ * The event in an Ably message's data, or null if it isn't one this client knows.
+ * Battle events (`battle-order-progress`, `battle-step`) are null for now: a
+ * generic "something changed" until the battle client routes them.
+ */
 export function parseRoomEvent(data: unknown): RoomEvent | null {
   if (!data || typeof data !== "object") return null;
   const d = data as Record<string, unknown>;
@@ -60,6 +66,9 @@ export function parseRoomEvent(data: unknown): RoomEvent | null {
       if (!Number.isInteger(d.pickIndex) || (d.pickIndex as number) < 0) return null;
       if (!isSlot(d.slot) || typeof d.pokemonId !== "string") return null;
       return { kind: d.kind, pickIndex: d.pickIndex as number, slot: d.slot, pokemonId: d.pokemonId };
+    case "battle-started":
+      if (!isBattleSize(d.battleSize) || !Number.isInteger(d.deadline) || !Number.isInteger(d.at)) return null;
+      return { kind: d.kind, battleSize: d.battleSize, deadline: d.deadline as number, at: d.at as number };
     default:
       return null;
   }
@@ -116,12 +125,16 @@ export function applyEvent(state: RoomState | null, event: SyncEvent): ApplyResu
 
     case "draft-started":
       if (phase === "lobby") return HOLD;
-      if (phase === "draft") return draft?.firstDrafter === event.firstDrafter ? SAME : CONFLICT;
+      if (phase === "draft" || phase === "battle") return draft?.firstDrafter === event.firstDrafter ? SAME : CONFLICT;
       return {
         next: { ...state, phase: "draft", typeBattle: null, draft: { firstDrafter: event.firstDrafter, picks: [] } },
       };
 
     case "draft-picked": {
+      if (phase === "battle") {
+        const held = draft?.picks[event.pickIndex];
+        return held && held.slot === event.slot && held.pokemonId === event.pokemonId ? SAME : CONFLICT;
+      }
       if (phase !== "draft" || !draft) return HOLD;
       const { picks } = draft;
       if (event.pickIndex < picks.length) {
@@ -133,15 +146,23 @@ export function applyEvent(state: RoomState | null, event: SyncEvent): ApplyResu
       const pick = { slot: event.slot, pokemonId: event.pokemonId };
       return { next: { ...state, draft: { ...draft, picks: [...picks, pick] } } };
     }
+
+    case "battle-started":
+      if (phase === "battle") return SAME;
+      // The last pick must be in first.
+      if (phase !== "draft" || !draft || draft.picks.length < TOTAL_PICKS) return HOLD;
+      return { next: { ...state, phase: "battle", battle: { stage: "team-order", result: null } } };
   }
 }
 
 /**
  * How far along the room is, as a number that only grows: phase, then (in the
- * type battle) round and how much of it is done, then (in the draft) picks made.
+ * type battle) round and how much of it is done, then (in the draft) picks made,
+ * then (in the battle) its stage.
  */
 export function progress(state: RoomState): number {
-  const { typeBattle: tb, draft } = state;
+  const { typeBattle: tb, draft, battle } = state;
+  if (state.phase === "battle") return 3e6 + (battle?.stage === "ended" ? 2 : battle?.stage === "in-progress" ? 1 : 0);
   if (state.phase === "draft" && draft) return 2e6 + draft.picks.length;
   if (state.phase === "type-battle" && tb) {
     const stage = tb.opponentPick !== null ? 2 : tb.yourPick !== null ? 1 : 0;
@@ -152,13 +173,14 @@ export function progress(state: RoomState): number {
 
 /** The parts of the state two clients must agree on, as a comparable string. */
 export function stateKey(state: RoomState): string {
-  const { phase, battleSize, players, typeBattle: tb, draft } = state;
+  const { phase, battleSize, players, typeBattle: tb, draft, battle } = state;
   return JSON.stringify({
     phase,
     battleSize,
     players: players.map((p) => [p.id, p.name, p.slot]),
     typeBattle: tb && [tb.round, tb.yourPick, tb.opponentPick, tb.winner, tb.firstDrafter],
     draft: draft && [draft.firstDrafter, draft.picks.map((p) => [p.slot, p.pokemonId])],
+    battle: battle && [battle.stage, battle.result?.winner, battle.result?.reason],
   });
 }
 

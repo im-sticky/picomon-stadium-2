@@ -1589,6 +1589,8 @@ This section turns the 2026-10-21 answers into spec for the battle feature. Item
 - **Rules in the format:** `Team Preview`, `Cancel Mod`, `Sleep Clause Mod`, `Endless Battle Clause`, `HP Percentage Mod`.
 - **Team size per battle.** The battle size lives on the room (`rooms.battle_size`: 3, 4 or 6). Add it to the format id when creating the battle:
 
+  > **Update 2026-10-21:** the `@@@` suffix doesn't work on our registered format (the battle falls back to gen 9). Battles use one registered format per size instead; see §3 and §6.1 of [the battle server spec](../superpowers/specs/2026-10-21-battle-server-api-design.md).
+
   ```ts
   new Battle({ formatid: `${FORMAT_ID}@@@Picked Team Size = ${room.battleSize}`, seed, send });
   ```
