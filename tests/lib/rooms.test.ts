@@ -44,6 +44,7 @@ describe('rooms', () => {
       battleSize: 6,
       typeBattle: null,
       draft: null,
+      battle: null,
     });
     expect(await findActivePlayer(db, secret, T0)).toEqual({ id: playerId, roomCode: code });
     expect(await findActivePlayer(db, null, T0)).toBeNull();

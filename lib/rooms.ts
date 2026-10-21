@@ -1,11 +1,12 @@
 import { and, asc, eq, inArray, isNull, lte, gt } from 'drizzle-orm';
 import type { Db } from '@/db/client';
-import { draftPicks, players, rooms, typePicks } from '@/db/schema';
+import { battles, draftPicks, players, rooms, typePicks } from '@/db/schema';
 import { generateCode } from '@/lib/codes';
 import { draftPickError, TOTAL_PICKS, type DraftPickError } from '@/lib/draft';
 import { getPokemon } from '@/lib/pokemon-dex';
 import { typeBattleWinner } from '@/lib/type-battle';
 import { DEFAULT_BATTLE_SIZE } from '@/lib/types';
+import type { BattleResult, BattleStage, EndReason } from '@/lib/battle-types';
 import type {
   BattleSize,
   DraftPick,
@@ -38,7 +39,7 @@ function errorCodes(err: unknown): string[] {
   return out;
 }
 
-function isConstraintError(err: unknown): boolean {
+export function isConstraintError(err: unknown): boolean {
   return errorCodes(err).some((c) => c.startsWith('SQLITE_CONSTRAINT'));
 }
 
@@ -49,6 +50,7 @@ function isBusyError(err: unknown): boolean {
 async function deleteExpired(db: Db, now: number): Promise<void> {
   // Players first: foreign keys may not be enforced, so don't rely on cascade.
   const expired = db.select({ code: rooms.code }).from(rooms).where(lte(rooms.expiresAt, now));
+  await db.delete(battles).where(inArray(battles.roomCode, expired));
   await db.delete(typePicks).where(inArray(typePicks.roomCode, expired));
   await db.delete(draftPicks).where(inArray(draftPicks.roomCode, expired));
   await db.delete(players).where(inArray(players.roomCode, expired));
@@ -89,7 +91,7 @@ export async function createRoom(
   throw new Error('Could not allocate a unique room code');
 }
 
-async function listPlayers(db: Pick<Db, 'select'>, code: string): Promise<PublicPlayer[]> {
+export async function listPlayers(db: Pick<Db, 'select'>, code: string): Promise<PublicPlayer[]> {
   const rows = await db
     .select({ id: players.id, name: players.name, slot: players.slot })
     .from(players)
@@ -144,7 +146,7 @@ async function joinOnce(
 }
 
 /** Runs a write transaction, retrying a few times if the database is busy. */
-async function withBusyRetry<T>(run: () => Promise<T>): Promise<T> {
+export async function withBusyRetry<T>(run: () => Promise<T>): Promise<T> {
   const MAX_ATTEMPTS = 3;
   for (let attempt = 1; ; attempt++) {
     try {
@@ -186,11 +188,25 @@ export async function getRoomState(
     phase,
     battleSize: room.battleSize as BattleSize,
     typeBattle: phase === 'type-battle' ? await typeBattleView(db, room, me.slot) : null,
-    draft: phase === 'draft' ? await draftView(db, room) : null,
+    draft: phase === 'draft' || phase === 'battle' ? await draftView(db, room) : null,
+    battle: phase === 'battle' ? await battleSummary(db, code) : null,
   };
 }
 
-type LiveRoom = {
+/** The battle's stage and result, from the row's plain columns: the snapshot isn't read. */
+async function battleSummary(db: Db, code: string): Promise<RoomState['battle']> {
+  const [row] = await db
+    .select({ stage: battles.stage, winner: battles.winner, endReason: battles.endReason })
+    .from(battles)
+    .where(eq(battles.roomCode, code));
+  if (!row) return null;
+  const result: BattleResult | null = row.endReason
+    ? { winner: row.winner as Slot | null, reason: row.endReason as EndReason }
+    : null;
+  return { stage: row.stage as BattleStage, result };
+}
+
+export type LiveRoom = {
   code: string;
   phase: string;
   battleSize: number;
@@ -199,7 +215,7 @@ type LiveRoom = {
   firstDrafter: number | null;
 };
 
-async function findLiveRoom(db: Pick<Db, 'select'>, code: string, now: number): Promise<LiveRoom | null> {
+export async function findLiveRoom(db: Pick<Db, 'select'>, code: string, now: number): Promise<LiveRoom | null> {
   const [room] = await db
     .select({
       code: rooms.code,
@@ -214,7 +230,7 @@ async function findLiveRoom(db: Pick<Db, 'select'>, code: string, now: number): 
   return room ?? null;
 }
 
-async function findMember(
+export async function findMember(
   db: Pick<Db, 'select'>,
   code: string,
   secret: string,
@@ -251,7 +267,7 @@ async function typeBattleView(db: Db, room: LiveRoom, slot: Slot): Promise<TypeB
   };
 }
 
-async function listDraftPicks(db: Pick<Db, 'select'>, code: string): Promise<DraftPick[]> {
+export async function listDraftPicks(db: Pick<Db, 'select'>, code: string): Promise<DraftPick[]> {
   const rows = await db
     .select({ slot: draftPicks.slot, pokemonId: draftPicks.pokemonId })
     .from(draftPicks)
