@@ -24,7 +24,7 @@ Background research: [Gen 6 battle mechanics](2026-10-19-gen6-battle-mechanics.m
 - **Clauses:**
   - Turn on **Sleep Clause** and **Endless Battle Clause** in the engine.
   - No **Item Clause**.
-  - **OHKO, Evasion and Self-KO** are not engine rules: keep those moves out of the sets.
+  - **No OHKO, Evasion or Self-KO clauses.** Those moves are allowed if a Pokémon's set has them, with no data check. *Changed 2026-10-21.*
   - **Species Clause** is already guaranteed by the draft (each Pokémon can be rented once).
 - **IP posture: real Pokémon names, data and sprites.** Free, never charged for, credited as an unofficial fan project (as on Home today).
 - **Turn timer: 75 seconds for every choice**, both moves and faint replacements, with a visible countdown.

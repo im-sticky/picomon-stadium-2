@@ -131,7 +131,7 @@ Answered on 2026-10-21 (details and implementation in §18):
 | Team source | **The draft.** Players rent from a hand-picked pool with fixed sets (moves, item, nature, EVs) from `data/pokemon/`. Sets can't be edited, so no team validator runs. |
 | Species pool | **Hand-picked** (`data/pokemon/`). Legendaries allowed, at most one uber per player (enforced by the draft). The Fairy retypes and §17's patches stand. |
 | Learnsets / XY vs ORAS | **Not checked.** The data files are the only control over which moves a Pokémon gets. |
-| Clauses | **Sleep Clause Mod** and **Endless Battle Clause** in the engine. **No Item Clause.** OHKO, Evasion and Self-KO moves are kept out of the sets instead. Species Clause is guaranteed by the draft (each Pokémon can be rented once). |
+| Clauses | **Sleep Clause Mod** and **Endless Battle Clause** in the engine. **No Item Clause.** **No OHKO, Evasion or Self-KO clauses:** those moves are allowed whenever a set has them. Species Clause is guaranteed by the draft (each Pokémon can be rented once). |
 | Base PP | **No PP Ups** (decided 2026-10-20). See §18.2. |
 | Turn timer | **75 seconds for every choice**, the engine's `default` choice on timeout, forfeit after 3 timeouts in a row (§18.4). |
 | Faint replacements | As the engine does them (§18.5), on the same timer. |
@@ -1255,8 +1255,8 @@ Updated 2026-10-21 to match the answered questions. §18 is the spec for each it
 - Data rules, checked by hand when writing sets:
   - no `isNonstandard` species, items or moves (the loader already checks names);
   - no Mega Stones, Blue Orb or Red Orb (§5);
-  - no Electric/Grassy/Misty Terrain moves (§10.2);
-  - no OHKO, evasion-raising or self-KO moves (the clauses that aren't engine rules; §18.3).
+  - no Electric/Grassy/Misty Terrain moves (§10.2).
+- OHKO, evasion-raising and self-KO moves are allowed if a set has them (§18.3).
 
 **Mechanics:** everything the engine does, with no feature flags. The pool's content decides which abilities, items and moves appear (§12.4 and §13.4 remain useful guides).
 
@@ -1621,7 +1621,7 @@ battle.setPlayer('p2', { name, team });
 
 - **In the engine:** `Sleep Clause Mod` and `Endless Battle Clause`, both in the format's ruleset (both are `Rule`s, so they act in battle; §1).
 - **Not used:** Item Clause (two Pokémon on a team may hold the same item), Freeze Clause.
-- **Kept out through the data, not the engine:** OHKO moves (Fissure, Guillotine, Horn Drill, Sheer Cold), evasion-raising moves (Double Team, Minimize) and self-KO moves (Explosion, Self-Destruct, Memento, Healing Wish, Lunar Dance, Final Gambit). Whoever writes or reviews a set in `data/pokemon/` checks this. A loader check that rejects these move IDs at startup would make it automatic (**design**, optional).
+- **Allowed, with no clause and no check:** OHKO moves (Fissure, Guillotine, Horn Drill, Sheer Cold), evasion-raising moves (Double Team, Minimize) and self-KO moves (Explosion, Self-Destruct, Memento, Healing Wish, Lunar Dance, Final Gambit). If a Pokémon's set in `data/pokemon/` has one, it can use it (decided 2026-10-21). Don't add a loader check or validator rule for them.
 - **Species Clause** is guaranteed by the draft: each Pokémon can be rented once per room.
 
 ### 18.4 Turn timer, timeouts and forfeits
