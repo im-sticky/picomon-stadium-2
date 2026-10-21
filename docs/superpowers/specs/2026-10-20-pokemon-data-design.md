@@ -91,7 +91,7 @@ export const MOVE_CHANGES: Record<string, MoveChange> = {
 };
 ```
 
-Nested objects replace the stock value rather than merging with it, so `secondary` must be written out in full (research doc §17.5, gotcha 2).
+Nested objects replace the stock value rather than merging with it, so `secondary` must be written out in full (research doc §17.6, gotcha 2).
 
 ## 4. The loader (`lib/pokemon-dex.ts`)
 

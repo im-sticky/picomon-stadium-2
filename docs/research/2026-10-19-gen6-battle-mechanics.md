@@ -707,7 +707,7 @@ Durations in Showdown count the turn of application. A `duration: N` effect is d
 | Rain (Rain Dance, Drizzle) | **5 turns**, 8 with Damp Rock. Abilities included: the `effect.effectType === 'Ability'` code only sets `duration = 0` (infinite) when `gen <= 5`. | Water ×1.5, Fire ×0.5. Thunder and Hurricane never miss. Swift Swim ×2 Spe. Rain Dish and Dry Skin heal. |
 | Sun (Sunny Day, Drought) | 5, or 8 with Heat Rock | Fire ×1.5, Water ×0.5. No freezing. Chlorophyll ×2 Spe. Solar Power ×1.5 SpA and −1/8 HP. Solar Beam needs no charge. |
 | Sandstorm (Sand Stream) | 5, or 8 with Smooth Rock | 1/16 per turn to non-Rock/Ground/Steel Pokémon (Overcoat, Safety Goggles, Sand Veil/Force/Rush, Magic Guard exempt). Rock-type SpD ×1.5. |
-| Hail (Snow Warning) | 5, or 8 with Icy Rock | 1/16 per turn to non-Ice Pokémon. Blizzard never misses. Ice Body heals. |
+| Hail (Snow Warning) | 5, or 8 with Icy Rock | 1/16 per turn to non-Ice Pokémon. Blizzard never misses. Ice Body heals. Custom: Ice-type Def ×1.5 (§17.5). |
 | Primordial Sea / Desolate Land / Delta Stream | Indefinite while the source is active | Out of scope: these only come from Primal Kyogre, Primal Groudon and Mega Rayquaza (§5). |
 
 When a new weather is set, it replaces the current one. The exception is that only another strong weather can replace a strong (Primal) weather.
@@ -1271,9 +1271,9 @@ Decided and removed from this list: singles; the Showdown gen6 engine; Showdown 
 
 ## 17. Custom modifications
 
-The project changes some species (types, base stats, abilities) and moves on top of the stock gen6 data, taken from Polished Crystal's Regular version. Only the final values are recorded. These changes win over the engine data (they are the one exception to "the npm package data is trusted as-is"). Every other value stays as Showdown has it.
+The project changes some species (types, base stats, abilities), moves and one weather effect on top of the stock gen6 data, taken from Polished Crystal's Regular version. Only the final values are recorded. These changes win over the engine data (they are the one exception to "the npm package data is trusted as-is"). Every other value stays as Showdown has it.
 
-How they get in: a custom Showdown mod (or `Dex.mod`-style data overrides) that inherits from `gen6` and patches only the entries below. The patch list is the single source of truth, so the Crystal UI text (move info, Pokédex screens) reads from the same patched data. See §17.5 for how to build it.
+How they get in: a custom Showdown mod (or `Dex.mod`-style data overrides) that inherits from `gen6` and patches only the entries below. The patch list is the single source of truth, so the Crystal UI text (move info, Pokédex screens) reads from the same patched data. See §17.6 for how to build it.
 
 Left out (decided): every Pokémon on the wiki tables that isn't in the Gen 6 data, since we won't add species ourselves. These are Typhlosion (Hisuian), Annihilape, Sneasler, Dudunsparce, Farigiraf, Clodsire, Corsola (Galarian), Cursola, Raticate (Alolan), Raichu (Alolan), Marowak (Alolan), Slowbro (Galarian), Slowking (Galarian) and Mewtwo (Armored). The Gen 8 ability Gorilla Tactics (a Primeape option on the wiki) is left out for the same reason. Every species and ability below exists in Gen 6.
 
@@ -1472,9 +1472,23 @@ Polished Crystal's "before" values are not always the same as Gen 6. So the **Ge
 
 Fury Strikes (Polished Crystal's merged Fury Swipes / Fury Attack) and Hidden Power are on the Regular table but left out here: the project won't use those moves (decided).
 
-### 17.5 Implementing the overrides
+### 17.5 Weather
 
-We can change any Pokémon's type, base stats, ability or moves without editing Showdown's files. We put our changes in a **custom mod**, which is a set of data in our own code layered on top of the gen6 data. Anything the mod doesn't mention keeps its gen6 value. The tables in §17.1–17.4 are the content of this mod.
+Hail gives Ice-type Pokémon **1.5× Defence** while it is active, in the same way Sandstorm gives Rock types 1.5× Special Defence (§10.1). Everything else about Hail stays as Gen 6 has it: 1/16 damage per turn to non-Ice Pokémon, 5 turns (8 with Icy Rock), Blizzard never misses, Ice Body heals.
+
+This is a custom change, not from Polished Crystal. It copies Gen 9 Snow's Defence boost onto Gen 6 Hail. The engine's `snowscape` condition already has this exact handler (`onModifyDef` at priority 10, checking `pokemon.hasType('Ice')` and `effectiveWeather()`), and it matches Sandstorm's `onModifySpD` [read, `@pkmn/sim@0.10.11` `data/conditions.ts`].
+
+| Weather | Gen 6 | Custom change |
+|---|---|---|
+| Hail | 1/16 chip to non-Ice; Blizzard never misses | Also Ice-type Def ×1.5 |
+
+As with Sandstorm, the boost is applied to the stat before other modifiers are chained. Cloud Nine and Air Lock remove it, because the engine skips every weather handler while weather is suppressed.
+
+Verified 2026-10-21 [run]: in a Gen 6 battle on the patched mod, Mamoswine set Hail against Glaceon. Glaceon's Defence went from 130 to 195. The same battle on stock gen6 stayed at 130.
+
+### 17.6 Implementing the overrides
+
+We can change any Pokémon's type, base stats, ability or moves, and any weather's effect, without editing Showdown's files. We put our changes in a **custom mod**, which is a set of data in our own code layered on top of the gen6 data. Anything the mod doesn't mention keeps its gen6 value. The tables in §17.1–17.5 are the content of this mod.
 
 #### Use `@pkmn/sim`
 
@@ -1524,6 +1538,7 @@ The values above are illustrations, not our changes. The real ones are in §17.1
 | A move's power, accuracy, type, PP | `Moves` | `basePower`, `accuracy`, `type`, `pp`, `secondary`, and others | §17.4 |
 | A held item's effect | `Items` | its fields and `on*` handlers | none yet |
 | An ability's effect | `Abilities` | its fields and `on*` handlers | none yet |
+| A weather's or status's effect | `Conditions` | `on*` handlers, with `inherit: true` to keep the rest | §17.5 |
 
 For §17.3, `abilities` is set to just the one ability picked for that Pokémon, e.g. `{ 0: 'Natural Cure' }`. Metronome's "???" type (§17.4) is display-only, so it goes in the UI text, not the `Moves` table.
 
