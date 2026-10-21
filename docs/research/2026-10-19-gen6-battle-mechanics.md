@@ -1628,7 +1628,7 @@ battle.setPlayer('p2', { name, team });
 
 **Rules (decided):**
 
-- **75 seconds** for every choice the battle asks for: team order (Battle order screen), each turn's move or switch, and faint replacements. The countdown is visible to both players.
+- **75 seconds** for every choice the battle asks for: team order on the Battle order screen (confirmed 2026-10-21), each turn's move or switch, and faint replacements. The countdown is visible to both players.
 - **On timeout,** the server submits the engine's own **`default`** choice for that player (decided 2026-10-21; not a random choice).
 - **Three timeouts in a row** and that player **forfeits**. Choosing in time resets their count to 0.
 - **Disconnects** are not handled separately. A disconnected player simply doesn't choose, so the timer covers them; refreshing restores the battle from the server.
