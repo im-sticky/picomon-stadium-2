@@ -3,7 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "entei",
   sprite: "/sprites/pokemon-icons/entei.png",
-  isUber: true,
+  isStrong: true,
   ability: "Flash Fire",
   set: {
     moves: ["Sacred Fire", "Extreme Speed", "Stone Edge", "Iron Head"],

@@ -70,7 +70,8 @@ export function DraftScreen({
   const done = picks.length >= TOTAL_PICKS;
   const left = picksLeftInTurn(firstDrafter, picks.length);
   const youHaveUber = team(you.slot).some((id) => byId.get(id)?.isUber);
-  const blocked = (p: PoolPokemon) => p.isUber && youHaveUber;
+  const youHaveStrong = team(you.slot).some((id) => byId.get(id)?.isStrong);
+  const blocked = (p: PoolPokemon) => (p.isUber && youHaveUber) || (p.isStrong && youHaveStrong);
   const title = turn ? `${name(turn)}'S CHOICE` : "DRAFT COMPLETE";
 
   async function rent(id: string) {
@@ -195,7 +196,7 @@ export function DraftScreen({
                 <button
                   type="button"
                   className={`${styles.draft__cell} ${on} ${blocked(p) ? styles["draft__cell--blocked"] : ""}`}
-                  aria-label={`View ${label}${blocked(p) ? " (you already have an uber)" : ""}`}
+                  aria-label={`View ${label}${!blocked(p) ? "" : p.isUber ? " (you already have an uber)" : " (you already have a strong one)"}`}
                   onMouseEnter={() => setHover(p.id)}
                   onFocus={() => setHover(p.id)}
                   onClick={() => setOpen({ id: p.id, viewOnly: false })}
@@ -234,9 +235,9 @@ export function DraftScreen({
               <div className={styles.draft__infoLeft}>
                 <div className={styles.draft__infoName}>
                   <Image
-                    className={styles.draft__infoIcon}
+                    className={`${styles.draft__infoIcon} ${hovered.isStrong ? styles["draft__infoIcon--strong"] : ""}`}
                     src={hovered.isUber ? MASTER_BALL_ICON : BALL_ICON}
-                    alt={hovered.isUber ? "Uber" : ""}
+                    alt={hovered.isUber ? "Uber" : hovered.isStrong ? "Strong" : ""}
                     width={32}
                     height={32}
                     unoptimized

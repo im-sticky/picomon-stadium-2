@@ -68,7 +68,7 @@
 - **Custom modifications (§17).** On top of stock gen6, the project patches species types (27 Pokémon), base stats (56), ability options (59; one is picked per Pokémon) and 15 moves, all from Polished Crystal's Regular version. Species and abilities not in Gen 6 are left out. These patched values win over the stock values elsewhere in this document.
 - **Decided battle setup (§1, §18), 2026-10-21:**
   - singles at **Lv 50**; each player drafts 6 and brings **3, 4 or 6** (the host's battle size from Home), chosen on the Battle order screen, which is the engine's team preview;
-  - fixed rental sets from the hand-picked pool in `data/pokemon/`, at most one uber per player;
+  - fixed rental sets from the hand-picked pool in `data/pokemon/`, at most one uber and one strong Pokémon (base stat total 580–600) per player;
   - the project's own format `[Gen 6] Picomon` (`lib/pokemon-dex.ts`) with **Sleep Clause Mod** and **Endless Battle Clause** as the only clauses; `Picked Team Size` is set per battle (§18.1);
   - **base PP, no PP Ups** (the engine hard-codes 3 PP Ups; §18.2 shows the tested fix);
   - **75 seconds per choice**, the engine's own `default` choice on timeout, and a forfeit after three timeouts in a row (§18.4);
@@ -129,7 +129,7 @@ Answered on 2026-10-21 (details and implementation in §18):
 | Team size | **Draft 6, bring 3, 4 or 6.** The host picks the battle size on Home (`rooms.battle_size`). `Picked Team Size` is set per battle, not in the shared ruleset (§18.1). |
 | Team preview | **On.** The Battle order screen is the team preview: both teams are visible there, and the player's chosen order becomes the engine's `team …` choice. |
 | Team source | **The draft.** Players rent from a hand-picked pool with fixed sets (moves, item, nature, EVs) from `data/pokemon/`. Sets can't be edited, so no team validator runs. |
-| Species pool | **Hand-picked** (`data/pokemon/`). Legendaries allowed, at most one uber per player (enforced by the draft). The Fairy retypes and §17's patches stand. |
+| Species pool | **Hand-picked** (`data/pokemon/`). Legendaries allowed, at most one uber and one strong Pokémon per player (enforced by the draft). The Fairy retypes and §17's patches stand. |
 | Learnsets / XY vs ORAS | **Not checked.** The data files are the only control over which moves a Pokémon gets. |
 | Clauses | **Sleep Clause Mod** and **Endless Battle Clause** in the engine. **No Item Clause.** **No OHKO, Evasion or Self-KO clauses:** those moves are allowed whenever a set has them. Species Clause is guaranteed by the draft (each Pokémon can be rented once). |
 | Base PP | **No PP Ups** (decided 2026-10-20). See §18.2. |

@@ -438,9 +438,9 @@ export type DraftPickResult =
   | { kind: 'not-drafting' }
   | { kind: 'not-found' };
 
-const isUber = (id: string) => {
+const draftLimits = (id: string) => {
   const entry = getPokemon(id);
-  return entry && (entry.isUber ?? false);
+  return entry && { isUber: entry.isUber ?? false, isStrong: entry.isStrong ?? false };
 };
 
 /**
@@ -465,7 +465,7 @@ export async function pickPokemon(
         if (room.phase !== 'draft' || room.firstDrafter === null) return { kind: 'not-drafting' };
 
         const picks = await listDraftPicks(tx, code);
-        const error = draftPickError(room.firstDrafter as Slot, picks, me.slot, pokemonId, isUber);
+        const error = draftPickError(room.firstDrafter as Slot, picks, me.slot, pokemonId, draftLimits);
         if (error) return { kind: error };
 
         await tx

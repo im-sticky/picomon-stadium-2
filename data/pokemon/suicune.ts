@@ -3,7 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "suicune",
   sprite: "/sprites/pokemon-icons/suicune.png",
-  isUber: true,
+  isStrong: true,
   ability: "Water Absorb",
   set: {
     moves: ["Calm Mind", "Scald", "Rest", "Sleep Talk"],
