@@ -131,7 +131,7 @@ Answered on 2026-10-21 (details and implementation in §18):
 | Team source | **The draft.** Players rent from a hand-picked pool with fixed sets (moves, item, nature, EVs) from `data/pokemon/`. Sets can't be edited, so no team validator runs. |
 | Species pool | **Hand-picked** (`data/pokemon/`). Legendaries allowed, at most one uber and one strong Pokémon per player, and no two on a team holding the same item (enforced by the draft). The Fairy retypes and §17's patches stand. |
 | Learnsets / XY vs ORAS | **Not checked.** The data files are the only control over which moves a Pokémon gets. |
-| Clauses | **Sleep Clause Mod** and **Endless Battle Clause** in the engine. **No Item Clause.** **No OHKO, Evasion or Self-KO clauses:** those moves are allowed whenever a set has them. Species Clause is guaranteed by the draft (each Pokémon can be rented once). |
+| Clauses | **Sleep Clause Mod** and **Endless Battle Clause** in the engine. **No Item Clause** in the engine, but the draft lets each player take each held item only once, so a team never has duplicate items (`item-limit` in `lib/draft.ts`). **No OHKO, Evasion or Self-KO clauses:** those moves are allowed whenever a set has them. Species Clause is guaranteed by the draft (each Pokémon can be rented once). |
 | Base PP | **No PP Ups** (decided 2026-10-20). See §18.2. |
 | Turn timer | **75 seconds for every choice**, the engine's `default` choice on timeout, forfeit after 3 timeouts in a row (§18.4). |
 | Faint replacements | As the engine does them (§18.5), on the same timer. |
@@ -1622,7 +1622,7 @@ battle.setPlayer('p2', { name, team });
 ### 18.3 Clauses
 
 - **In the engine:** `Sleep Clause Mod` and `Endless Battle Clause`, both in the format's ruleset (both are `Rule`s, so they act in battle; §1).
-- **Not used:** Item Clause (two Pokémon on a team may hold the same item), Freeze Clause.
+- **Not used in the engine:** Item Clause, Freeze Clause. Duplicate items are still impossible, because the draft only lets each player take each held item once (`item-limit` in `lib/draft.ts`, added 2026-10-21).
 - **Allowed, with no clause and no check:** OHKO moves (Fissure, Guillotine, Horn Drill, Sheer Cold), evasion-raising moves (Double Team, Minimize) and self-KO moves (Explosion, Self-Destruct, Memento, Healing Wish, Lunar Dance, Final Gambit). If a Pokémon's set in `data/pokemon/` has one, it can use it (decided 2026-10-21). Don't add a loader check or validator rule for them.
 - **Species Clause** is guaranteed by the draft: each Pokémon can be rented once per room.
 

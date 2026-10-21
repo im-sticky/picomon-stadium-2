@@ -23,7 +23,7 @@ Background research: [Gen 6 battle mechanics](2026-10-19-gen6-battle-mechanics.m
 - **Learnsets and X/Y vs ORAS: no longer an issue.** Sets are written by hand and not checked against learnsets, so the data files are the only control over which moves a Pokémon gets.
 - **Clauses:**
   - Turn on **Sleep Clause** and **Endless Battle Clause** in the engine.
-  - No **Item Clause**.
+  - No **Item Clause** in the engine. The draft enforces it instead: each player can take each held item only once (`item-limit` in `lib/draft.ts`, added 2026-10-21).
   - **No OHKO, Evasion or Self-KO clauses.** Those moves are allowed if a Pokémon's set has them, with no data check. *Changed 2026-10-21.*
   - **Species Clause** is already guaranteed by the draft (each Pokémon can be rented once).
 - **IP posture: real Pokémon names, data and sprites.** Free, never charged for, credited as an unofficial fan project (as on Home today).
