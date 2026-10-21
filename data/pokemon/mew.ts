@@ -3,7 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "mew",
   sprite: "/sprites/pokemon-icons/mew.png",
-  isUber: true,
+  isStrong: true,
   ability: "Magic Guard",
   set: {
     moves: ["Nasty Plot", "Psychic", "Aura Sphere", "Fire Blast"],

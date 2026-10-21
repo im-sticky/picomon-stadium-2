@@ -3,7 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "tyranitar",
   sprite: "/sprites/pokemon-icons/tyranitar.png",
-  isUber: true,
+  isStrong: true,
   ability: "Sand Stream",
   set: {
     moves: ["Dragon Dance", "Stone Edge", "Crunch", "Earthquake"],

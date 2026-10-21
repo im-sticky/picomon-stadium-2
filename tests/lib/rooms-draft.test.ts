@@ -9,7 +9,9 @@ import type { Slot } from '@/lib/types';
 
 const T0 = 1_000_000;
 const ubers = POKEMON.filter((p) => p.isUber).map((p) => p.id);
-const others = POKEMON.filter((p) => !p.isUber).map((p) => p.id);
+// Neither uber nor strong, and each holding a different item, so any of them can share a team.
+const plain = POKEMON.filter((p) => !p.isUber && !p.isStrong);
+const others = [...new Map(plain.map((p) => [p.set.item, p.id])).values()];
 
 /** A room where the guest won the type battle and chose `order`. */
 async function draftRoom(db: Db, order: 'first' | 'second') {
@@ -48,12 +50,11 @@ describe('draft', () => {
       const db = await createTestDb();
       const room = await draftRoom(db, order);
       const first: Slot = order === 'first' ? 2 : 1;
-      const ids = [...others, ...ubers];
       for (let i = 0; i < TOTAL_PICKS; i++) {
         const slot = draftTurn(first, i)!;
         const offTurn: Slot = slot === 1 ? 2 : 1;
-        expect(await pickPokemon(db, room.code, room[offTurn], ids[i], T0)).toEqual({ kind: 'not-your-turn' });
-        expect(await pickPokemon(db, room.code, room[slot], ids[i], T0)).toEqual({
+        expect(await pickPokemon(db, room.code, room[offTurn], others[i], T0)).toEqual({ kind: 'not-your-turn' });
+        expect(await pickPokemon(db, room.code, room[slot], others[i], T0)).toEqual({
           kind: 'picked',
           complete: i === TOTAL_PICKS - 1,
           pickIndex: i,

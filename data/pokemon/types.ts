@@ -17,6 +17,12 @@ export interface PokemonEntry {
    * Ball, and each player may draft at most one. Defaults to false.
    */
   isUber?: boolean;
+  /**
+   * Draft only. For Pokémon with a base stat total of 580 to 600. A strong one shows
+   * an Ultra Ball on the draft screen, and each player may draft at most one (on
+   * top of their one uber). Defaults to false.
+   */
+  isStrong?: boolean;
   /** The one ability this Pokémon has. Replaces all of its gen6 abilities. */
   ability: string;
   /** New types (§17.1 of the gen6 research doc). Leave out to keep the gen6 types. */

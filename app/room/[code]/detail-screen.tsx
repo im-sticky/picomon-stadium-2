@@ -48,6 +48,7 @@ export function DetailScreen({
   title,
   viewOnly,
   canRent,
+  notRentable,
   onRent,
   onBack,
 }: {
@@ -55,6 +56,8 @@ export function DetailScreen({
   title: string;
   viewOnly: boolean;
   canRent: boolean;
+  /** Why RENT is disabled, shown beside it. */
+  notRentable?: string | null;
   onRent: () => void;
   onBack: () => void;
 }) {
@@ -170,6 +173,11 @@ export function DetailScreen({
                   <span className={styles.detail__baseValue}>{total}</span>
                 </div>
               </>
+            )}
+            {notRentable && (
+              <p className={styles.detail__notRentable} role="status">
+                {notRentable}
+              </p>
             )}
           </section>
         </div>
