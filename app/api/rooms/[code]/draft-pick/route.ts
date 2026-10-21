@@ -33,6 +33,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ cod
       return NextResponse.json({ error: 'Only one uber each.' }, { status: 409 });
     case 'strong-limit':
       return NextResponse.json({ error: 'Only one strong Pokémon each.' }, { status: 409 });
+    case 'item-limit':
+      return NextResponse.json({ error: 'Already have a Pokémon holding that item.' }, { status: 409 });
     case 'picked': {
       const event: RoomEvent = { kind: 'draft-picked', pickIndex: result.pickIndex, slot: result.slot, pokemonId };
       await notifyRoomEvent(code, event);

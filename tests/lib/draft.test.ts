@@ -4,12 +4,16 @@ import type { DraftPick, Slot } from '@/lib/types';
 
 const order = (first: Slot) => Array.from({ length: TOTAL_PICKS }, (_, i) => draftTurn(first, i));
 
-// A made-up pool: two ubers, two strong ones and plenty of others.
+// A made-up pool: two ubers, two strong ones, two holding Life Orb and plenty of
+// others. Every other Pokémon holds an item of its own.
 const UBERS = ['uberA', 'uberB'];
 const STRONG = ['strongA', 'strongB'];
-const POOL = [...UBERS, ...STRONG, 'a', 'b', 'c'];
+const ORBS = ['orbA', 'orbB'];
+const POOL = [...UBERS, ...STRONG, ...ORBS, 'a', 'b', 'c'];
 const limits = (id: string) =>
-  POOL.includes(id) ? { isUber: UBERS.includes(id), isStrong: STRONG.includes(id) } : undefined;
+  POOL.includes(id)
+    ? { isUber: UBERS.includes(id), isStrong: STRONG.includes(id), item: ORBS.includes(id) ? 'Life Orb' : id }
+    : undefined;
 
 describe('draft turn order', () => {
   it('snakes from the host when the host drafts first', () => {
@@ -63,6 +67,14 @@ describe('draft pick rules', () => {
     const more: DraftPick[] = [...picks, { slot: 2, pokemonId: 'b' }];
     expect(draftPickError(1, more, 1, 'strongB', limits)).toBe('strong-limit');
     expect(draftPickError(1, more, 1, 'uberA', limits)).toBeNull();
+  });
+
+  it('allows each item once per player', () => {
+    const picks: DraftPick[] = [{ slot: 1, pokemonId: 'orbA' }, { slot: 2, pokemonId: 'a' }];
+    expect(draftPickError(1, picks, 2, 'orbB', limits)).toBeNull();
+    const more: DraftPick[] = [...picks, { slot: 2, pokemonId: 'b' }];
+    expect(draftPickError(1, more, 1, 'orbB', limits)).toBe('item-limit');
+    expect(draftPickError(1, more, 1, 'c', limits)).toBeNull();
   });
 
   it('rejects picks after 12', () => {

@@ -71,14 +71,20 @@ export function DraftScreen({
   const left = picksLeftInTurn(firstDrafter, picks.length);
   const youHaveUber = team(you.slot).some((id) => byId.get(id)?.isUber);
   const youHaveStrong = team(you.slot).some((id) => byId.get(id)?.isStrong);
-  const blocked = (p: PoolPokemon) => (p.isUber && youHaveUber) || (p.isStrong && youHaveStrong);
+  const yourItems = new Set(team(you.slot).map((id) => byId.get(id)?.item));
+  /** Why one of your team's limits rules `p` out, or null. */
+  const limitReason = (p: PoolPokemon): string | null => {
+    if (p.isUber && youHaveUber) return "Only one uber allowed.";
+    if (p.isStrong && youHaveStrong) return "Only one strong allowed.";
+    if (yourItems.has(p.item)) return "Item already on team.";
+    return null;
+  };
+  const blocked = (p: PoolPokemon) => limitReason(p) !== null;
   /** Why the open Pokémon can't be rented, shown by RENT. Null while it can be (or mid-rent). */
   const notRentable = (p: PoolPokemon): string | null => {
     if (rentedBy.has(p.id)) return "Already drafted.";
     if (turn !== you.slot) return "Not your turn.";
-    if (p.isUber && youHaveUber) return "Only one uber allowed.";
-    if (p.isStrong && youHaveStrong) return "Only one strong allowed.";
-    return null;
+    return limitReason(p);
   };
   const title = turn ? `${name(turn)}'S CHOICE` : "DRAFT COMPLETE";
 
@@ -204,7 +210,7 @@ export function DraftScreen({
                 <button
                   type="button"
                   className={`${styles.draft__cell} ${on} ${blocked(p) ? styles["draft__cell--blocked"] : ""}`}
-                  aria-label={`View ${label}${!blocked(p) ? "" : p.isUber ? " (you already have an uber)" : " (you already have a strong one)"}`}
+                  aria-label={`View ${label}${blocked(p) ? ` (${limitReason(p)})` : ""}`}
                   onMouseEnter={() => setHover(p.id)}
                   onFocus={() => setHover(p.id)}
                   onClick={() => setOpen({ id: p.id, viewOnly: false })}

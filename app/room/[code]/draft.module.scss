@@ -129,7 +129,7 @@
     background: var(--hover);
   }
 
-  /* An uber or strong one when you already have one: it can be looked at but not rented. */
+  /* Ruled out by a team limit (uber, strong, item): it can be looked at but not rented. */
   &__cell--blocked {
     opacity: 0.3;
   }
