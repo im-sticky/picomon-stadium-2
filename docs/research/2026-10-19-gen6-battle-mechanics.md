@@ -1,7 +1,7 @@
 # Gen 6 (X/Y and Omega Ruby/Alpha Sapphire) Battle Mechanics: Research for Picomon Stadium
 
 - **Date:** 2026-10-19
-- **Status:** Research draft. To be reviewed, then turned into an implementation spec.
+- **Status:** Research, updated **2026-10-21** with the user's answers to every open question. The decisions are in §1 (format and rules) and the new **§18 (battle server design)**, which is written as spec. §16.3 has no open questions left.
 - **Scope:** Singles battles only (decided). Doubles and triples are out of scope. Showdown supports them, but nothing below covers them.
 - **Also decided out of scope:** **Mega Evolution**, **Primal Reversion** and **terrain** (Electric, Grassy and Misty Terrain). §5 and §10.2 only record how to keep them switched off.
 - **Rule for the whole project:** Gen 2 (Crystal) supplies the look. **Pokémon Showdown's `gen6` engine** supplies every mechanic. Where Showdown and the cartridge differ, Showdown wins (decided). The npm package data is trusted as-is (decided), **except for the project's own custom changes to species types, base stats, abilities and moves, listed in §17**. Those override the engine data.
@@ -66,12 +66,16 @@
   - a half-submitted turn (one player has chosen, the other has not) survives the round trip;
   - replaying after deserialization is byte-identical, apart from the wall-clock `|t:|` lines.
 - **Custom modifications (§17).** On top of stock gen6, the project patches species types (27 Pokémon), base stats (56), ability options (59; one is picked per Pokémon) and 15 moves, all from Polished Crystal's Regular version. Species and abilities not in Gen 6 are left out. These patched values win over the stock values elsewhere in this document.
-- **Proposed MVP (§16):**
-  - singles at Lv 50, bring 6 and pick 3, with team preview;
-  - rental sets from a curated Gen 1–2 pool;
-  - the format `gen6customgame@@@Sleep Clause Mod,Species Clause,Picked Team Size = 3,Endless Battle Clause,HP Percentage Mod` (or a fully custom rule list);
-  - no Mega Stones, Primal orbs or terrain moves in any set (decided);
-  - all mechanics handled by the engine. The app's job is the data whitelist, the choice API, state storage and the Crystal-style rendering of the protocol.
+- **Decided battle setup (§1, §18), 2026-10-21:**
+  - singles at **Lv 50**; each player drafts 6 and brings **3, 4 or 6** (the host's battle size from Home), chosen on the Battle order screen, which is the engine's team preview;
+  - fixed rental sets from the hand-picked pool in `data/pokemon/`, at most one master and one ultra Pokémon (base stat total 580–600) per player, and no two on a team holding the same item;
+  - the project's own format `[Gen 6] Picomon` (`lib/pokemon-dex.ts`) with **Sleep Clause Mod** and **Endless Battle Clause** as the only clauses; `Picked Team Size` is set per battle (§18.1);
+  - **base PP, no PP Ups** (the engine hard-codes 3 PP Ups; §18.2 shows the tested fix);
+  - **75 seconds per choice**, the engine's own `default` choice on timeout, and a forfeit after three timeouts in a row (§18.4);
+  - the engine's `toJSON()` snapshot saved in **one `battles` row per room**, overwritten every turn, with no choice log (§18.6);
+  - real Pokémon names, data and sprites in a free, non-commercial fan project (§14.5);
+  - no Mega Stones, Primal orbs or terrain moves in any set;
+  - all mechanics handled by the engine. The app's job is the data whitelist, the choice API, the timer, state storage and the Crystal-style rendering of the protocol.
 
 ---
 
@@ -94,7 +98,8 @@
 15. [Key Gen 6 mechanics](#15-key-gen-6-mechanics)
 16. [Recommendations and open questions](#16-recommendations-and-open-questions)
 17. [Custom modifications](#17-custom-modifications)
-18. [Appendix: Sources and verification notes](#appendix-sources-and-verification-notes)
+18. [Battle server design (decided)](#18-battle-server-design-decided)
+19. [Appendix: Sources and verification notes](#appendix-sources-and-verification-notes)
 
 ### Source abbreviations
 
@@ -115,6 +120,23 @@
 - **Singles.** Doubles, triples and rotation (spread-move ×0.75, ally targeting, Wide Guard and so on) are not covered.
 - **Engine:** Showdown's gen6 mod, used through npm.
 - **No Mega Evolution, no Primal Reversion, no terrain.** §5 and §10.2 explain how to enforce this.
+
+Answered on 2026-10-21 (details and implementation in §18):
+
+| Decision | Answer |
+|---|---|
+| Level | **50.** Written into every set by the server (`LEVEL` and `toSet` in `lib/pokemon-dex.ts`); the validator's `Adjust Level Down` is not used. |
+| Team size | **Draft 6, bring 3, 4 or 6.** The host picks the battle size on Home (`rooms.battle_size`). `Picked Team Size` is set per battle, not in the shared ruleset (§18.1). |
+| Team preview | **On.** The Battle order screen is the team preview: both teams are visible there, and the player's chosen order becomes the engine's `team …` choice. |
+| Team source | **The draft.** Players rent from a hand-picked pool with fixed sets (moves, item, nature, EVs) from `data/pokemon/`. Sets can't be edited, so no team validator runs. |
+| Species pool | **Hand-picked** (`data/pokemon/`). Legendaries allowed, at most one master and one ultra Pokémon per player, and no two on a team holding the same item (enforced by the draft). The Fairy retypes and §17's patches stand. |
+| Learnsets / XY vs ORAS | **Not checked.** The data files are the only control over which moves a Pokémon gets. |
+| Clauses | **Sleep Clause Mod** and **Endless Battle Clause** in the engine. **No Item Clause** in the engine, but the draft lets each player take each held item only once, so a team never has duplicate items (`item-limit` in `lib/draft.ts`). **No OHKO, Evasion or Self-KO clauses:** those moves are allowed whenever a set has them. Species Clause is guaranteed by the draft (each Pokémon can be rented once). |
+| Base PP | **No PP Ups** (decided 2026-10-20). See §18.2. |
+| Turn timer | **75 seconds for every choice**, the engine's `default` choice on timeout, forfeit after 3 timeouts in a row (§18.4). |
+| Faint replacements | As the engine does them (§18.5), on the same timer. |
+| Saving battles | **One `battles` row per room** holding the latest `toJSON()` snapshot; **no choice log** for now (§18.6). |
+| IP posture | Real names, data and sprites; free and non-commercial, credited as an unofficial fan project (§14.5). |
 
 ### How Showdown's gen6 formats are configured
 
@@ -143,7 +165,10 @@ Consequences for this project:
 - **Sleep Clause Mod** also bans `Hypnosis + Gengarite` (validator part) (`data/rulesets.ts`).
 - **Turn limit.** At turn 1000 the battle is forced to a tie. Endless Battle Clause has its own extra checks after turn 100 (`sim/battle.ts`, `maybeTriggerEndlessBattleClause`).
 
-### Options for the user to decide
+### Options that were considered
+
+The table below is kept for reference. Every row has been decided; see the table under **Decided** above.
+
 
 | Decision | Options | Notes |
 |---|---|---|
@@ -707,7 +732,7 @@ Durations in Showdown count the turn of application. A `duration: N` effect is d
 | Rain (Rain Dance, Drizzle) | **5 turns**, 8 with Damp Rock. Abilities included: the `effect.effectType === 'Ability'` code only sets `duration = 0` (infinite) when `gen <= 5`. | Water ×1.5, Fire ×0.5. Thunder and Hurricane never miss. Swift Swim ×2 Spe. Rain Dish and Dry Skin heal. |
 | Sun (Sunny Day, Drought) | 5, or 8 with Heat Rock | Fire ×1.5, Water ×0.5. No freezing. Chlorophyll ×2 Spe. Solar Power ×1.5 SpA and −1/8 HP. Solar Beam needs no charge. |
 | Sandstorm (Sand Stream) | 5, or 8 with Smooth Rock | 1/16 per turn to non-Rock/Ground/Steel Pokémon (Overcoat, Safety Goggles, Sand Veil/Force/Rush, Magic Guard exempt). Rock-type SpD ×1.5. |
-| Hail (Snow Warning) | 5, or 8 with Icy Rock | 1/16 per turn to non-Ice Pokémon. Blizzard never misses. Ice Body heals. |
+| Hail (Snow Warning) | 5, or 8 with Icy Rock | 1/16 per turn to non-Ice Pokémon. Blizzard never misses. Ice Body heals. Custom: Ice-type Def ×1.5 (§17.5). |
 | Primordial Sea / Desolate Land / Delta Stream | Indefinite while the source is active | Out of scope: these only come from Primal Kyogre, Primal Groudon and Mega Rayquaza (§5). |
 
 When a new weather is set, it replaces the current one. The exception is that only another strong weather can replace a strong (Primal) weather.
@@ -1100,7 +1125,7 @@ Results of running this [run]:
 - `fromJSON` averaged about 0.6 ms.
 - **A half-submitted turn survives serialization.** I saved after only p1 had chosen, restored, and submitted p2's choice. The turn resolved correctly. The test happened to use a Mega choice; plain `move N` uses the same code path.
 - **Determinism:** two copies of the same battle, one of them round-tripped through JSON, produced identical logs for the same choices. The exception is the `|t:|<unix time>` lines, which `turnLoop` writes from `Date.now()`; ignore them or strip them before comparing.
-- **Alternative persistence:** store the seed and the input log (`battle.inputLog`: `>start …`, `>player …`, `>p1 move 1`, …). Rebuild the battle by replaying it, which is the Showdown replay model. That costs more CPU per turn but stores much less.
+- **Alternative persistence:** store the seed and the input log (`battle.inputLog`: `>start …`, `>player …`, `>p1 move 1`, …). Rebuild the battle by replaying it, which is the Showdown replay model. That costs more CPU per turn but stores much less. **Not chosen:** the project saves the `toJSON()` snapshot (§18.6).
 
 **Option B: `BattleStream`**, the text protocol Showdown uses between processes:
 
@@ -1142,6 +1167,7 @@ I ran this [run], with a Mega choice in the test. The p2 switch was intercepted 
   - **Mechanics and numbers.** Abstract game rules and formulas are generally treated as unprotectable ideas or methods in many jurisdictions (e.g. US copyright law). Code, expressive text and some compilations can be protected, so copying game binaries or decompiled code is riskier than using public data.
   - **Enforcement.** Nintendo and The Pokémon Company have sent takedown notices (e.g. DMCA) to several fan games and projects. Showdown has run for years without takedowns of its names and sprites; draw no conclusions from that.
   - **Lower-risk options:** original creatures, names and art; private or invite-only play; non-commercial use; no official logos or ripped assets.
+- **Decided (2026-10-21):** the project keeps **real Pokémon names, data and sprites** (sprites from Polished Crystal). It is **free and will never be charged for**, and Home credits it as an unofficial fan project not affiliated with Nintendo, Creatures or GAME FREAK. No change to the code or assets is needed.
 
 ---
 
@@ -1198,8 +1224,8 @@ A quick reference to the Gen 6 behaviour from the gen6 engine, as cited in the s
 | Gems | Only Normal Gem obtainable (×1.3) |
 | Notable items | Assault Vest, Weakness Policy, Safety Goggles, Roseli/Kee/Maranga, Luminous Moss, Snowball, Pixie Plate, Rocky Helmet, Eviolite, Air Balloon |
 | Pinch berries | Heal 1/8 at ≤ 1/2 HP (may confuse) |
-| Faint replacement | Simultaneous, end of turn |
-| Level-50 rule | `Adjust Level Down = 50` (validator only) |
+| Faint replacement | End of turn; only the side(s) that lost a Pokémon choose, both at once if both fainted (§18.5) |
+| Level-50 rule | `Adjust Level Down = 50` (validator only). This project writes `level: 50` into each set instead (§18.1) |
 
 ---
 
@@ -1207,73 +1233,60 @@ A quick reference to the Gen 6 behaviour from the gen6 engine, as cited in the s
 
 ### 16.1 Minimal faithful MVP slice
 
+Updated 2026-10-21 to match the answered questions. §18 is the spec for each item.
+
 **Engine:**
 
 - Use `@pkmn/sim` `Battle` in a Node (not Edge) Vercel function.
 - Pin the exact version (`0.10.11`). Upgrades can change behaviour.
-- Use one battle per room. Persist `toJSON()` (or seed + input log) in Turso after every accepted choice. Publish the new protocol lines over Ably.
+- One battle per room. Save `toJSON()` in the room's `battles` row after every accepted choice (§18.6), and broadcast a "something changed" event over Ably so each player refetches their own view.
 
 **Format:**
 
-- `gen6customgame@@@Sleep Clause Mod,Species Clause,Picked Team Size = 3,Endless Battle Clause,HP Percentage Mod`, pending the user's answers.
+- The project's format `[Gen 6] Picomon` (`lib/pokemon-dex.ts`): `Team Preview`, `Cancel Mod`, `Sleep Clause Mod`, `Endless Battle Clause`, `HP Percentage Mod`, plus `Picked Team Size = N` added per battle from the room's battle size (§18.1).
 - Lv 50, written into each set by the server.
-- Bring 6, pick 3, with team preview.
+- Draft 6, bring 3, 4 or 6, with the Battle order screen as team preview.
 
 **Teams:**
 
-- Server-held rental sets from a curated Gen 1–2 pool.
-- Fixed 31 IVs and preset natures and EVs.
-- Validate the whitelist at build time:
-  - no `isNonstandard` species, items or moves;
+- The two drafted teams of 6, built from the fixed sets in `data/pokemon/` (`toSet`).
+- 31 IVs unless a set says otherwise; preset natures and EVs.
+- Base PP: no PP Ups (§18.2).
+- Data rules, checked by hand when writing sets:
+  - no `isNonstandard` species, items or moves (the loader already checks names);
   - no Mega Stones, Blue Orb or Red Orb (§5);
-  - no Electric/Grassy/Misty Terrain moves (§10.2);
-  - every move legal in Gen 6 learnsets (use `TeamValidator('gen6ou')`-style checks with level adjust, or `canLearn`).
+  - no Electric/Grassy/Misty Terrain moves (§10.2).
+- OHKO, evasion-raising and self-KO moves are allowed if a set has them (§18.3).
 
-**Mechanics:** everything the engine does, with no feature flags. A smaller content pool keeps the UI text manageable:
-
-- the abilities and items in §12.4;
-- the moves in §13.4;
-- no Megas and no terrain (decided).
+**Mechanics:** everything the engine does, with no feature flags. The pool's content decides which abilities, items and moves appear (§12.4 and §13.4 remain useful guides).
 
 **Server responsibilities:**
 
-- authenticate the player;
+- authenticate the player (the existing room cookie);
 - reject any choice with a `mega` suffix;
 - call `battle.choose(side, choice)` and reject a `false` result;
-- the turn timer;
+- the 75-second timer, the `default` choice on timeout and the three-timeout forfeit (§18.4);
 - turning the protocol into Crystal-style UI events;
-- splitting private and public log lines per player (`sideupdate` / `|split|`).
+- giving each player only their own view (`sideupdate` / `|split|`), never the saved snapshot.
 
 ### 16.2 Phased additions
 
-1. **Phase 2:** weather and hazard-setter rentals, Trick Room, more items and abilities.
-2. **Phase 3:** a custom team builder with server-side `TeamValidator` (format with `Adjust Level Down = 50`, `Species Clause`, `Item Clause`, `-Mega`, `-Blue Orb`, `-Red Orb`, and the three terrain moves banned) and full Gen 6 learnsets. The full Gen 1–2 pool including legendaries, if allowed.
-3. **Phase 4:** replays from the stored input log, spectators (the `spectator` stream / public log), and ORAS-only content if allowed.
+1. **Phase 2:** more rentals (weather and hazard setters, Trick Room users), more items and abilities.
+2. **Later, if wanted:** a per-turn choice log for debugging and replays (§18.6), spectators (the `spectator` stream / public log).
+3. **Only if sets ever become editable:** a custom team builder with server-side `TeamValidator` and Gen 6 learnsets. Not planned: sets are fixed.
 4. **Ongoing:** golden tests. Fixed seed plus fixed choices gives an expected log, using the scratch scripts' approach. Re-run them on every package upgrade.
 
 ### 16.3 Open questions (only the user can answer)
 
-Decided and removed from this list: singles; the Showdown gen6 engine; Showdown fidelity; **no Mega Evolution, no Primal Reversion, no terrain**.
-
-1. **XY vs ORAS:** allow ORAS-only content (ORAS move tutors; ORAS-only Megas are moot), or XY only (`gen6xy`)? Allow Gen 6-only moves (Play Rough, Moonblast, Sticky Web …) on Gen 1–2 species?
-2. **Level:** 50 or 100?
-3. **Team size and preview:** 6v6, bring 6 / pick 3, or bring 3 / pick 1? Team preview on?
-4. **Species pool:** Gen 1–2 only? How should the Fairy retypes be handled? Clefable, Togepi and Togetic, Azumarill and Granbull are now Fairy, and Mr. Mime is Psychic/Fairy. Keep them as Gen 6 has them (the decided fidelity rule implies yes), or exclude them? Legendaries and Mewtwo?
-5. **Clauses:** Species, Item, Sleep (Mod), Freeze (Mod), OHKO, Evasion, Endless Battle?
-6. **Learnsets:** full Gen 6 (XY + ORAS) legality via Showdown's validator, or curated rental sets only?
-7. **Team source:** rentals only, custom building, or random?
-8. **Turn timer and disconnects:** how long per turn? On timeout, use `default` (the engine's auto-choice), or a forfeit? How long a reconnect grace period?
-9. **Simultaneous faint replacements:** Gen 6 asks both players at once at the end of the turn. Show the opponent's pick only after both have chosen? (Recommended; the engine already works this way.)
-10. **IP posture:** real names and Gen 2-style sprites for private/hobby use, or original creatures? Is a public or commercial launch planned?
-11. **Persistence model:** store the full `toJSON()` state per turn (~20 KB) or the seed plus input log (replay on load)?
+**None.** Every question was answered on 2026-10-21. The answers are in the table under §1 → Decided, and §18 turns them into spec. The project-level record is `docs/research/battle-brainstorm-open-questions.md`.
 
 ---
 
 ## 17. Custom modifications
 
-The project changes some species (types, base stats, abilities) and moves on top of the stock gen6 data, taken from Polished Crystal's Regular version. Only the final values are recorded. These changes win over the engine data (they are the one exception to "the npm package data is trusted as-is"). Every other value stays as Showdown has it.
+The project changes some species (types, base stats, abilities), moves and one weather effect on top of the stock gen6 data, taken from Polished Crystal's Regular version. Only the final values are recorded. These changes win over the engine data (they are the one exception to "the npm package data is trusted as-is"). Every other value stays as Showdown has it.
 
-How they get in: a custom Showdown mod (or `Dex.mod`-style data overrides) that inherits from `gen6` and patches only the entries below. The patch list is the single source of truth, so the Crystal UI text (move info, Pokédex screens) reads from the same patched data. See §17.5 for how to build it.
+How they get in: a custom Showdown mod (or `Dex.mod`-style data overrides) that inherits from `gen6` and patches only the entries below. The patch list is the single source of truth, so the Crystal UI text (move info, Pokédex screens) reads from the same patched data. See §17.6 for how to build it.
 
 Left out (decided): every Pokémon on the wiki tables that isn't in the Gen 6 data, since we won't add species ourselves. These are Typhlosion (Hisuian), Annihilape, Sneasler, Dudunsparce, Farigiraf, Clodsire, Corsola (Galarian), Cursola, Raticate (Alolan), Raichu (Alolan), Marowak (Alolan), Slowbro (Galarian), Slowking (Galarian) and Mewtwo (Armored). The Gen 8 ability Gorilla Tactics (a Primeape option on the wiki) is left out for the same reason. Every species and ability below exists in Gen 6.
 
@@ -1472,9 +1485,23 @@ Polished Crystal's "before" values are not always the same as Gen 6. So the **Ge
 
 Fury Strikes (Polished Crystal's merged Fury Swipes / Fury Attack) and Hidden Power are on the Regular table but left out here: the project won't use those moves (decided).
 
-### 17.5 Implementing the overrides
+### 17.5 Weather
 
-We can change any Pokémon's type, base stats, ability or moves without editing Showdown's files. We put our changes in a **custom mod**, which is a set of data in our own code layered on top of the gen6 data. Anything the mod doesn't mention keeps its gen6 value. The tables in §17.1–17.4 are the content of this mod.
+Hail gives Ice-type Pokémon **1.5× Defence** while it is active, in the same way Sandstorm gives Rock types 1.5× Special Defence (§10.1). Everything else about Hail stays as Gen 6 has it: 1/16 damage per turn to non-Ice Pokémon, 5 turns (8 with Icy Rock), Blizzard never misses, Ice Body heals.
+
+This is a custom change, not from Polished Crystal. It copies Gen 9 Snow's Defence boost onto Gen 6 Hail. The engine's `snowscape` condition already has this exact handler (`onModifyDef` at priority 10, checking `pokemon.hasType('Ice')` and `effectiveWeather()`), and it matches Sandstorm's `onModifySpD` [read, `@pkmn/sim@0.10.11` `data/conditions.ts`].
+
+| Weather | Gen 6 | Custom change |
+|---|---|---|
+| Hail | 1/16 chip to non-Ice; Blizzard never misses | Also Ice-type Def ×1.5 |
+
+As with Sandstorm, the boost is applied to the stat before other modifiers are chained. Cloud Nine and Air Lock remove it, because the engine skips every weather handler while weather is suppressed.
+
+Verified 2026-10-21 [run]: in a Gen 6 battle on the patched mod, Mamoswine set Hail against Glaceon. Glaceon's Defence went from 130 to 195. The same battle on stock gen6 stayed at 130.
+
+### 17.6 Implementing the overrides
+
+We can change any Pokémon's type, base stats, ability or moves, and any weather's effect, without editing Showdown's files. We put our changes in a **custom mod**, which is a set of data in our own code layered on top of the gen6 data. Anything the mod doesn't mention keeps its gen6 value. The tables in §17.1–17.5 are the content of this mod.
 
 #### Use `@pkmn/sim`
 
@@ -1524,6 +1551,7 @@ The values above are illustrations, not our changes. The real ones are in §17.1
 | A move's power, accuracy, type, PP | `Moves` | `basePower`, `accuracy`, `type`, `pp`, `secondary`, and others | §17.4 |
 | A held item's effect | `Items` | its fields and `on*` handlers | none yet |
 | An ability's effect | `Abilities` | its fields and `on*` handlers | none yet |
+| A weather's or status's effect | `Conditions` | `on*` handlers, with `inherit: true` to keep the rest | §17.5 |
 
 For §17.3, `abilities` is set to just the one ability picked for that Pokémon, e.g. `{ 0: 'Natural Cure' }`. Metronome's "???" type (§17.4) is display-only, so it goes in the UI text, not the `Moves` table.
 
@@ -1551,9 +1579,128 @@ For gen6, check at least:
 
 ---
 
+## 18. Battle server design (decided)
+
+This section turns the 2026-10-21 answers into spec for the battle feature. Items marked **[tested]** were run against `@pkmn/sim` 0.10.11 in the repo on 2026-10-21. Items marked **design** are proposals for the implementation spec to confirm.
+
+### 18.1 Format, level and team size
+
+- **Format.** Battles use the project's format `[Gen 6] Picomon` (`FORMAT_NAME` / `FORMAT_ID` in `lib/pokemon-dex.ts`). It runs on the `picomon` mod (stock gen6 plus the §17 patches) and no team validator.
+- **Rules in the format:** `Team Preview`, `Cancel Mod`, `Sleep Clause Mod`, `Endless Battle Clause`, `HP Percentage Mod`.
+- **Team size per battle.** The battle size lives on the room (`rooms.battle_size`: 3, 4 or 6). Add it to the format id when creating the battle:
+
+  > **Update 2026-10-21:** the `@@@` suffix doesn't work on our registered format (the battle falls back to gen 9). Battles use one registered format per size instead; see §3 and §6.1 of [the battle server spec](../superpowers/specs/2026-10-21-battle-server-api-design.md).
+
+  ```ts
+  new Battle({ formatid: `${FORMAT_ID}@@@Picked Team Size = ${room.battleSize}`, seed, send });
+  ```
+
+  **[tested]** `gen6customgame@@@Picked Team Size = N` brought exactly 3, 4 and 6 Pokémon after team preview. But if the base ruleset already contains `Picked Team Size = 3`, adding a different value throws (`Rule "pickedteamsize=4" conflicts with "pickedteamsize=3"`), and adding the same value throws as "redundant".
+
+  **Change needed:** `RULESET` in `lib/pokemon-dex.ts` currently includes `"Picked Team Size = 3"`. Remove it, so the per-battle rule is the only one.
+- **Level 50.** `toSet()` already writes `level: 50` into every set. The battle reads `set.level` directly, so no validator rule is needed.
+- **Teams.** Each side's team is its 6 drafted Pokémon, in draft order, as `Teams.pack(picks.map((id) => toSet(getPokemon(id))))`.
+- **Team preview = Battle order screen.** When both players have set their order, the server sends `team 425…` (the first N slots in the chosen order) for each side. The engine trims each team to N, and the first one leads. The opponent's choice stays hidden until both have chosen, the same pattern as the type battle.
+
+### 18.2 Base PP (no PP Ups)
+
+The engine gives every move 3 PP Ups when it builds a Pokémon, and **there is no field on the set to change that**. `sim/pokemon.ts` hard-codes `const ppUps = move.noPPBoosts || move.id === 'trumpcard' ? 0 : 3`, then calls `battle.calculatePP(move, ppUps)`.
+
+Override `calculatePP` so it returns the move's base PP. **[tested]** Patching the battle before `setPlayer`:
+
+```ts
+const battle = new Battle({ formatid, seed, send });
+battle.calculatePP = (move) => move.pp;   // base PP: no PP Ups
+battle.setPlayer('p1', { name, team });
+battle.setPlayer('p2', { name, team });
+```
+
+- **Result:** Gengar's Sludge Bomb / Shadow Ball / Thunderbolt / Destiny Bond had max PP 16/24/24/8 stock, and **10/15/15/5** patched. The patched values survived `toJSON()` → `Battle.fromJSON()` unchanged, because PP is stored in the snapshot, so the patch is only needed when a battle is **created**.
+- **Cleaner alternative (design):** put the same `calculatePP` override in the `picomon` mod's scripts. Then every battle in the format gets it with no per-battle patch. This is not tested yet; the spec should pick one and add a test asserting Sludge Bomb has 10 max PP.
+- This matches what the draft and Detail screens show (`lib/draft-pool.ts` uses `move.pp`).
+
+### 18.3 Clauses
+
+- **In the engine:** `Sleep Clause Mod` and `Endless Battle Clause`, both in the format's ruleset (both are `Rule`s, so they act in battle; §1).
+- **Not used in the engine:** Item Clause, Freeze Clause. Duplicate items are still impossible, because the draft only lets each player take each held item once (`item-limit` in `lib/draft.ts`, added 2026-10-21).
+- **Allowed, with no clause and no check:** OHKO moves (Fissure, Guillotine, Horn Drill, Sheer Cold), evasion-raising moves (Double Team, Minimize) and self-KO moves (Explosion, Self-Destruct, Memento, Healing Wish, Lunar Dance, Final Gambit). If a Pokémon's set in `data/pokemon/` has one, it can use it (decided 2026-10-21). Don't add a loader check or validator rule for them.
+- **Species Clause** is guaranteed by the draft: each Pokémon can be rented once per room.
+
+### 18.4 Turn timer, timeouts and forfeits
+
+**Rules (decided):**
+
+- **75 seconds** for every choice the battle asks for: team order on the Battle order screen (confirmed 2026-10-21), each turn's move or switch, and faint replacements. The countdown is visible to both players.
+- **On timeout,** the server submits the engine's own **`default`** choice for that player (decided 2026-10-21; not a random choice).
+- **Three timeouts in a row** and that player **forfeits**. Choosing in time resets their count to 0.
+- **Disconnects** are not handled separately. A disconnected player simply doesn't choose, so the timer covers them; refreshing restores the battle from the server.
+
+**The timeout choice.** The server calls `battle.choose(side, 'default')`. The engine handles it in `side.choose()` (`case 'default'` → `side.autoChoose()`) and makes a fixed, predictable choice from the player's current request (§14.4):
+
+| Request | What `default` does |
+|---|---|
+| `teamPreview` | `chooseTeam()` with no order: the first N Pokémon in team order (draft order), the first one leading |
+| `active` (a normal turn) | `chooseMove()` with no move: the **first move that isn't disabled**. If every move is out of PP, the request only offers Struggle, so Struggle is used. It never switches. |
+| `forceSwitch` | `chooseSwitch()` with no slot: the **first healthy bench Pokémon** |
+| `wait` | Nothing: this player isn't being asked |
+
+No server-side choice logic is needed. The same input always produces the same choice, which also makes timeouts easy to test.
+
+**Forfeit.** **[tested]** `battle.forceWin('p2')` ends the battle immediately with `|win|<p2 name>` in the log and `battle.ended === true`. To forfeit p1, call `forceWin('p2')`, and vice versa.
+
+**Enforcing the deadline (design).** Vercel functions only run while handling a request; there's no always-on process to fire a timer. So:
+
+- When the engine issues a new request (battle start, each new turn, a forced switch), the server stores a `deadline` (now + 75 s) on the battle row.
+- Every battle request (both players' GETs and choices) first checks the deadline. If it has passed, the server applies the timeout choices for whoever hasn't chosen, bumps their consecutive-timeout counts, and resolves the turn before handling the request.
+- Each client's countdown reaches zero at about the same time. The client then calls the battle state route (or a small `POST …/battle/timeout`) so a request arrives promptly even if only one player is still connected.
+- If neither player is connected, nothing happens until one returns. The room's normal expiry cleans the battle up.
+
+### 18.5 Faint replacements
+
+The engine already follows the Gen 5+ rule:
+
+- At the end of a turn, only a side that lost its active Pokémon gets a `forceSwitch` request. The other side gets `wait`, and its screen shows "Waiting for <NAME> to choose a POKéMON...".
+- If both active Pokémon fainted, both sides get `forceSwitch` and choose at the same time. Neither player sees the other's choice until both are in.
+- Same 75-second timer. On timeout, `default` sends in the first healthy bench Pokémon (§18.4), and it counts toward the three-timeout forfeit.
+
+### 18.6 Saving battles
+
+**Decided:** one database row per battle holding the engine's latest snapshot, overwritten after every turn. No choice log for now.
+
+- **The snapshot** is `JSON.stringify(battle.toJSON())`, about 20 KB for 3v3 (§14.3). It contains **everything**, including both teams' hidden information and the PRNG state. It never leaves the server: each player gets their own view from the engine's per-player output (`sideupdate` / `|split|`), the same way the type battle hides the opponent's pick.
+- **Loading** is `Battle.fromJSON(json)`, about 0.6 ms, followed by `battle.restart(send)` to reattach the output callback. A half-submitted turn (one player has chosen) survives the round trip (§14.3).
+- **Table (design):** `battles`, one row per room:
+
+  | Column | Type | Meaning |
+  |---|---|---|
+  | `room_code` | text, primary key, references `rooms.code` | One battle per room |
+  | `state` | text | The latest `toJSON()` snapshot |
+  | `version` | integer | Bumped on every save, for the concurrency check below |
+  | `deadline` | integer (unix ms), nullable | When the current choices time out (§18.4) |
+  | `p1_timeouts`, `p2_timeouts` | integer, default 0 | Consecutive timeouts per player |
+  | `updated_at` | integer (unix ms) | Last save |
+
+- **Concurrent choices (design).** Both players can submit at almost the same moment. Two requests could each load version *v*, apply their own choice and save, and the second save would overwrite the first player's choice. Guard the save with the version:
+
+  ```sql
+  UPDATE battles SET state = ?, version = version + 1, … WHERE room_code = ? AND version = ?
+  ```
+
+  If no row was updated, reload and apply the choice again. Alternatively, do the load, choose and save inside one write transaction, as `joinRoom` does today. Either way, never two writers on one snapshot.
+- **Cleanup.** When a room expires, delete its `battles` row along with its players, type picks and draft picks.
+- **No choice log for now.** `battle.inputLog` is inside the snapshot anyway. A separate per-turn log table can be added later for debugging or replays (§16.2).
+
+---
+
 ## Appendix: Sources and verification notes
 
 ### Verified directly this session (read from source or run)
+
+- **2026-10-21, against `@pkmn/sim` 0.10.11 in the repo (§18):**
+  - `sim/pokemon.ts` hard-codes 3 PP Ups per move. Overriding `battle.calculatePP` before `setPlayer` gives base PP (Sludge Bomb 10, not 16), and it survives `toJSON` / `fromJSON`.
+  - `@@@Picked Team Size = N` brings exactly 3, 4 or 6 after team preview. It conflicts with a `Picked Team Size` already in the base ruleset.
+  - `battle.forceWin(side)` ends the battle with a `|win|` line.
+  - `side.autoChoose()` (the `default` choice) picks the first usable move, the first healthy bench Pokémon, or the team in its listed order. The project uses it as the timeout choice.
 
 - **`pokemon-showdown@0.11.11`** (npm, TypeScript source included):
   - `sim/battle-actions.ts`: `getDamage`, `modifyDamage`, `getConfusionDamage`, `canMegaEvo`, `runMegaEvo`, `hitStepAccuracy`, the Gen ≤ 6 hit-step swap, multi-hit odds, `calcRecoilDamage`.

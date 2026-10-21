@@ -38,6 +38,7 @@ const roomState = {
   battleSize: 6,
   typeBattle: null,
   draft: null,
+  battle: null,
 };
 
 beforeEach(() => {

@@ -63,3 +63,34 @@ export const draftPicks = sqliteTable(
   },
   (t) => [primaryKey({ columns: [t.roomCode, t.pickIndex] }), unique().on(t.roomCode, t.pokemonId)],
 );
+
+// One battle per room: the engine's latest snapshot plus what the routes need without
+// deserialising it. `state` and the orders are secret and never leave the server.
+export const battles = sqliteTable('battles', {
+  roomCode: text('room_code')
+    .primaryKey()
+    .references(() => rooms.code),
+  // JSON.stringify(battle.toJSON()). Holds both teams, every choice and the PRNG state.
+  state: text('state').notNull(),
+  // Bumped by every save: the compare-and-swap guard. Not sent to clients.
+  version: integer('version').notNull().default(1),
+  // 'team-order' | 'in-progress' | 'ended'
+  stage: text('stage').notNull(),
+  // The current step. 0 is the intro and team preview.
+  step: integer('step').notNull().default(0),
+  // JSON number[]: the battle.log index where each step's lines begin; [0] is 0.
+  stepStarts: text('step_starts').notNull(),
+  // Unix ms when the current step's choices time out; null once ended.
+  deadline: integer('deadline'),
+  p1Timeouts: integer('p1_timeouts').notNull().default(0),
+  p2Timeouts: integer('p2_timeouts').notNull().default(0),
+  // JSON number[]: the Battle order so far, as 1-based positions in the player's draft
+  // order. Secret: the opponent only sees its length.
+  p1Order: text('p1_order').notNull().default('[]'),
+  p2Order: text('p2_order').notNull().default('[]'),
+  // Set when the stage is 'ended'. winner null with an end reason is a tie.
+  winner: integer('winner'),
+  endReason: text('end_reason'), // 'normal' | 'forfeit' | 'abandoned'
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+});

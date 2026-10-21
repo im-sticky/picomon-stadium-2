@@ -54,7 +54,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "lugia",
   sprite: "/sprites/pokemon-icons/lugia.png",
-  isUber: true,
+  isMaster: true,
   ability: "Multiscale",
   types: ["Water", "Flying"],
   // baseStats: { hp, atk, def, spa, spd, spe },   // only if changed, all six
@@ -72,7 +72,8 @@ export default {
 |---|---|
 | `id` | Showdown species ID. Must match the file name. |
 | `sprite` | Public path of the image the front end shows. Typed as `` `/sprites/${string}.png` ``. |
-| `isUber` | Draft only. Optional, defaults to `false`. `true` shows a Master Ball (`icon-masterball.png`) on the draft screen instead of a Poké Ball (`icon-pokeballball.png`), and each player may draft at most one uber. It has no effect on battles. |
+| `isMaster` | Draft only. Optional, defaults to `false`. `true` shows a Master Ball (`icon-masterball.png`) on the draft screen instead of a Poké Ball (`icon-pokeballball.png`), and each player may draft at most one master. It has no effect on battles. |
+| `isUltra` | Draft only. Optional, defaults to `false`. Set on Pokémon with a base stat total of 580 to 600 (they are not masters). `true` shows an Ultra Ball on the draft screen (for now the Poké Ball icon hue-shifted to yellow, until `icon-ultraball.png` exists), and each player may draft at most one ultra Pokémon, on top of their one master. It has no effect on battles. |
 | `ability` | The one ability this Pokémon has (§17.3). Always set. It replaces all of the species' gen6 abilities, in battle and in the dex. |
 | `types` | §17.1 types. Leave it out to keep the gen6 types. |
 | `baseStats` | §17.2 stats, all six. Leave it out to keep the gen6 stats. |
@@ -91,7 +92,7 @@ export const MOVE_CHANGES: Record<string, MoveChange> = {
 };
 ```
 
-Nested objects replace the stock value rather than merging with it, so `secondary` must be written out in full (research doc §17.5, gotcha 2).
+Nested objects replace the stock value rather than merging with it, so `secondary` must be written out in full (research doc §17.6, gotcha 2).
 
 ## 4. The loader (`lib/pokemon-dex.ts`)
 
@@ -137,13 +138,13 @@ The prototype ruleset is `Team Preview, Cancel Mod, Sleep Clause Mod, Endless Ba
 - **Battle server:** `toSet(getPokemon(id))` for each picked Pokémon → `battle.setPlayer(side, { name, team: Teams.pack(sets) })`.
 - **Draft and battle UI:** read display data (types, stats, move type/power/accuracy/PP, ability text) from the exported `dex`, never from stock gen6. The UI then shows exactly what the battle uses.
 - **Server only:** `lib/pokemon-dex.ts` imports `@pkmn/sim`, which is a large package. Only import it from server code (route handlers, server components). Send the client plain objects with just the fields a screen needs, such as `{ id, name, sprite, types, stats, moves }`. The files in `data/pokemon/` don't import the engine, so a client component can import them for the sprite path.
-- **Ubers in the draft:** show `icon-masterball.png` when `entry.isUber` is true, otherwise `icon-pokeballball.png` (draft info box, design README "Draft"). The one-uber limit is a draft rule. The server's pick handler must reject a second uber from the same player, because the client can't be trusted. The draft screen can also disable the remaining ubers once a player has one.
+- **Masters in the draft:** show `icon-masterball.png` when `entry.isMaster` is true, otherwise `icon-pokeballball.png` (draft info box, design README "Draft"). The one-master limit is a draft rule. The server's pick handler must reject a second master from the same player, because the client can't be trusted. The draft screen can also disable the remaining masters once a player has one.
 - **Sprites:** `sprite` points into `public/sprites/`, e.g. `/sprites/pokemon-icons/lugia.png`. Use it as an `<img src>` or `next/image`.
 
 ## 6. What's left for implementation
 
 1. **Decide the draft pool**, then add one file per Pokémon and list each in `data/pokemon/index.ts`. The four prototype files (Ampharos, Lugia, Meganium, Snorlax) are examples. Their sets and ability picks are placeholders.
-2. **Mark the ubers** with `isUber: true`. The design canvas uses Dragonite, Tyranitar and Zapdos as samples. Lugia is marked in the prototype as an example. Enforce the one-uber limit on the server when the draft pick API is built.
+2. **Mark the masters** with `isMaster: true`. The design canvas uses Dragonite, Tyranitar and Zapdos as samples. Lugia is marked in the prototype as an example. Enforce the one-master limit on the server when the draft pick API is built.
 3. **Pick one ability per Pokémon** from §17.3 (or its gen6 options if it isn't listed there).
 4. **Write each set:** moves, item, nature, EVs.
 5. **Fill in `types` / `baseStats`** for every pool Pokémon that appears in §17.1 / §17.2.

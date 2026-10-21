@@ -1,4 +1,6 @@
 import * as Ably from 'ably';
+import type { BattleEvent } from '@/lib/battle-types';
+import type { RoomEvent } from '@/lib/room-events';
 import type { PublicPlayer } from '@/lib/types';
 
 let client: Ably.Rest | null = null;
@@ -21,19 +23,15 @@ export async function publishPlayerJoined(code: string, players: PublicPlayer[])
 }
 
 /**
- * Tells both players that the room changed. It carries no data, so nothing secret
- * (like a type pick) is broadcast: each client refetches its own view.
+ * Tells both players what changed, after the write has committed. Only shared
+ * results are sent: a type pick stays secret until the round is resolved.
+ * A failure is only logged: clients also check the server in the background.
  */
-export async function publishRoomUpdated(code: string): Promise<void> {
-  await getClient().channels.get(channelName(code)).publish('room-updated', {});
-}
-
-/** Like publishRoomUpdated, but a failure is only logged: clients also refetch on reconnect. */
-export async function notifyRoomUpdated(code: string): Promise<void> {
+export async function notifyRoomEvent(code: string, event: RoomEvent | BattleEvent): Promise<void> {
   try {
-    await publishRoomUpdated(code);
+    await getClient().channels.get(channelName(code)).publish(event.kind, event);
   } catch (err) {
-    console.error('Failed to publish room-updated', err);
+    console.error(`Failed to publish ${event.kind}`, err);
   }
 }
 

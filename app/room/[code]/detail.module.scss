@@ -241,4 +241,12 @@
     justify-content: center;
     gap: 48px;
   }
+
+  /* Why RENT is disabled: at the bottom of the stats column. */
+  &__notRentable {
+    margin-top: auto;
+    font-size: 16px;
+    line-height: 24px;
+    color: var(--error);
+  }
 }

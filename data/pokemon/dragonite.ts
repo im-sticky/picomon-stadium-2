@@ -3,7 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "dragonite",
   sprite: "/sprites/pokemon-icons/dragonite.png",
-  isUber: true,
+  isUltra: true,
   ability: "Multiscale",
   set: {
     moves: ["Dragon Dance", "Outrage", "Extreme Speed", "Earthquake"],

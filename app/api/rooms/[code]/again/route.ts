@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/db/client';
-import { notifyRoomUpdated } from '@/lib/ably-server';
+import { notifyRoomEvent } from '@/lib/ably-server';
 import { normalizeCode } from '@/lib/codes';
 import { playTypeBattleAgain } from '@/lib/rooms';
+import type { RoomEvent } from '@/lib/room-events';
 import { readSessionSecret } from '@/lib/session';
 
 /** After a draw, starts the next type battle round for both players. */
@@ -22,8 +23,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ cod
       return NextResponse.json({ error: 'The round was not a draw.' }, { status: 409 });
     case 'already-new-round':
       return NextResponse.json({ ok: true });
-    case 'new-round':
-      await notifyRoomUpdated(code);
-      return NextResponse.json({ ok: true });
+    case 'new-round': {
+      const event: RoomEvent = { kind: 'type-round-started', round: result.round };
+      await notifyRoomEvent(code, event);
+      return NextResponse.json({ ok: true, event });
+    }
   }
 }

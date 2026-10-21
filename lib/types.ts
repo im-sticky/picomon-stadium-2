@@ -1,3 +1,5 @@
+import type { BattleResult, BattleStage } from "@/lib/battle-types";
+
 export type Slot = 1 | 2;
 
 export type PublicPlayer = {
@@ -6,7 +8,7 @@ export type PublicPlayer = {
   slot: Slot;
 };
 
-export type Phase = "lobby" | "type-battle" | "draft";
+export type Phase = "lobby" | "type-battle" | "draft" | "battle";
 
 /** How many Pokémon each player sends into battle, chosen by the host. Everyone drafts 6. */
 export const BATTLE_SIZES = [3, 4, 6] as const;
@@ -45,6 +47,8 @@ export type RoomState = {
   battleSize: BattleSize;
   /** Set only in the type-battle phase. */
   typeBattle: TypeBattleView | null;
-  /** Set only in the draft phase. */
+  /** Set in the draft and battle phases: the Battle order screen shows both drafted teams. */
   draft: DraftView | null;
+  /** Set only in the battle phase: which battle screen to show. The rest comes from `GET …/battle`. */
+  battle: { stage: BattleStage; result: BattleResult | null } | null;
 };

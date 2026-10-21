@@ -8,8 +8,10 @@ import { draftTurn, TOTAL_PICKS } from '@/lib/draft';
 import type { Slot } from '@/lib/types';
 
 const T0 = 1_000_000;
-const ubers = POKEMON.filter((p) => p.isUber).map((p) => p.id);
-const others = POKEMON.filter((p) => !p.isUber).map((p) => p.id);
+const masters = POKEMON.filter((p) => p.isMaster).map((p) => p.id);
+// Neither master nor ultra, and each holding a different item, so any of them can share a team.
+const plain = POKEMON.filter((p) => !p.isMaster && !p.isUltra);
+const others = [...new Map(plain.map((p) => [p.set.item, p.id])).values()];
 
 /** A room where the guest won the type battle and chose `order`. */
 async function draftRoom(db: Db, order: 'first' | 'second') {
@@ -48,14 +50,15 @@ describe('draft', () => {
       const db = await createTestDb();
       const room = await draftRoom(db, order);
       const first: Slot = order === 'first' ? 2 : 1;
-      const ids = [...others, ...ubers];
       for (let i = 0; i < TOTAL_PICKS; i++) {
         const slot = draftTurn(first, i)!;
         const offTurn: Slot = slot === 1 ? 2 : 1;
-        expect(await pickPokemon(db, room.code, room[offTurn], ids[i], T0)).toEqual({ kind: 'not-your-turn' });
-        expect(await pickPokemon(db, room.code, room[slot], ids[i], T0)).toEqual({
+        expect(await pickPokemon(db, room.code, room[offTurn], others[i], T0)).toEqual({ kind: 'not-your-turn' });
+        expect(await pickPokemon(db, room.code, room[slot], others[i], T0)).toEqual({
           kind: 'picked',
           complete: i === TOTAL_PICKS - 1,
+          pickIndex: i,
+          slot,
         });
       }
       const { draft } = await state(db, room.code, room[1]);
@@ -65,16 +68,16 @@ describe('draft', () => {
     }
   });
 
-  it('rejects a rented, unknown or second uber pick', async () => {
-    expect(ubers.length).toBeGreaterThanOrEqual(2);
+  it('rejects a rented, unknown or second master pick', async () => {
+    expect(masters.length).toBeGreaterThanOrEqual(2);
     const db = await createTestDb();
     const room = await draftRoom(db, 'first'); // guest, host, host, guest, ...
-    await pickPokemon(db, room.code, room[2], ubers[0], T0);
-    expect(await pickPokemon(db, room.code, room[1], ubers[0], T0)).toEqual({ kind: 'taken' });
+    await pickPokemon(db, room.code, room[2], masters[0], T0);
+    expect(await pickPokemon(db, room.code, room[1], masters[0], T0)).toEqual({ kind: 'taken' });
     expect(await pickPokemon(db, room.code, room[1], 'missingno', T0)).toEqual({ kind: 'unknown-pokemon' });
     await pickPokemon(db, room.code, room[1], others[0], T0);
     await pickPokemon(db, room.code, room[1], others[1], T0);
-    expect(await pickPokemon(db, room.code, room[2], ubers[1], T0)).toEqual({ kind: 'uber-limit' });
+    expect(await pickPokemon(db, room.code, room[2], masters[1], T0)).toEqual({ kind: 'master-limit' });
     expect((await state(db, room.code, room[2])).draft!.picks).toHaveLength(3);
   });
 

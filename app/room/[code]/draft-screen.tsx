@@ -69,8 +69,23 @@ export function DraftScreen({
   const turn = draftTurn(firstDrafter, picks.length);
   const done = picks.length >= TOTAL_PICKS;
   const left = picksLeftInTurn(firstDrafter, picks.length);
-  const youHaveUber = team(you.slot).some((id) => byId.get(id)?.isUber);
-  const blocked = (p: PoolPokemon) => p.isUber && youHaveUber;
+  const youHaveMaster = team(you.slot).some((id) => byId.get(id)?.isMaster);
+  const youHaveUltra = team(you.slot).some((id) => byId.get(id)?.isUltra);
+  const yourItems = new Set(team(you.slot).map((id) => byId.get(id)?.item));
+  /** Why one of your team's limits rules `p` out, or null. */
+  const limitReason = (p: PoolPokemon): string | null => {
+    if (p.isMaster && youHaveMaster) return "Only 1 master pokemon allowed.";
+    if (p.isUltra && youHaveUltra) return "Only 1 ultra pokemon allowed.";
+    if (yourItems.has(p.item)) return "Item already used on team.";
+    return null;
+  };
+  const blocked = (p: PoolPokemon) => limitReason(p) !== null;
+  /** Why the open Pokémon can't be rented, shown by RENT. Null while it can be (or mid-rent). */
+  const notRentable = (p: PoolPokemon): string | null => {
+    if (rentedBy.has(p.id)) return "Already drafted.";
+    if (turn !== you.slot) return "Not your turn.";
+    return limitReason(p);
+  };
   const title = turn ? `${name(turn)}'S CHOICE` : "DRAFT COMPLETE";
 
   async function rent(id: string) {
@@ -88,15 +103,15 @@ export function DraftScreen({
   const opened = open && byId.get(open.id);
   if (open && opened) {
     const owner = rentedBy.get(opened.id);
-    const canRent =
-      !open.viewOnly && !busy && turn === you.slot && owner === undefined && !blocked(opened);
+    const reason = open.viewOnly ? null : notRentable(opened);
     return (
       <DetailScreen
         key={opened.id}
         pokemon={opened}
         title={open.viewOnly && owner ? `RENTED BY ${name(owner)}` : title}
         viewOnly={open.viewOnly}
-        canRent={canRent}
+        canRent={!open.viewOnly && !busy && reason === null}
+        notRentable={reason}
         onRent={() => void rent(opened.id)}
         onBack={() => setOpen(null)}
       />
@@ -195,7 +210,7 @@ export function DraftScreen({
                 <button
                   type="button"
                   className={`${styles.draft__cell} ${on} ${blocked(p) ? styles["draft__cell--blocked"] : ""}`}
-                  aria-label={`View ${label}${blocked(p) ? " (you already have an uber)" : ""}`}
+                  aria-label={`View ${label}${blocked(p) ? ` (${limitReason(p)})` : ""}`}
                   onMouseEnter={() => setHover(p.id)}
                   onFocus={() => setHover(p.id)}
                   onClick={() => setOpen({ id: p.id, viewOnly: false })}
@@ -234,9 +249,9 @@ export function DraftScreen({
               <div className={styles.draft__infoLeft}>
                 <div className={styles.draft__infoName}>
                   <Image
-                    className={styles.draft__infoIcon}
-                    src={hovered.isUber ? MASTER_BALL_ICON : BALL_ICON}
-                    alt={hovered.isUber ? "Uber" : ""}
+                    className={`${styles.draft__infoIcon} ${hovered.isUltra ? styles["draft__infoIcon--ultra"] : ""}`}
+                    src={hovered.isMaster ? MASTER_BALL_ICON : BALL_ICON}
+                    alt={hovered.isMaster ? "Master" : hovered.isUltra ? "Ultra" : ""}
                     width={32}
                     height={32}
                     unoptimized

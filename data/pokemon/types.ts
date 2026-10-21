@@ -13,10 +13,16 @@ export interface PokemonEntry {
   /** Public path of the sprite to show on the front end, e.g. "/sprites/pokemon-icons/lugia.png". */
   sprite: `/sprites/${string}.png`;
   /**
-   * Draft only. An uber shows a Master Ball on the draft screen instead of a Poké
+   * Draft only. A master shows a Master Ball on the draft screen instead of a Poké
    * Ball, and each player may draft at most one. Defaults to false.
    */
-  isUber?: boolean;
+  isMaster?: boolean;
+  /**
+   * Draft only. For Pokémon with a base stat total of 580 to 600. An ultra one shows
+   * an Ultra Ball on the draft screen, and each player may draft at most one (on
+   * top of their one master). Defaults to false.
+   */
+  isUltra?: boolean;
   /** The one ability this Pokémon has. Replaces all of its gen6 abilities. */
   ability: string;
   /** New types (§17.1 of the gen6 research doc). Leave out to keep the gen6 types. */
