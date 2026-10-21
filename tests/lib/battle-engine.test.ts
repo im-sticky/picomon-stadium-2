@@ -63,7 +63,7 @@ const pool3 = (size: BattleSize) => createBattle({ size, seed: SEED, teams: { 1:
 const species = (engine: Engine, slot: Slot) => engine.battle.sides[slot - 1].pokemon.map((p) => p.set.species);
 
 describe('formats', () => {
-  it.each([3, 4, 6] as const)('a %iv%i battle runs on gen 6, the picomon mod, and brings that many', (size) => {
+  it.each([3, 4, 6] as const)('%i a side: the battle runs on gen 6, the picomon mod, and brings that many', (size) => {
     const engine = pool3(size);
     const { battle } = engine;
     expect(battle.gen).toBe(6);
