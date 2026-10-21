@@ -4,9 +4,12 @@ import type { DraftPick, Slot } from '@/lib/types';
 
 const order = (first: Slot) => Array.from({ length: TOTAL_PICKS }, (_, i) => draftTurn(first, i));
 
-// A made-up pool: two ubers and plenty of others.
-const POOL: Record<string, boolean> = { uberA: true, uberB: true, a: false, b: false, c: false };
-const limits = (id: string) => (id in POOL ? { isUber: POOL[id], isStrong: false } : undefined);
+// A made-up pool: two ubers, two strong ones and plenty of others.
+const UBERS = ['uberA', 'uberB'];
+const STRONG = ['strongA', 'strongB'];
+const POOL = [...UBERS, ...STRONG, 'a', 'b', 'c'];
+const limits = (id: string) =>
+  POOL.includes(id) ? { isUber: UBERS.includes(id), isStrong: STRONG.includes(id) } : undefined;
 
 describe('draft turn order', () => {
   it('snakes from the host when the host drafts first', () => {
@@ -52,6 +55,14 @@ describe('draft pick rules', () => {
     const more: DraftPick[] = [...picks, { slot: 2, pokemonId: 'b' }];
     expect(draftPickError(1, more, 1, 'uberB', limits)).toBe('uber-limit');
     expect(draftPickError(1, more, 1, 'c', limits)).toBeNull();
+  });
+
+  it('allows one strong per player, on top of one uber', () => {
+    const picks: DraftPick[] = [{ slot: 1, pokemonId: 'strongA' }, { slot: 2, pokemonId: 'a' }];
+    expect(draftPickError(1, picks, 2, 'strongB', limits)).toBeNull();
+    const more: DraftPick[] = [...picks, { slot: 2, pokemonId: 'b' }];
+    expect(draftPickError(1, more, 1, 'strongB', limits)).toBe('strong-limit');
+    expect(draftPickError(1, more, 1, 'uberA', limits)).toBeNull();
   });
 
   it('rejects picks after 12', () => {
