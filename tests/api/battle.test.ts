@@ -231,7 +231,11 @@ describe('POST battle/order', () => {
     expect(lastBody.view).toMatchObject({ stage: 'in-progress', step: 1, log: { from: 1 } });
     expect(published()).toEqual(lastBody.events);
 
-    const late = await order(c[2], { order: [3, 2, 1] });
+    // A resend of the lock-in (its response lost) is a success; a different order is too late.
+    const resent = await order(c[2], { order: [3, 2, 1] });
+    expect(resent.status).toBe(200);
+    expect(await resent.json()).toMatchObject({ ok: true, events: [], view: { stage: 'in-progress' } });
+    const late = await order(c[2], { order: [1, 2, 3] });
     expect(late.status).toBe(409);
     expect(await late.json()).toMatchObject({ error: 'Not choosing an order.', view: { stage: 'in-progress' } });
   });

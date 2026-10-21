@@ -404,7 +404,7 @@ Every route returns 404 `{ error: 'Room not found.' }` for an unknown or expired
 | Result | Status | Body |
 |---|---|---|
 | `progressed` | 200 | `{ ok: true, events, view }`, where `events` is `[battle-order-progress]`, plus `battle-step` (step 1) if this lock-in started the battle |
-| `unchanged` (same order as stored) | 200 | `{ ok: true, events: [], view }` |
+| `unchanged` (same order as stored, checked before the stage, so a resent lock-in after the battle has started is a success) | 200 | `{ ok: true, events: [], view }` |
 | `invalid-order` | 400 | `{ error: 'invalid-order' }` |
 | `order-conflict` (doesn't extend the stored order) | 409 | `{ error: 'Order already chosen.', view }` |
 | `not-ordering` (stage isn't `team-order`, including after a timeout) | 409 | `{ error: 'Not choosing an order.', view }` |
@@ -432,7 +432,7 @@ Every route returns 404 `{ error: 'Room not found.' }` for an unknown or expired
 | `not-asked` (your request is `wait`, the stage is `team-order`, or the kind doesn't match, §6.4) | 409 | `{ error: 'Not your turn.', view }`, or `{ error: 'Must switch.', view }` for a `move` sent when a switch is due |
 | `already-chosen` | 409 | `{ error: 'Already chosen.', view }` |
 | `ended` | 409 | `{ error: 'The battle is over.', view }` |
-| `rejected` (the engine returned false) | 422 | `{ error: 'invalid-choice', message: '<engine text>', view }` |
+| `rejected` (the engine returned false) | 422 | `{ error: 'invalid-choice', message: '<engine text>', view }`. For a switch the engine refused because of a hidden trap (Shadow Tag, Arena Trap), the view's request says `trapped: true, canSwitch: false`. That's private to the player, and nothing is saved: the rejected engine is still thrown away, so a later view can offer the switch again, and the engine refuses it again. |
 | `busy` | 503 | `{ error: 'Busy, try again.' }` |
 
 Each 409 or 422 response carries the current `view`, so the client can correct itself without another request. `view.log.from` is the request's `step + 1` (or the current step if that's lower), so the response only carries steps the client doesn't have.
@@ -445,6 +445,7 @@ Each 409 or 422 response carries the current `view`, so the client can correct i
 - **400:** `from` isn't a non-negative integer. A `from` beyond the current step is clamped.
 - **409:** `{ error: 'No battle yet.' }` when the room isn't in the `battle` phase.
 - **503:** `{ error: 'Busy, try again.' }` when applying a timeout uses up the CAS retries.
+- If applying the timeouts throws (a bug), the GET logs it and returns the saved state read-only, so neither player is locked out. The POST routes still fail with the error.
 
 ### 8.5 `POST /api/rooms/[code]/battle/timeout` — the countdown trigger
 
@@ -624,6 +625,7 @@ for attempt in 1..5:
 after 5 attempts: return busy (503)
 ```
 
+- **A busy database** (`SQLITE_BUSY` / `SQLITE_LOCKED`) on the CAS `UPDATE` counts as a lost race: reload and retry, within the same 5 attempts.
 - **"Changed" is explicit.** Both steps return `save: boolean`. Nothing infers it from comparing engines.
 - **A rejected `mutate` never saves its engine,** because a rejected `choose` still mutates it (§3). When timeouts were also applied, the attempt writes the serialised state taken *before* `mutate` ran.
 - In practice, a choice after due timeouts is always `stale-step` (§10.2), so the rejection never reaches the engine anyway. The `base` snapshot covers the general rule.

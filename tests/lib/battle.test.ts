@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { eq, sql } from 'drizzle-orm';
 import type { Db } from '@/db/client';
 import { battles, rooms } from '@/db/schema';
@@ -19,8 +19,23 @@ import type { Slot } from '@/lib/types';
 
 const DUE = T0 + TIMER_MS + GRACE_MS;
 
+// Lets a test make the timeout path crash, as a bug in it would.
+const broken = vi.hoisted(() => ({ defaults: false }));
+vi.mock('@/lib/battle-engine', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/battle-engine')>();
+  return {
+    ...actual,
+    applyDefault: (...args: Parameters<typeof actual.applyDefault>) => {
+      if (broken.defaults) throw new Error('applyDefault exploded');
+      return actual.applyDefault(...args);
+    },
+  };
+});
+
 afterEach(() => {
   casHooks.beforeWrite = undefined;
+  broken.defaults = false;
+  vi.restoreAllMocks();
 });
 
 async function started(db: Db, size: 3 | 4 | 6 = 3): Promise<TestRoom> {
@@ -154,7 +169,21 @@ describe('Battle order', () => {
     expect(hp(v2, 1)[0]).toMatch(/\/100$/);
     expect(v1.request?.team.map((m) => m.pokemonId)).toEqual(['furret', 'tauros', 'gengar']);
     expect((await getRoomState(db, room.code, room[1], T0))!.battle).toEqual({ stage: 'in-progress', result: null });
-    expect(await submitOrder(db, room.code, room[1], [2, 1, 3], T0)).toMatchObject({ kind: 'not-ordering' });
+    expect(await submitOrder(db, room.code, room[1], [2, 1], T0)).toMatchObject({ kind: 'not-ordering' });
+  });
+
+  it('a resent lock-in after the battle has started is unchanged, not a conflict', async () => {
+    const db = await createTestDb();
+    const room = await started(db);
+    await submitOrder(db, room.code, room[1], [2, 1, 3], T0);
+    await submitOrder(db, room.code, room[2], [1, 2, 3], T0);
+    const { version } = await row(db, room.code);
+    for (const slot of [1, 2] as const) {
+      const again = await submitOrder(db, room.code, room[slot], slot === 1 ? [2, 1, 3] : [1, 2, 3], T0);
+      expect(again).toMatchObject({ kind: 'unchanged', events: [], view: { stage: 'in-progress', step: 1 } });
+    }
+    expect((await row(db, room.code)).version).toBe(version);
+    expect(await submitOrder(db, room.code, room[2], [3, 2, 1], T0)).toMatchObject({ kind: 'not-ordering' });
   });
 });
 
@@ -216,8 +245,17 @@ describe('choices', () => {
   it('a switch while trapped goes to the engine and is rejected', async () => {
     const db = await createTestDb();
     const room = await inProgress(db, { 1: [1, 2, 3], 2: [6, 1, 2] });
+    // Shadow Tag is hidden until P1 tries to switch.
+    expect((await view(db, room, 1, T0)).request).toMatchObject({ kind: 'move', canSwitch: true, trapped: false });
+    const { version } = await row(db, room.code);
     const result = await choice(db, room, 1, 1, { kind: 'switch', slot: 2 }, T0);
-    expect(result).toMatchObject({ kind: 'rejected', message: expect.stringContaining('trapped') });
+    expect(result).toMatchObject({
+      kind: 'rejected',
+      message: expect.stringContaining('trapped'),
+      view: { request: { kind: 'move', canSwitch: false, trapped: true } },
+    });
+    expect((await row(db, room.code)).version).toBe(version);
+    expect(await choice(db, room, 1, 1, { kind: 'move', move: 1 }, T0)).toMatchObject({ kind: 'chosen' });
   });
 
   it('the team order stage takes no moves', async () => {
@@ -424,6 +462,24 @@ describe('concurrency', () => {
     expect(lines.some((l) => l.startsWith('|move|p2a: Blissey|Seismic Toss'))).toBe(true);
   });
 
+  it('a busy database during the save is retried like a lost race', async () => {
+    const db = await createTestDb();
+    const room = await inProgress(db);
+    let attempts = 0;
+    casHooks.beforeWrite = async () => {
+      attempts++;
+      if (attempts === 1) throw Object.assign(new Error('database is locked'), { code: 'SQLITE_BUSY' });
+    };
+    expect(await choice(db, room, 1, 1, { kind: 'move', move: 1 }, T0)).toMatchObject({ kind: 'chosen' });
+    expect(attempts).toBe(2);
+    expect((await view(db, room, 1, T0)).chosen).toBe(true);
+
+    casHooks.beforeWrite = async () => {
+      throw Object.assign(new Error('database is locked'), { code: 'SQLITE_BUSY' });
+    };
+    expect(await choice(db, room, 2, 1, { kind: 'move', move: 1 }, T0)).toEqual({ kind: 'busy' });
+  });
+
   it('a compare-and-swap that keeps losing is busy after 5 attempts', async () => {
     const db = await createTestDb();
     const room = await inProgress(db);
@@ -438,6 +494,21 @@ describe('concurrency', () => {
     expect(await choice(db, room, 1, 1, { kind: 'move', move: 1 }, T0)).toEqual({ kind: 'busy' });
     expect(attempts).toBe(5);
     expect((await view(db, room, 1, T0)).chosen).toBe(false);
+  });
+});
+
+describe('a crash in the timeout path', () => {
+  it('still lets the GET show the saved state; writes keep failing', async () => {
+    const db = await createTestDb();
+    const room = await inProgress(db);
+    const { version } = await row(db, room.code);
+    broken.defaults = true;
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const result = await getBattleView(db, room.code, room[1], 0, DUE);
+    expect(result).toMatchObject({ kind: 'view', events: [], view: { step: 1, stage: 'in-progress' } });
+    expect(errors).toHaveBeenCalledWith(expect.stringContaining('serving the saved state'), expect.any(Error));
+    expect((await row(db, room.code)).version).toBe(version);
+    await expect(triggerTimeout(db, room.code, room[1], 1, DUE)).rejects.toThrow('applyDefault exploded');
   });
 });
 

@@ -43,7 +43,7 @@ export function isConstraintError(err: unknown): boolean {
   return errorCodes(err).some((c) => c.startsWith('SQLITE_CONSTRAINT'));
 }
 
-function isBusyError(err: unknown): boolean {
+export function isBusyError(err: unknown): boolean {
   return errorCodes(err).some((c) => c === 'SQLITE_BUSY' || c === 'SQLITE_LOCKED');
 }
 

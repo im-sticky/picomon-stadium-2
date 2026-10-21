@@ -30,7 +30,7 @@ import {
   type EndReason,
 } from '@/lib/battle-types';
 import { TOTAL_PICKS } from '@/lib/draft';
-import { findLiveRoom, findMember, isConstraintError, listDraftPicks, withBusyRetry } from '@/lib/rooms';
+import { findLiveRoom, findMember, isBusyError, isConstraintError, listDraftPicks, withBusyRetry } from '@/lib/rooms';
 import type { BattleSize, Slot } from '@/lib/types';
 
 /** A `battle-step` bigger than this goes out with `lines: null` (Ably's limit is 64 KB). */
@@ -253,8 +253,10 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 /**
  * Loads the battle, applies due timeouts, runs `mutate` and saves with a
  * compare-and-swap on `version`. Losing the race reloads and redoes the whole
- * attempt, so no choice is lost. `events` are the ones written, for the caller to
- * publish. `applyTimeouts` can skip the timeout path for this call.
+ * attempt, so no choice is lost; a busy database counts as a lost race. `events`
+ * are the ones written, for the caller to publish. `applyTimeouts` can skip the
+ * timeout path for this call. With `readOnlyOnTimeoutError`, a timeout path that
+ * throws is logged and skipped, so a read still returns the saved state.
  */
 async function withBattle<T>(
   db: Db,
@@ -262,8 +264,9 @@ async function withBattle<T>(
   secret: string | null,
   now: number,
   mutate: (ctx: Context) => Mutation<T>,
-  applyTimeouts: (saved: Saved) => boolean = () => true,
+  opts: { applyTimeouts?: (saved: Saved) => boolean; readOnlyOnTimeoutError?: boolean } = {},
 ): Promise<WithBattleResult<T>> {
+  const { applyTimeouts = () => true, readOnlyOnTimeoutError = false } = opts;
   if (!secret) return { kind: 'not-found' };
   const room = await findLiveRoom(db, code, now);
   const me = room && (await findMember(db, code, secret));
@@ -276,9 +279,19 @@ async function withBattle<T>(
     if (!row) return { kind: 'no-battle' };
     let engine = restoreBattle(row.state);
     const loaded = parseRow(row);
-    const timed = applyTimeouts(loaded)
-      ? applyDueTimeouts(engine, loaded, now)
-      : { save: false, events: [], saved: loaded };
+    const untimed = { save: false, events: [], saved: loaded };
+    let timed: ReturnType<typeof applyDueTimeouts> = untimed;
+    if (applyTimeouts(loaded)) {
+      try {
+        timed = applyDueTimeouts(engine, loaded, now);
+      } catch (err) {
+        if (!readOnlyOnTimeoutError) throw err;
+        // Don't lock both players out: show the saved state, and leave the error for a write to hit.
+        console.error(`Applying timeouts failed in room ${code}; serving the saved state`, err);
+        engine = restoreBattle(row.state);
+        timed = untimed;
+      }
+    }
     // The state with the timeouts applied, saved even if the mutation is rejected.
     const base = timed.save ? serialize(engine) : row.state;
 
@@ -300,13 +313,19 @@ async function withBattle<T>(
     }
 
     if (state !== null) {
-      await casHooks.beforeWrite?.();
-      const result = await db
-        .update(battles)
-        .set({ state, version: row.version + 1, ...columns(saved), updatedAt: now })
-        .where(and(eq(battles.roomCode, code), eq(battles.version, row.version)));
-      if (result.rowsAffected !== 1) {
-        // Lost the race: the other player saved first. Reload and redo it all.
+      let written = false;
+      try {
+        await casHooks.beforeWrite?.();
+        const result = await db
+          .update(battles)
+          .set({ state, version: row.version + 1, ...columns(saved), updatedAt: now })
+          .where(and(eq(battles.roomCode, code), eq(battles.version, row.version)));
+        written = result.rowsAffected === 1;
+      } catch (err) {
+        if (!isBusyError(err)) throw err;
+      }
+      if (!written) {
+        // Lost the race (the other player saved first) or the database was busy. Reload and redo it all.
         await sleep(10 + Math.random() * 40);
         continue;
       }
@@ -391,7 +410,9 @@ export async function getBattleView(
   from: number,
   now: number,
 ): Promise<ViewResult> {
-  const result = await withBattle(db, code, secret, now, () => ({ outcome: null, save: false }));
+  const result = await withBattle(db, code, secret, now, () => ({ outcome: null, save: false }), {
+    readOnlyOnTimeoutError: true,
+  });
   if (result.kind !== 'done') return result;
   return { kind: 'view', view: result.view(from), events: result.events };
 }
@@ -419,7 +440,7 @@ export async function triggerTimeout(
     secret,
     now,
     () => ({ outcome: null, save: false }),
-    (saved) => step >= saved.step,
+    { applyTimeouts: (saved) => step >= saved.step },
   );
   if (result.kind !== 'done') return result;
   return { kind: 'checked', view: result.view(step + 1), events: result.events };
@@ -448,12 +469,15 @@ export async function submitOrder(
 ): Promise<SubmitOrderResult> {
   const result = await withBattle<OrderOutcome>(db, code, secret, now, ({ engine, saved, slot, size }) => {
     if (order.length > size) return { outcome: 'invalid-order', save: false, reject: true };
-    if (saved.stage !== 'team-order') return { outcome: 'not-ordering', save: false, reject: true };
     const stored = saved.orders[slot];
+    // A resent order (e.g. a lost response to the lock-in that started the battle) is a success.
+    if (order.length === stored.length && stored.every((value, i) => order[i] === value)) {
+      return { outcome: 'unchanged', save: false };
+    }
+    if (saved.stage !== 'team-order') return { outcome: 'not-ordering', save: false, reject: true };
     if (stored.some((value, i) => order[i] !== value)) {
       return { outcome: 'order-conflict', save: false, reject: true };
     }
-    if (order.length === stored.length) return { outcome: 'unchanged', save: false };
 
     saved.orders[slot] = [...order];
     const events: BattleEvent[] = [{ kind: 'battle-order-progress', slot, count: order.length }];
@@ -475,7 +499,7 @@ export async function submitOrder(
 export type ChoiceOutcome =
   | { kind: 'chosen' | 'resolved' | 'stale-step' | 'already-chosen' | 'ended' | 'invalid-body' }
   | { kind: 'not-asked'; message: string }
-  | { kind: 'rejected'; message: string };
+  | { kind: 'rejected'; message: string; trapped?: boolean };
 
 export type SubmitChoiceResult =
   | { kind: 'chosen' | 'resolved' | 'stale-step' | 'already-chosen' | 'ended'; events: BattleEvent[]; view: BattleView }
@@ -522,7 +546,12 @@ export async function submitChoice(
     const wasAsked = askedBoth(engine);
     touched = true;
     const chosen = choose(engine, slot, toChoiceString(choice));
-    if (!chosen.ok) return reject({ kind: 'rejected', message: chosen.message });
+    if (!chosen.ok) {
+      // A hidden trap (Shadow Tag, Arena Trap) is only found out by trying to switch.
+      const after = playerRequest(battle, slot);
+      const trapped = choice.kind === 'switch' && after?.kind === 'move' && after.trapped;
+      return reject({ kind: 'rejected', message: chosen.message, trapped });
+    }
     if (battle.log.length === start) return { outcome: { kind: 'chosen' }, save: true };
     const event = recordStep(engine, saved, start, now, wasAsked, [], 'normal');
     return { outcome: { kind: 'resolved' }, save: true, events: [event] };
@@ -530,5 +559,14 @@ export async function submitChoice(
   if (result.kind !== 'done') return result;
   const { outcome, events } = result;
   if (outcome.kind === 'invalid-body') return { kind: 'invalid-body', events };
-  return { ...outcome, events, view: result.view(step + 1) };
+  const view = result.view(step + 1);
+  if (outcome.kind === 'rejected') {
+    // The rejected engine is thrown away, so tell this player about a trap it found here.
+    // The request is private to them; it isn't saved, and the engine says so again next try.
+    if (outcome.trapped && view.request?.kind === 'move') {
+      view.request = { ...view.request, trapped: true, canSwitch: false };
+    }
+    return { kind: 'rejected', message: outcome.message, events, view };
+  }
+  return { ...outcome, events, view };
 }
