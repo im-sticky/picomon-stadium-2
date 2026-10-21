@@ -1,6 +1,6 @@
 # Battle Brainstorm — Starting Point
 
-*Created 2026-10-16. Updated 2026-10-19. Start here when brainstorming the battle spec.*
+*Created 2026-10-16. Updated 2026-10-21: all open questions answered. Start here when brainstorming the battle spec.*
 
 Background research: [Gen 6 battle mechanics](2026-10-19-gen6-battle-mechanics.md).
 
@@ -14,19 +14,34 @@ Background research: [Gen 6 battle mechanics](2026-10-19-gen6-battle-mechanics.m
 - **Authority model (from the room-join PoC):** the server resolves turns with server-side randomness, stores state in Turso and publishes results over Ably. Clients only send their chosen action.
 - **Base PP, no PP Ups (must do when building the battle).** The draft and Detail screens show each move's **base** PP (e.g. Sludge Bomb 10/10). Showdown's engine gives every move **3 PP Ups by default** (Sludge Bomb would have 16 PP). When the server builds each team for the engine, it must set PP Ups to 0 for every move, so the battle matches what players saw. *Decided 2026-10-20.*
 
+### Answered 2026-10-21
+
+- **Level 50.** Already set by the data loader (`LEVEL` in `lib/pokemon-dex.ts`) and shown as LV.50 on Detail.
+- **Team size: draft 6, bring 3, 4 or 6.** The host picks the battle size on Home. Each player drafts 6, then chooses which to bring, and in what order, on the Battle order screen. Both teams are visible there, so that screen is the team preview.
+- **Team source: the draft.** Players rent Pokémon from a hand-picked pool with fixed sets (moves, item, nature, EVs from `data/pokemon/`). Players can't edit sets.
+- **Species pool: hand-picked**, from whatever is in `data/pokemon/`. Legendaries allowed, with at most one uber per player (enforced in the draft).
+- **Learnsets and X/Y vs ORAS: no longer an issue.** Sets are written by hand and not checked against learnsets, so the data files are the only control over which moves a Pokémon gets.
+- **Clauses:**
+  - Turn on **Sleep Clause** and **Endless Battle Clause** in the engine.
+  - No **Item Clause**.
+  - **OHKO, Evasion and Self-KO** are not engine rules: keep those moves out of the sets.
+  - **Species Clause** is already guaranteed by the draft (each Pokémon can be rented once).
+- **IP posture: real Pokémon names, data and sprites.** Free, never charged for, credited as an unofficial fan project (as on Home today).
+- **Turn timer: 75 seconds for every choice**, both moves and faint replacements, with a visible countdown.
+  - On timeout, the server picks a random legal move, or sends in a random healthy Pokémon for a replacement.
+  - **Three timeouts in a row and that player forfeits.**
+  - Disconnects need no separate handling: a disconnected player just doesn't choose, so the timer covers it. Refreshing puts them back in the battle.
+- **Faint replacements** follow the engine (Gen 5+ rules):
+  - Only the player who lost a Pokémon chooses; the other sees a waiting message.
+  - If both fainted, both choose at once, and neither sees the other's choice until both have picked.
+  - Same 75-second timer.
+- **Saving battles: one row per battle with the engine's latest snapshot.**
+  - A new `battles` table, keyed by room code. After each turn the server saves `battle.toJSON()` into that row, overwriting it.
+  - The next request restores it with `Battle.fromJSON(...)`.
+  - The snapshot holds both teams' hidden information, so it never leaves the server. Each player gets their own view.
+  - The row is deleted with the room when it expires.
+  - **No choice log for now** (it could be added later for debugging or replays).
+
 ## Open questions
 
-1. **Level:** 50 or 100?
-2. **Team size:** full 6v6, or bring 6 / pick 3, or something else? Is there a team preview?
-3. **Team source:** rental or preset teams, custom team building, random battles, or the draft from the design canvas? If custom, do players get full EV/IV/nature control?
-4. **Species pool:** Gen 1–2 species only (to match the Crystal visuals), everything up to Gen 6 (721), or a hand-picked list? Are legendaries allowed? Note that Gen 6 retypes some Gen 1–2 Pokémon to Fairy (e.g. Clefable, Togekiss line, Azumarill, Granbull, Mr. Mime).
-5. **Clauses:** which of Species, Item, Sleep, Freeze, OHKO, Evasion, Self-KO and Endless Battle?
-6. **Learnset legality:** any Gen 6 game's moves (XY + ORAS, including tutors), or a narrower set?
-7. **IP posture:** real Pokémon names and Gen 2-style sprites (private/hobby use), or original creatures and art on Gen 6 mechanics? Is a public or commercial launch planned?
-8. **Turn timer and disconnects:** how long is each turn, and what happens on a timeout (a random move, Struggle, or forfeit) or a disconnect?
-9. **Faint replacements:** do both players choose at the same time (the Gen 5+ rule too), with a timer?
-
-10. **Game content:** X/Y only, or include ORAS content and learnsets? Can Gen 1–2 species use Gen 6-only moves?
-11. **Saving battles:** store the full engine state after every turn (`toJSON`, about 20 KB for 3v3), or store the seed plus the list of choices and replay it?
-
-See §16.3 of the [Gen 6 research](2026-10-19-gen6-battle-mechanics.md) for detail on each question.
+None. Everything above is decided; the next step is the battle spec.
