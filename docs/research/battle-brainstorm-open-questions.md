@@ -44,4 +44,4 @@ Background research: [Gen 6 battle mechanics](2026-10-19-gen6-battle-mechanics.m
 
 ## Open questions
 
-None. Everything above is decided; the next step is the battle spec.
+None. Everything above is decided. §18 of the [Gen 6 research](2026-10-19-gen6-battle-mechanics.md) turns these answers into spec (format and team size, base PP, clauses, the timer, faint replacements and saving). The next step is the battle spec.
