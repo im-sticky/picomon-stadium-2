@@ -237,22 +237,16 @@
   }
 
   &__buttons {
-    position: relative;
     display: flex;
     justify-content: center;
     gap: 48px;
   }
 
-  /* Why RENT is disabled: in the space left of the (still centred) buttons. */
+  /* Why RENT is disabled: at the bottom of the stats column. */
   &__notRentable {
-    position: absolute;
-    top: 50%;
-    left: 0;
-    width: 264px;
-    transform: translateY(-50%);
-    font-size: 24px;
-    line-height: 36px;
-    text-align: right;
+    margin-top: auto;
+    font-size: 16px;
+    line-height: 24px;
     color: var(--error);
   }
 }

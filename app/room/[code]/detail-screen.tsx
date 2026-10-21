@@ -174,6 +174,11 @@ export function DetailScreen({
                 </div>
               </>
             )}
+            {notRentable && (
+              <p className={styles.detail__notRentable} role="status">
+                {notRentable}
+              </p>
+            )}
           </section>
         </div>
       </Frame>
@@ -199,11 +204,6 @@ export function DetailScreen({
       </Frame>
 
       <div className={styles.detail__buttons}>
-        {notRentable && (
-          <p className={styles.detail__notRentable} role="status">
-            {notRentable}
-          </p>
-        )}
         {!viewOnly && (
           <Button primary disabled={!canRent} onClick={onRent}>
             RENT
