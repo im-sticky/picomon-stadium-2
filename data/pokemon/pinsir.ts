@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "pinsir",
   sprite: "/sprites/pokemon-icons/pinsir.png",
+  isGreat: true,
   ability: "Moxie",
   set: {
     moves: ["Swords Dance", "X-Scissor", "Close Combat", "Stone Edge"],

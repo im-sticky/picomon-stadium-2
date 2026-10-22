@@ -294,8 +294,12 @@ beside the names.
   - Once both players have locked in, the battle starts 2 seconds later.
 
 ### Detail (`Detail.dc.html`)
-- Top row: 128px sprite, then the name with the type badges below it (no ball icon
-  here; that's on the draft info box).
+- Top row: 128px sprite, then the name (24px) with the type badges below it. A 32px ball
+  icon (16px art at 2×) sits 12px left of the name, vertically centred: the
+  Pokémon's ball tier from its data (`icon-pokeballball.png`, `icon-greatball.png`,
+  `icon-ultraball.png` or `icon-masterball.png`), the same icons the draft info box
+  uses. The design shows Venusaur's Great Ball; the board's `ball` prop previews the
+  others.
 - Ability (top right): 480px wide, so its left edge lines up with the STATS column
   below. It has an "ABILITY" heading styled like MOVES/STATS, then the ability name
   (24px, 32px line height) and its description (16px, 24px line height).
@@ -467,6 +471,8 @@ The design files reference sprites by canvas id. These are the matching repo fil
 | icon-special.png | `3ee4588b90c265212c90acc7ed0ffd95` |
 | icon-status.png | `87ab199033fd3769fffdeae0ead39fa6` |
 | icon-masterball.png | `1232bfea6d5fbe714ce6f5a04bb1772c` |
+| icon-greatball.png | `d6bf1b8384a3ccb2f30658b5dced077a` |
+| icon-ultraball.png | `5741f1a3f9e2471912bd5560c0aea1a8` |
 | icon-item.png | `304d19156319bb03d1ef9b08ad02f23e` |
 
 `public/sprites/pokemon-icons/` (the draft pool, in grid order):

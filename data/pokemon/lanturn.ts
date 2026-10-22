@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "lanturn",
   sprite: "/sprites/pokemon-icons/lanturn.png",
+  isGreat: true,
   ability: "Volt Absorb",
   baseStats: { hp: 125, atk: 58, def: 58, spa: 86, spd: 86, spe: 67 },
   set: {

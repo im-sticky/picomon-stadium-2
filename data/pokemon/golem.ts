@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "golem",
   sprite: "/sprites/pokemon-icons/golem.png",
+  isGreat: true,
   ability: "Sturdy",
   set: {
     moves: ["Stealth Rock", "Earthquake", "Stone Edge", "Explosion"],

@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "machamp",
   sprite: "/sprites/pokemon-icons/machamp.png",
+  isGreat: true,
   ability: "No Guard",
   set: {
     moves: ["Dynamic Punch", "Knock Off", "Stone Edge", "Bullet Punch"],

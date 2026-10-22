@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "xatu",
   sprite: "/sprites/pokemon-icons/xatu.png",
+  isGreat: true,
   ability: "Magic Bounce",
   baseStats: { hp: 65, atk: 75, def: 70, spa: 100, spd: 70, spe: 100 },
   set: {

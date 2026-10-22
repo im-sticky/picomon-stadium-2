@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "clefable",
   sprite: "/sprites/pokemon-icons/clefable.png",
+  isGreat: true,
   ability: "Magic Guard",
   set: {
     moves: ["Moonblast", "Calm Mind", "Soft-Boiled", "Flamethrower"],

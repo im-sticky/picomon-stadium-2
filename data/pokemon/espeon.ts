@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "espeon",
   sprite: "/sprites/pokemon-icons/espeon.png",
+  isGreat: true,
   ability: "Magic Bounce",
   set: {
     moves: ["Calm Mind", "Psyshock", "Dazzling Gleam", "Morning Sun"],

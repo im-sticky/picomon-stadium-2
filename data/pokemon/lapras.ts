@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "lapras",
   sprite: "/sprites/pokemon-icons/lapras.png",
+  isGreat: true,
   ability: "Water Absorb",
   set: {
     moves: ["Freeze-Dry", "Surf", "Thunderbolt", "Ice Shard"],

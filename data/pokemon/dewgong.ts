@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "dewgong",
   sprite: "/sprites/pokemon-icons/dewgong.png",
+  isGreat: true,
   ability: "Thick Fat",
   baseStats: { hp: 90, atk: 70, def: 80, spa: 80, spd: 95, spe: 70 },
   set: {

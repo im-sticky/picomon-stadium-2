@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "kingdra",
   sprite: "/sprites/pokemon-icons/kingdra.png",
+  isGreat: true,
   ability: "Sniper",
   set: {
     moves: ["Dragon Dance", "Waterfall", "Outrage", "Iron Head"],

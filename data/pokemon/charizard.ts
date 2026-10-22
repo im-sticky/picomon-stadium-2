@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "charizard",
   sprite: "/sprites/pokemon-icons/charizard.png",
+  isGreat: true,
   ability: "Blaze",
   types: ["Fire", "Dragon"],
   baseStats: { hp: 78, atk: 94, def: 78, spa: 99, spd: 85, spe: 100 },

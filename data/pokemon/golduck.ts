@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "golduck",
   sprite: "/sprites/pokemon-icons/golduck.png",
+  isGreat: true,
   ability: "Cloud Nine",
   types: ["Water", "Psychic"],
   set: {

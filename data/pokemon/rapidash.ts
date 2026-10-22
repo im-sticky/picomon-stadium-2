@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "rapidash",
   sprite: "/sprites/pokemon-icons/rapidash.png",
+  isGreat: true,
   ability: "Flash Fire",
   types: ["Fire", "Fairy"],
   set: {

@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "ursaring",
   sprite: "/sprites/pokemon-icons/ursaring.png",
+  isGreat: true,
   ability: "Guts",
   set: {
     moves: ["Facade", "Close Combat", "Crunch", "Protect"],

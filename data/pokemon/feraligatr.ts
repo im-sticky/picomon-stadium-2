@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "feraligatr",
   sprite: "/sprites/pokemon-icons/feraligatr.png",
+  isGreat: true,
   ability: "Sheer Force",
   types: ["Water", "Dark"],
   set: {

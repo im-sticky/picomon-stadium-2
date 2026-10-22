@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "glaceon",
   sprite: "/sprites/pokemon-icons/glaceon.png",
+  isGreat: true,
   ability: "Snow Warning",
   set: {
     moves: ["Blizzard", "Shadow Ball", "Water Pulse", "Hyper Voice"],

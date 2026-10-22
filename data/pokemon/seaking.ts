@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "seaking",
   sprite: "/sprites/pokemon-icons/seaking.png",
+  isGreat: true,
   ability: "Lightning Rod",
   baseStats: { hp: 80, atk: 102, def: 65, spa: 65, spd: 80, spe: 88 },
   set: {

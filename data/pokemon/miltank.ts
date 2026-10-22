@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "miltank",
   sprite: "/sprites/pokemon-icons/miltank.png",
+  isGreat: true,
   ability: "Thick Fat",
   set: {
     moves: ["Body Slam", "Earthquake", "Milk Drink", "Heal Bell"],

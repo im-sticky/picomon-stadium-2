@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "shuckle",
   sprite: "/sprites/pokemon-icons/shuckle.png",
+  isGreat: true,
   ability: "Contrary",
   set: {
     moves: ["Shell Smash", "Infestation", "Toxic", "Rest"],

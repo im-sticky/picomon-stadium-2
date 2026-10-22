@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "hypno",
   sprite: "/sprites/pokemon-icons/hypno.png",
+  isGreat: true,
   ability: "Insomnia",
   set: {
     moves: ["Psychic", "Focus Blast", "Thunder Wave", "Wish"],

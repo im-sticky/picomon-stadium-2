@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "venusaur",
   sprite: "/sprites/pokemon-icons/venusaur.png",
+  isGreat: true,
   ability: "Overgrow",
   set: {
     moves: ["Sludge Bomb", "Energy Ball", "Sleep Powder", "Leech Seed"],

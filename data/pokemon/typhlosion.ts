@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "typhlosion",
   sprite: "/sprites/pokemon-icons/typhlosion.png",
+  isGreat: true,
   ability: "Flash Fire",
   types: ["Fire", "Ground"],
   set: {

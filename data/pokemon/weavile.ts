@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "weavile",
   sprite: "/sprites/pokemon-icons/weavile.png",
+  isGreat: true,
   ability: "Technician",
   set: {
     moves: ["Icicle Crash", "Knock Off", "Ice Shard", "Low Kick"],

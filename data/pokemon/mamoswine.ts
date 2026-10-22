@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "mamoswine",
   sprite: "/sprites/pokemon-icons/mamoswine.png",
+  isGreat: true,
   ability: "Thick Fat",
   set: {
     moves: ["Earthquake", "Icicle Crash", "Ice Shard", "Knock Off"],
