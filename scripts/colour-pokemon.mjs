@@ -52,35 +52,146 @@ function find(id, file) {
   throw new Error(`no ${file} for ${id}`);
 }
 
+// White gaps fully enclosed by the Pokémon's outline (between limbs, coils,
+// branches) that the edge flood fill can't reach. Picked by eye, since eye
+// whites and white markings look the same by the numbers. Each entry is
+// [x, y, size]: the top-left pixel of the gap in a 1x frame and its pixel
+// count, so it's only cleared in frames where that exact gap appears.
+const GAPS = {
+  ambipom: {
+    front: [[47, 27, 108], [16, 28, 83], [47, 26, 111], [16, 28, 90], [16, 27, 90], [46, 27, 120]],
+    back: [[27, 16, 11], [22, 21, 31]],
+  },
+  arbok: { front: [[15, 42, 11], [41, 29, 124], [43, 18, 168]] },
+  corsola: { front: [[36, 16, 17]] },
+  dodrio: { front: [[36, 41, 46]] },
+  heracross: { front: [[13, 18, 34]] },
+  honchkrow: { front: [[34, 45, 14], [34, 45, 15]] },
+  houndoom: { front: [[24, 13, 30], [24, 14, 25], [24, 13, 28]] },
+  kingler: { front: [[32, 16, 19]] },
+  leafeon: { front: [[33, 26, 25], [33, 27, 19], [37, 16, 66]] },
+  mewtwo: { front: [[30, 16, 12]] },
+  persian: { back: [[7, 28, 36]] },
+  raichu: { front: [[39, 17, 119]] },
+  sudowoodo: { front: [[16, 15, 22], [32, 19, 16]], back: [[33, 23, 30], [12, 34, 10]] },
+  sunflora: { front: [[23, 28, 14]] },
+};
+
+// The other way round for back pics: they're cropped by the image edge, so
+// white parts of the Pokémon cut off at the edge (wings, fur, bellies) would
+// be flood-filled away with the background. These stay white. Same [x, y, size]
+// format as GAPS, also picked by eye.
+const BACK_WHITES = {
+  ampharos: [[21, 47, 3]],
+  arcanine: [[43, 47, 1]],
+  ariados: [[11, 47, 60]],
+  articuno: [[38, 47, 31], [13, 47, 15], [1, 47, 1], [18, 47, 1]],
+  azumarill: [[26, 47, 22], [15, 47, 15]],
+  beedrill: [[15, 47, 49], [4, 47, 36], [10, 47, 22], [19, 47, 22], [2, 47, 7], [7, 47, 5], [12, 47, 3]],
+  bellossom: [[23, 47, 45], [37, 47, 45], [11, 47, 43], [4, 47, 35], [9, 47, 1], [15, 47, 1], [21, 47, 1], [27, 47, 1]],
+  blastoise: [[6, 47, 28], [11, 47, 1], [13, 47, 1], [42, 47, 1]],
+  charizard: [[2, 47, 14], [25, 47, 7], [19, 47, 1], [21, 47, 1], [23, 47, 1]],
+  corsola: [[6, 47, 16], [9, 47, 1], [11, 47, 1], [13, 47, 1]],
+  delibird: [[1, 47, 72]],
+  dewgong: [[5, 47, 287], [19, 47, 17], [32, 47, 2], [12, 47, 1], [14, 47, 1], [23, 47, 1]],
+  donphan: [[4, 47, 5], [6, 47, 1]],
+  dragonite: [[37, 47, 1], [39, 47, 1]],
+  dunsparce: [[8, 47, 37]],
+  electrode: [[34, 47, 32]],
+  entei: [[2, 47, 225], [27, 47, 16], [33, 47, 14], [23, 47, 5], [11, 47, 1], [13, 47, 1], [15, 47, 1], [17, 47, 1], [19, 47, 1], [21, 47, 1], [39, 47, 1]],
+  exeggutor: [[15, 47, 1], [17, 47, 1], [35, 47, 1], [37, 47, 1]],
+  fearow: [[8, 47, 34], [2, 47, 14], [22, 47, 2], [6, 47, 1], [14, 47, 1], [16, 47, 1], [18, 47, 1], [20, 47, 1]],
+  feraligatr: [[38, 47, 5], [45, 47, 2], [36, 47, 1]],
+  flareon: [[4, 47, 369], [12, 47, 1], [25, 47, 1], [27, 47, 1]],
+  glaceon: [[14, 47, 59], [24, 47, 1]],
+  gyarados: [[1, 47, 1], [3, 47, 1]],
+  heracross: [[2, 47, 3]],
+  honchkrow: [[39, 47, 129]],
+  hypno: [[2, 47, 1], [4, 47, 1], [6, 47, 1]],
+  jolteon: [[30, 47, 227], [38, 47, 2], [16, 47, 1], [24, 47, 1], [26, 47, 1], [28, 47, 1], [34, 47, 1], [36, 47, 1]],
+  jumpluff: [[1, 47, 14], [7, 47, 1], [0, 46, 1]],
+  kabutops: [[38, 47, 43]],
+  kangaskhan: [[2, 47, 4], [12, 47, 1]],
+  kingdra: [[7, 47, 25], [2, 47, 3], [9, 47, 1], [11, 47, 1]],
+  lapras: [[6, 47, 103], [23, 47, 8], [1, 47, 4], [28, 47, 1], [30, 47, 1]],
+  lugia: [[8, 47, 149]],
+  machamp: [[26, 47, 3], [32, 47, 1], [34, 47, 1], [36, 47, 1]],
+  mamoswine: [[34, 47, 136]],
+  marowak: [[7, 47, 21], [33, 47, 5], [11, 47, 1], [13, 47, 1]],
+  meganium: [[3, 47, 1], [5, 47, 1], [7, 47, 1]],
+  mewtwo: [[29, 47, 20], [1, 47, 14], [36, 47, 11], [10, 47, 9], [13, 47, 1]],
+  moltres: [[2, 47, 156], [9, 47, 1]],
+  mrmime: [[8, 47, 171], [40, 47, 7]],
+  nidoqueen: [[5, 47, 1]],
+  ninetales: [[7, 47, 39], [0, 47, 1], [18, 47, 1]],
+  parasect: [[38, 47, 30]],
+  pinsir: [[6, 47, 3]],
+  quagsire: [[38, 47, 1]],
+  raikou: [[15, 47, 1], [17, 47, 1], [19, 47, 1]],
+  rapidash: [[6, 47, 162], [21, 47, 1], [23, 47, 1]],
+  raticate: [[44, 47, 1]],
+  sandslash: [[26, 47, 1], [28, 47, 1], [30, 47, 1], [32, 47, 1]],
+  seaking: [[20, 47, 14], [1, 47, 28], [38, 47, 1]],
+  shuckle: [[11, 47, 18], [37, 47, 5], [19, 47, 4], [28, 47, 2]],
+  skarmory: [[23, 47, 17], [8, 47, 10], [13, 47, 1], [21, 47, 1], [27, 47, 1], [29, 47, 1]],
+  slowbro: [[3, 47, 1], [5, 47, 1], [7, 47, 1]],
+  slowking: [[20, 47, 49], [6, 47, 27], [37, 47, 15]],
+  stantler: [[8, 47, 1], [10, 47, 1]],
+  starmie: [[4, 47, 18], [17, 47, 1], [19, 47, 1]],
+  steelix: [[1, 47, 5]],
+  sudowoodo: [[29, 47, 8], [20, 47, 3]],
+  suicune: [[19, 47, 10]],
+  togekiss: [[6, 47, 205], [32, 47, 85], [4, 47, 1], [10, 47, 1], [12, 47, 1], [28, 47, 1], [30, 47, 1], [45, 47, 1]],
+  victreebel: [[27, 47, 14], [12, 47, 1], [31, 47, 1], [33, 47, 1]],
+  zapdos: [[9, 47, 16], [14, 47, 1], [16, 47, 1]],
+};
+
 const to8 = (v) => (v << 3) | (v >> 2);
 const WHITE = [31, 31, 31];
 const BLACK = [0, 0, 0];
 
 // Colour a grayscale strip of square frames. Each frame's white background is
 // flood-filled from its own edges to transparent, so whites inside the
-// Pokémon (eyes, markings) stay.
-async function colour(src, palette, dest) {
+// Pokémon (eyes, markings) stay; then the frame's enclosed `gaps` are cleared.
+// `whites` are edge-touching white areas to keep out of the flood fill.
+async function colour(src, palette, dest, gaps = [], whites = []) {
   const { data, info } = await sharp(src).greyscale().raw().toBuffer({ resolveWithObject: true });
   const { width: w, height: h } = info;
   if (h % w) throw new Error(`${src} is not a strip of square frames`);
   const shade = (p) => 3 - Math.round(data[p * info.channels] / 85);
 
   const clear = new Uint8Array(w * h);
-  for (let top = 0; top < h; top += w) {
-    const stack = [];
-    for (let i = 0; i < w; i++) {
-      stack.push(top * w + i, (top + w - 1) * w + i, (top + i) * w, (top + i) * w + w - 1);
-    }
+  const kept = new Uint8Array(w * h);
+  // White pixels connected to the starting ones within one frame.
+  const region = (top, starts) => {
+    const seen = new Set();
+    const stack = [...starts];
     while (stack.length) {
       const p = stack.pop();
-      if (clear[p] || shade(p) !== 0) continue;
-      clear[p] = 1;
+      if (seen.has(p) || clear[p] || kept[p] || shade(p) !== 0) continue;
+      seen.add(p);
       const x = p % w;
       const y = Math.floor(p / w);
       if (x > 0) stack.push(p - 1);
       if (x < w - 1) stack.push(p + 1);
       if (y > top) stack.push(p - w);
       if (y < top + w - 1) stack.push(p + w);
+    }
+    return seen;
+  };
+  for (let top = 0; top < h; top += w) {
+    for (const [x, y, size] of whites) {
+      const white = region(top, [(top + y) * w + x]);
+      if (white.size === size) for (const p of white) kept[p] = 1;
+    }
+    const edges = [];
+    for (let i = 0; i < w; i++) {
+      edges.push(top * w + i, (top + w - 1) * w + i, (top + i) * w, (top + i) * w + w - 1);
+    }
+    for (const p of region(top, edges)) clear[p] = 1;
+    for (const [x, y, size] of gaps) {
+      const gap = region(top, [(top + y) * w + x]);
+      if (gap.size === size) for (const p of gap) clear[p] = 1;
     }
   }
 
@@ -127,8 +238,8 @@ for (const id of ids) {
   const palette = [WHITE, ...pal, BLACK].map((c) => c.map(to8));
 
   fs.mkdirSync(path.join(outDir, id), { recursive: true });
-  const front = await colour(find(id, "front.png"), palette, path.join(outDir, id, "front.png"));
-  const back = await colour(find(id, "back.png"), palette, path.join(outDir, id, "back.png"));
+  const front = await colour(find(id, "front.png"), palette, path.join(outDir, id, "front.png"), GAPS[id]?.front);
+  const back = await colour(find(id, "back.png"), palette, path.join(outDir, id, "back.png"), GAPS[id]?.back, BACK_WHITES[id]);
   entries.push({
     id,
     size: front.size * scale,
