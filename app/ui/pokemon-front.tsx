@@ -6,19 +6,29 @@ import styles from "./crystal.module.scss";
 
 /**
  * A Pokémon's animated front battle sprite, bottom-centred in a 112px box. Plays
- * `anim` once, then loops `idle`; restarts when the sprite changes. Reduced motion
- * shows the resting frame only.
+ * `anim` once, then rests on frame 0, or loops the sprite's idle animation if `idle`
+ * is set; restarts when the sprite changes. Reduced motion shows the resting frame only.
  */
-export function PokemonFront({ sprite, alt = "", className }: { sprite: PokemonSprite; alt?: string; className?: string }) {
+export function PokemonFront({
+  sprite,
+  idle = false,
+  alt = "",
+  className,
+}: {
+  sprite: PokemonSprite;
+  idle?: boolean;
+  alt?: string;
+  className?: string;
+}) {
   return (
     <span className={className ? `${styles.pokemonSprite} ${className}` : styles.pokemonSprite}>
-      <FrontStrip key={sprite.front} sprite={sprite} alt={alt} />
+      <FrontStrip key={sprite.front} sprite={sprite} idle={idle} alt={alt} />
     </span>
   );
 }
 
 /** One frame of the front strip at a time. Keyed by sprite, so a new one starts over. */
-function FrontStrip({ sprite, alt }: { sprite: PokemonSprite; alt: string }) {
+function FrontStrip({ sprite, idle, alt }: { sprite: PokemonSprite; idle: boolean; alt: string }) {
   const [frame, setFrame] = useState(0);
 
   useEffect(() => {
@@ -28,7 +38,7 @@ function FrontStrip({ sprite, alt }: { sprite: PokemonSprite; alt: string }) {
     let timer: number;
     const play = (steps: PokemonSprite["anim"], i: number) => {
       if (i === steps.length) {
-        if (sprite.idle.length) play(sprite.idle, 0);
+        if (idle && sprite.idle.length) play(sprite.idle, 0);
         else setFrame(0);
         return;
       }
@@ -39,7 +49,7 @@ function FrontStrip({ sprite, alt }: { sprite: PokemonSprite; alt: string }) {
     };
     timer = window.setTimeout(() => play(sprite.anim, 0), 0);
     return () => window.clearTimeout(timer);
-  }, [sprite]);
+  }, [sprite, idle]);
 
   return (
     <span
