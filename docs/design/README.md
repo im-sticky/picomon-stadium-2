@@ -112,6 +112,15 @@ Home ──JOIN──▶ Lobby (full)
 | 2f Detail, view only | `DetailRented.dc.html` | `Detail` with `viewOnly` and `rentedBy="GOLD"`: opened from a team slot, BACK only |
 | 3a Choose your order | `TeamOrder.dc.html` | Both teams in columns, pick your battle order into the pokéball slots |
 | 3b Locked in | `TeamOrderLocked.dc.html` | `TeamOrder` with your full order chosen and the opponent 4 of 6 in |
+| 4a Battle intro | `Battle.dc.html` | Plays the intro: "<NAME> wants to battle!", send-outs, an ability, then the menu |
+| 4b Opponent's ability indicator | `BattleAbility.dc.html` | `Battle` with the opponent's ability box showing |
+| 4c Fight or Pokémon | `BattleMenu.dc.html` | `Battle` waiting for your choice: FIGHT / POKéMON |
+| 4d Moves | `BattleFight.dc.html` | `Battle` with the move list open and the first move hovered (move info box) |
+| 4e Turn messages | `BattleTurn.dc.html` | `Battle` mid-turn: a move message, a poisoned opponent, yellow and red HP |
+| 4f Your Pokémon | `Party.dc.html` | Your battle team with HP and status, BACK, "Choose a POKéMON." |
+| 4g Detail in battle | `DetailBattle.dc.html` | `Detail` with `battle`: current HP, status, PP left, ◀ SWITCH/BACK ▶ |
+| 4h Detail, fainted | `DetailFainted.dc.html` | `Detail` with `battle` on fainted Gengar: SWITCH disabled |
+| 4i Your ability indicator | `BattleAbilityYou.dc.html` | `Battle` with your Pokémon's ability box showing |
 
 The `b`/`c`/`d` boards that import another file are the same screen in a different
 state, not separate screens.
@@ -291,7 +300,87 @@ beside the names.
   - When the opponent chooses a Pokémon, fill their next slot with the solid
     (full-opacity) pokéball, never their Pokémon's sprite, so you can see their
     progress but not their order.
-  - Once both players have locked in, the battle starts 2 seconds later.
+  - Once both players have locked in, the battle starts 2 seconds later. The
+    prototype goes to `Battle.dc.html` 2 seconds after you lock in.
+
+### Battle (`Battle.dc.html`)
+Where both players land once the battle order is set. Each player sees the battle
+from their own side: their Pokémon bottom left, the opponent's top right. Everything
+is absolutely placed on the 1200×900 board.
+
+- Intro (4a):
+  - The opponent's trainer sprite sits where their Pokémon will be (top right,
+    192px). The design uses a dashed placeholder box until trainer sprites exist.
+  - Both teams show as rows of 32px balls on a 3px ink line with an end stroke: the
+    opponent's top left (blue-tinted, line open to the right), yours on the right
+    above where your info will go. One ball per Pokémon in the battle (3, 4 or 6).
+  - Messages, one at a time in the full-width box: "SILVER wants to battle!" (each
+    player sees the other's name), "SILVER sent out GYARADOS!", "Go! VENUSAUR!".
+    Then any on-entry abilities (below), then the menu.
+- Opponent (top left): name (24px), a row with the status slot then `L50` (24px),
+  the HP bar (384px), and below the bar (12px gap) their type badges (the standard
+  148×28 badges, 12px apart; GYARADOS shows WATER and FLYING). No HP numbers for
+  the opponent.
+- You: sprite bottom left (192px); info on the right with name, status slot +
+  `L50`, HP bar (384px) and your HP numbers below the bar, right-aligned
+  ("97/155", 24px).
+- No experience bar and no gender icon.
+- Sprites: there are no battle sprites yet, so the design uses the 32px Pokémon
+  icons at 6× (192px), your own mirrored to face the opponent. Swap these for front
+  and back battle sprites.
+- HP bar: the same component as Detail (black notched bar, yellow "HP" label, light
+  track). The fill is current / max HP: green `#40C048`, yellow `#F8B830` below
+  51%, red `#E04030` below 15%. It animates to the new value when HP changes.
+- Status slot: a 64×24 space left of the level, always reserved so the level never
+  moves. It shows the Pokémon's status sprite (sleep, frozen, burn, poison,
+  paralyzed) when it
+  has one. The design fills it with placeholder tags (SLP, FRZ, BRN, PSN, PAR) until the
+  sprites are added.
+- Bottom area (72px from each side, 252px tall, 36px from the bottom) holds one of:
+  - Message box: full width, two 24px lines. Everything the battle says goes here:
+    moves used, effects, faints, abilities.
+  - Menu (4c): "What will / VENUSAUR do?" on the left, and the options box on the
+    right with FIGHT and POKéMON.
+  - Moves (4d): the four moves on the left, and the same options box on the right
+    with BACK. Hovering or focusing a move shows the ▶ cursor and the move info box;
+    clicking uses it. A move with no PP left is disabled.
+  - The options box is one 264px box (24px padding) that stays in place; only its
+    items change. Items are menu items, not framed buttons: 24px text with the ▶
+    cursor on hover/focus, centred vertically, 12px apart. 264px is the narrowest
+    that fits POKéMON plus the cursor.
+- Move info box (only while a move is hovered): 456×240 at the left, sitting on top
+  of your sprite. Category icon and type badge, then `90P/100%` (`---` for status
+  moves), then `PP x/y` (PP left this battle / max).
+- After choosing a move the message box shows "Waiting for SILVER..." until the
+  opponent has chosen, then the turn plays out as messages ("VENUSAUR used SLUDGE
+  BOMB!", effects, HP bars moving) before the menu comes back. The prototype fakes
+  the turn on timers; in the app the server's battle log drives it.
+- Ability indicator (4b opponent, 4i yours): when an ability triggers, a black box
+  slides out from that Pokémon's side of the content area and covers the middle of its
+  sprite for about 2 seconds, then disappears and the message box explains what
+  happened ("GYARADOS's Intimidate / cuts VENUSAUR's Attack!").
+  - 480×96, `#181818` fill, light 24px text on two 36px lines, staggered: the
+    name ("GYARADOS's") on the first line, left-aligned, and the ability
+    ("Intimidate") on the second, right-aligned.
+  - Opponent: its back end lines up with the content's right edge (72px from the
+    board edge, like the message box) at top 120; the left end is a stepped pixel
+    arrow pointing left (seven 6px steps to a 12px tip). Slides in from the right.
+  - You: back end on the content's left edge (72px in) at top 444 over your
+    sprite, the arrow on the right pointing right. Slides in from the left.
+  - The slide-in is 0.25s in 5 steps.
+- POKéMON opens the Your Pokémon screen.
+
+### Your Pokémon (`Party.dc.html`)
+- Title "GOLD'S POKéMON" (the player's name, 32px) at the top, like other screens.
+- Your battle team in battle order (3, 4 or 6), rows 4px apart, sitting just above
+  the bottom row (12px gap), so any spare space falls under the title. Each row is 92px: 64px icon; name over
+  the status slot + `L50`; on the right the HP numbers over a 384px HP bar.
+- Rows are links with a light grey hover. Clicking one opens Detail for that
+  Pokémon in battle mode.
+- Fainted Pokémon (0 HP) show `0/max` with an empty bar and can still be opened.
+- Bottom row, laid out like the battle's move list: the message box ("Choose a
+  POKéMON.") on the left and the 264px options box on the right with BACK (▶ on
+  hover), which returns to the battle menu.
 
 ### Detail (`Detail.dc.html`)
 - Top row: 128px sprite, then the name (24px) with the type badges below it. A 32px ball
@@ -310,8 +399,11 @@ beside the names.
 - Moves (left): each row shows the name with `PP x/x` right-aligned underneath.
   Hover, focus or click selects it (grey background).
 - Stats (right): a LV.50 / BASE toggle. LV.50 is the default and sits on the left.
-  - LV.50: `HP 155/155` with the HP bar (216px wide, right-aligned), then the other
-    stats as label/value rows. Stat formula (same in Gen 3–6) at level 50, 31 IVs, 0 EVs, neutral
+  - LV.50: the HP block, then the other stats as label/value rows. The HP block is
+    "HP" with the status slot on the same row (above the bar's left end, as on the
+    battle screen), then the HP bar (216px wide, right-aligned), then the HP numbers
+    below the bar, right-aligned (`155/155`, 16px). Outside a battle the bar is full
+    and the status slot is empty. Stat formula (same in Gen 3–6) at level 50, 31 IVs, 0 EVs, neutral
     nature: HP = ⌊(2B+31)·50/100⌋+60, others = ⌊(2B+31)·50/100⌋+5.
   - BASE: label, value and a coloured bar (bar length = value / 160), plus a total.
 - Held item (top row, under the type badges): `icon-item.png` at 2× (32px) with
@@ -326,6 +418,22 @@ beside the names.
 - Move box (bottom): category icon, type badge and `90P/100%` (power `---` for status
   moves) on one line, with the effect text below.
 - Buttons: RENT (dark) and BACK, centred.
+- In battle (4g, 4h), opened from the Your Pokémon screen:
+  - Title "GOLD'S POKéMON".
+  - The HP bar and numbers show this battle's current HP, with the battle colours
+    (yellow below 51%, red below 15%), and the status slot shows any status.
+  - Moves show PP left this battle (`PP 7/10`).
+  - Buttons: SWITCH (dark), which sends this Pokémon out, and BACK to the Your Pokémon
+    screen. A fainted Pokémon (0 HP) can't switch in: SWITCH is disabled (50%
+    opacity, no cursor).
+  - Arrow buttons: a 108×108 framed button at each end of the row, their outer
+    edges lined up with the move box above (◀ at the left edge, ▶ at the right;
+    SWITCH and BACK stay centred). The pixel arrow is the label, with a grey hover.
+    They step to the previous / next Pokémon in your battle team (wrapping round)
+    and show that Pokémon's details, HP, status and SWITCH state in place.
+  - The prototype cycles name, sprite, types, ball, HP and status; moves, ability
+    and stats stay Venusaur's because only Venusaur has that data. The `slot` prop
+    picks who it opens on (4g Venusaur, 4h fainted Gengar).
 
 ## Style tokens
 
@@ -511,6 +619,10 @@ early on but are no longer used.
 - Player names (GOLD, SILVER) and the room code (K7QM) are samples.
 - Both FIRST and SECOND go to the same draft board. A board where P2 drafts first
   doesn't exist yet.
+- Battle: trainer sprites are dashed placeholder boxes, Pokémon use their icons at
+  6× until battle sprites exist, and status sprites are placeholder tags. The
+  turn, damage and messages in the prototype are faked on timers. Every team row
+  and SWITCH open the same Venusaur boards.
 - The designs are fixed 1200×900. Scaling to the window, and phone layouts, haven't
   been designed.
 - The designs are still in progress, so check `git log design/` for the latest.

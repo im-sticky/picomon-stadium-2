@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Battle</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.gb{font-family:'Press Start 2P',monospace;color:#181818;background:#F8F8F8;-webkit-font-smoothing:none}
+.gb p,.gb h1,.gb h2{margin:0;font-weight:400}
+.frame{border:6px solid #181818;background-color:#F8F8F8;box-sizing:border-box}
+.pix{image-rendering:pixelated;display:block}
+.spr{overflow:hidden;flex:none}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+button:disabled{cursor:default}
+a{color:inherit;text-decoration:none}
+.abs{position:absolute}
+.cur{flex:none;visibility:hidden}
+.nm{font-size:24px;line-height:48px}
+.lvrow{display:flex;align-items:center;gap:12px;height:32px;font-size:24px;line-height:32px}
+.sslot{width:64px;height:24px;flex:none}
+.stag{display:block;width:64px;height:24px;font-size:16px;line-height:24px;text-align:center;color:#F8F8F8;clip-path:polygon(4px 0,calc(100% - 4px) 0,calc(100% - 4px) 4px,100% 4px,100% calc(100% - 4px),calc(100% - 4px) calc(100% - 4px),calc(100% - 4px) 100%,4px 100%,4px calc(100% - 4px),0 calc(100% - 4px),0 4px,4px 4px)}
+.hpbar{display:flex;align-items:center;height:18px;box-sizing:border-box;padding:3px 3px 3px 0;background:#181818;clip-path:polygon(3px 0,calc(100% - 3px) 0,calc(100% - 3px) 3px,100% 3px,100% calc(100% - 3px),calc(100% - 3px) calc(100% - 3px),calc(100% - 3px) 100%,3px 100%,3px calc(100% - 3px),0 calc(100% - 3px),0 3px,3px 3px)}
+.hplabel{font-size:12px;line-height:12px;color:#F8B830;padding:0 6px}
+.hptrack{flex:1;height:12px;background:#F8F8F8;overflow:hidden;clip-path:polygon(0 0,calc(100% - 3px) 0,calc(100% - 3px) 3px,100% 3px,100% calc(100% - 3px),calc(100% - 3px) calc(100% - 3px),calc(100% - 3px) 100%,0 100%)}
+.hpfill{height:100%;transition:width .8s linear}
+.balls{display:flex;gap:12px;padding:0 12px 9px;border-bottom:3px solid #181818}
+.p2ball{filter:hue-rotate(235deg)}
+.ph{display:flex;align-items:center;justify-content:center;box-sizing:border-box;border:3px dashed #A8A8A8;color:#A8A8A8;font-size:16px}
+.item{display:flex;align-items:center;gap:12px;font-size:24px;line-height:48px;text-align:left}
+.item:hover .cur,.item:focus-visible .cur,.item.on .cur{visibility:visible}
+.item:focus-visible{outline:none}
+.item:disabled{opacity:.5}
+.item:disabled .cur{visibility:hidden}
+.tag{display:inline-block;width:148px;height:28px;box-sizing:border-box;text-align:center;font-size:16px;line-height:28px;color:#F8F8F8;clip-path:polygon(4px 0,calc(100% - 4px) 0,calc(100% - 4px) 4px,100% 4px,100% calc(100% - 4px),calc(100% - 4px) calc(100% - 4px),calc(100% - 4px) 100%,4px 100%,4px calc(100% - 4px),0 calc(100% - 4px),0 4px,4px 4px)}
+/* Ability box: slides out over the Pokémon's sprite from the content edge (72px in), the far end a stepped pixel arrow (6px steps) */
+.abil{width:480px;height:96px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;background:#181818;color:#F8F8F8;font-size:24px;line-height:36px}
+.abil.opp{right:72px;padding:0 36px 0 60px;clip-path:polygon(42px 0,100% 0,100% 100%,42px 100%,42px 90px,36px 90px,36px 84px,30px 84px,30px 78px,24px 78px,24px 72px,18px 72px,18px 66px,12px 66px,12px 60px,6px 60px,6px 54px,0 54px,0 42px,0 42px,6px 42px,6px 36px,12px 36px,12px 30px,18px 30px,18px 24px,24px 24px,24px 18px,30px 18px,30px 12px,36px 12px,36px 6px,42px 6px);animation:abilR .25s steps(5) both}
+.abil.me{left:72px;padding:0 60px 0 36px;clip-path:polygon(calc(100% - 42px) 0,0 0,0 100%,calc(100% - 42px) 100%,calc(100% - 42px) 90px,calc(100% - 36px) 90px,calc(100% - 36px) 84px,calc(100% - 30px) 84px,calc(100% - 30px) 78px,calc(100% - 24px) 78px,calc(100% - 24px) 72px,calc(100% - 18px) 72px,calc(100% - 18px) 66px,calc(100% - 12px) 66px,calc(100% - 12px) 60px,calc(100% - 6px) 60px,calc(100% - 6px) 54px,100% 54px,100% 42px,100% 42px,calc(100% - 6px) 42px,calc(100% - 6px) 36px,calc(100% - 12px) 36px,calc(100% - 12px) 30px,calc(100% - 18px) 30px,calc(100% - 18px) 24px,calc(100% - 24px) 24px,calc(100% - 24px) 18px,calc(100% - 30px) 18px,calc(100% - 30px) 12px,calc(100% - 36px) 12px,calc(100% - 36px) 6px,calc(100% - 42px) 6px);animation:abilL .25s steps(5) both}
+/* Staggered: the name sits to the left, the ability to the right */
+.abil p:last-child{text-align:right}
+@keyframes abilR{from{transform:translateX(100%)}}
+@keyframes abilL{from{transform:translateX(-100%)}}
+/* Pixel corners: two 3px steps off the outer edge, a 3px square rounding the thick line's inner edge, one step off the thin line */
+.frame{--l:#181818;--e:var(--l);background-image:linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e));background-position:left 6px top 3px,left 6px bottom 3px,left 3px top 6px,right 3px top 6px,left top,right top,left bottom,right bottom;background-size:calc(100% - 12px) 3px,calc(100% - 12px) 3px,3px calc(100% - 12px),3px calc(100% - 12px),3px 3px,3px 3px,3px 3px,3px 3px;background-repeat:no-repeat}
+.frame{clip-path:polygon(6px 0,calc(100% - 6px) 0,calc(100% - 6px) 3px,calc(100% - 3px) 3px,calc(100% - 3px) 6px,100% 6px,100% calc(100% - 6px),calc(100% - 3px) calc(100% - 6px),calc(100% - 3px) calc(100% - 3px),calc(100% - 6px) calc(100% - 3px),calc(100% - 6px) 100%,6px 100%,6px calc(100% - 3px),3px calc(100% - 3px),3px calc(100% - 6px),0 calc(100% - 6px),0 6px,3px 6px,3px 3px,6px 3px)}
+</style>
+</helmet>
+<div class="gb" style="position: relative; width: 1200px; height: 900px; overflow: hidden">
+
+  <!-- Intro: the opponent's trainer and both teams as rows of balls -->
+  <sc-if value="{{trainer}}" hint-placeholder-val="{{ false }}">
+    <div class="abs ph" aria-label="{{oppName}}" style="right: 120px; top: 36px; width: 192px; height: 192px">TRAINER</div>
+    <div class="abs balls" aria-label="{{oppName}}'s team" style="left: 72px; top: 96px; border-left: 3px solid #181818">
+      <sc-for list="{{teamBalls}}" as="b" hint-placeholder-count="6">
+        <img class="pix p2ball" src="/_blob/42adad1d7cf5061d3889e683f8adb86c" alt="" style="width: 32px; height: 32px">
+      </sc-for>
+    </div>
+    <div class="abs balls" aria-label="Your team" style="right: 72px; top: 456px; border-right: 3px solid #181818">
+      <sc-for list="{{teamBalls}}" as="b" hint-placeholder-count="6">
+        <img class="pix" src="/_blob/42adad1d7cf5061d3889e683f8adb86c" alt="" style="width: 32px; height: 32px">
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <!-- Opponent: name, status + level, HP bar (no numbers), sprite top right -->
+  <sc-if value="{{showOpp}}" hint-placeholder-val="{{ true }}">
+    <section class="abs" aria-label="{{opp.name}}" style="left: 72px; top: 48px; width: 384px">
+      <p class="nm">{{opp.name}}</p>
+      <div class="lvrow">
+        <span class="sslot"><sc-if value="{{opp.hasStatus}}" hint-placeholder-val="{{ false }}"><span class="stag" style="background: {{opp.statusColor}}">{{opp.status}}</span></sc-if></span>
+        <span>L50</span>
+      </div>
+      <div style="height: 24px; display: flex; align-items: center">
+        <div class="hpbar" style="width: 384px" role="meter" aria-label="HP" aria-valuenow="{{opp.hp}}" aria-valuemax="{{opp.max}}">
+          <span class="hplabel">HP</span>
+          <div class="hptrack"><div class="hpfill" style="width: {{opp.pct}}; background: {{opp.color}}"></div></div>
+        </div>
+      </div>
+      <div aria-label="Types" style="display: flex; gap: 12px; margin-top: 12px">
+        <sc-for list="{{opp.types}}" as="t" hint-placeholder-count="2">
+          <span class="tag" style="background: {{t.color}}">{{t.name}}</span>
+        </sc-for>
+      </div>
+    </section>
+    <div class="abs spr" style="right: 120px; top: 36px; width: 192px; height: 192px"><img class="pix" src="{{opp.src}}" alt="{{opp.name}}" style="width: 192px; height: 384px"></div>
+  </sc-if>
+
+  <!-- You: sprite bottom left (mirrored icon until battle sprites exist), info right with HP numbers -->
+  <sc-if value="{{showMe}}" hint-placeholder-val="{{ true }}">
+    <div class="abs spr" style="left: 120px; top: 372px; width: 192px; height: 192px; transform: scaleX(-1)"><img class="pix" src="{{me.src}}" alt="{{me.name}}" style="width: 192px; height: 384px"></div>
+    <section class="abs" aria-label="{{me.name}}" style="right: 72px; top: 324px; width: 384px">
+      <p class="nm">{{me.name}}</p>
+      <div class="lvrow">
+        <span class="sslot"><sc-if value="{{me.hasStatus}}" hint-placeholder-val="{{ false }}"><span class="stag" style="background: {{me.statusColor}}">{{me.status}}</span></sc-if></span>
+        <span>L50</span>
+      </div>
+      <div style="height: 24px; display: flex; align-items: center">
+        <div class="hpbar" style="width: 384px" role="meter" aria-label="HP" aria-valuenow="{{me.hp}}" aria-valuemax="{{me.max}}">
+          <span class="hplabel">HP</span>
+          <div class="hptrack"><div class="hpfill" style="width: {{me.pct}}; background: {{me.color}}"></div></div>
+        </div>
+      </div>
+      <p style="font-size: 24px; line-height: 48px; text-align: right">{{me.hp}}/{{me.max}}</p>
+    </section>
+  </sc-if>
+
+  <!-- Ability indicator: shows for a couple of seconds beside whoever triggered it -->
+  <sc-if value="{{abilOpp}}" hint-placeholder-val="{{ false }}">
+    <div class="abs abil opp" role="status" style="top: 120px">
+      <p>{{opp.name}}'s</p>
+      <p>{{opp.ability}}</p>
+    </div>
+  </sc-if>
+  <sc-if value="{{abilMe}}" hint-placeholder-val="{{ false }}">
+    <div class="abs abil me" role="status" style="top: 444px">
+      <p>{{me.name}}'s</p>
+      <p>{{me.ability}}</p>
+    </div>
+  </sc-if>
+
+  <!-- Move info: only while a move is hovered; it covers your sprite -->
+  <sc-if value="{{showInfo}}" hint-placeholder-val="{{ false }}">
+    <div class="abs frame" aria-live="polite" style="left: 72px; top: 360px; width: 456px; height: 240px; padding: 18px 30px; display: flex; flex-direction: column; justify-content: center">
+      <div style="display: flex; align-items: center; gap: 12px; height: 48px">
+        <img class="pix" src="{{info.catSrc}}" alt="{{info.cat}}" style="width: 64px; height: 32px">
+        <span class="tag" style="background: {{info.typeColor}}">{{info.type}}</span>
+      </div>
+      <p style="font-size: 24px; line-height: 48px">{{info.powAcc}}</p>
+      <p style="font-size: 24px; line-height: 48px">PP {{info.left}}/{{info.pp}}</p>
+    </div>
+  </sc-if>
+
+  <!-- Bottom: the message box, the FIGHT / POKéMON menu, or the move list -->
+  <div class="abs" style="left: 72px; top: 612px; width: 1056px; height: 252px; display: flex; gap: 12px">
+    <sc-if value="{{isMsg}}" hint-placeholder-val="{{ false }}">
+      <div class="frame" role="status" style="flex: 1; padding: 30px 42px; display: flex; flex-direction: column; justify-content: center">
+        <p style="font-size: 24px; line-height: 48px">{{msg1}}</p>
+        <p style="font-size: 24px; line-height: 48px">{{msg2}}</p>
+      </div>
+    </sc-if>
+    <sc-if value="{{isMenu}}" hint-placeholder-val="{{ true }}">
+      <div class="frame" style="flex: 1; padding: 30px 42px; display: flex; flex-direction: column; justify-content: center">
+        <p style="font-size: 24px; line-height: 48px">What will</p>
+        <p style="font-size: 24px; line-height: 48px">{{me.name}} do?</p>
+      </div>
+    </sc-if>
+    <sc-if value="{{isFight}}" hint-placeholder-val="{{ false }}">
+      <div class="frame" role="menu" aria-label="Moves" style="flex: 1; padding: 24px 42px; display: flex; flex-direction: column; justify-content: center">
+        <sc-for list="{{moves}}" as="m" hint-placeholder-count="4">
+          <button type="button" class="item {{m.on}}" role="menuitem" disabled="{{m.disabled}}" onMouseEnter="{{m.hover}}" onFocus="{{m.hover}}" onMouseLeave="{{unhover}}" onBlur="{{unhover}}" onClick="{{m.use}}">
+            <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
+            {{m.name}}
+          </button>
+        </sc-for>
+      </div>
+    </sc-if>
+    <!-- One options box on the right: FIGHT / POKéMON in the menu, BACK in the move list -->
+    <sc-if value="{{hasOptions}}" hint-placeholder-val="{{ true }}">
+      <div class="frame" role="menu" style="width: 264px; padding: 24px; display: flex; flex-direction: column; justify-content: center; gap: 12px">
+        <sc-if value="{{isMenu}}" hint-placeholder-val="{{ true }}">
+          <button type="button" class="item" role="menuitem" onClick="{{openFight}}">
+            <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
+            FIGHT
+          </button>
+          <a class="item" role="menuitem" href="Party.dc.html">
+            <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
+            POKéMON
+          </a>
+        </sc-if>
+        <sc-if value="{{isFight}}" hint-placeholder-val="{{ false }}">
+          <button type="button" class="item" role="menuitem" onClick="{{closeFight}}">
+            <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
+            BACK
+          </button>
+        </sc-if>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","options":["","menu","fight","ability","abilityMe","turn"],"default":""},"myHp":{"editor":"int","min":0,"max":155,"default":155},"oppHp":{"editor":"int","min":0,"max":170,"default":170},"myStatus":{"editor":"enum","options":["","SLP","FRZ","BRN","PSN","PAR"],"default":""},"oppStatus":{"editor":"enum","options":["","SLP","FRZ","BRN","PSN","PAR"],"default":""},"$preview":{"width":1200,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const num = (v, max) => { const n = parseInt(v, 10); return n >= 0 && n <= max ? n : max; };
+    const base = {
+      myHp: num(props.myHp, 155), oppHp: num(props.oppHp, 170),
+      myStatus: props.myStatus || '', oppStatus: props.oppStatus || '',
+      pp: [10, 10, 15, 10], hover: null, abil: null,
+      trainer: false, showOpp: true, showMe: true, mode: 'menu', msg: ['', '']
+    };
+    // Each board starts at one moment of the battle; the plain board plays the intro
+    const VIEWS = {
+      '': { trainer: true, showOpp: false, showMe: false, mode: 'msg', msg: ['SILVER wants', 'to battle!'] },
+      menu: {},
+      fight: { mode: 'fight', hover: 0 },
+      ability: { mode: 'msg', abil: 'opp', msg: ['Go! VENUSAUR!', ''] },
+      // Your own Pokémon's ability, mid-battle
+      abilityMe: { mode: 'msg', abil: 'me', msg: ['VENUSAUR used', 'ENERGY BALL!'] },
+      turn: { mode: 'msg', msg: ['VENUSAUR used', 'SLUDGE BOMB!'] }
+    };
+    this.state = Object.assign(base, VIEWS[props.view || ''] || {});
+  }
+  componentDidMount() {
+    if (this.props.view) return;
+    this.run([
+      { wait: 2200 },
+      { set: { trainer: false, showOpp: true, msg: ['SILVER sent out', 'GYARADOS!'] }, wait: 1800 },
+      { set: { showMe: true, msg: ['Go! VENUSAUR!', ''] }, wait: 1500 },
+      // The ability box shows first, then the bottom box says what it did
+      { set: { abil: 'opp' }, wait: 2000 },
+      { set: { abil: null, msg: ["GYARADOS's Intimidate", "cuts VENUSAUR's Attack!"] }, wait: 2400 },
+      { set: { mode: 'menu' } }
+    ]);
+  }
+  componentWillUnmount() {
+    clearTimeout(this.t);
+  }
+  // Prototype only: plays a list of steps on timers. In the app the server's battle
+  // log drives these messages and HP changes.
+  run(steps) {
+    clearTimeout(this.t);
+    const go = (i) => {
+      if (i >= steps.length) return;
+      if (steps[i].set) this.setState(steps[i].set);
+      this.t = setTimeout(() => go(i + 1), steps[i].wait || 0);
+    };
+    go(0);
+  }
+  renderVals() {
+    const NAMES = { 1: 'GOLD', 2: 'SILVER' };
+    const CAT = {
+      PHYSICAL: '/_blob/5e334b67f3a33e0aef7c6d7e44195045',
+      SPECIAL: '/_blob/3ee4588b90c265212c90acc7ed0ffd95',
+      STATUS: '/_blob/87ab199033fd3769fffdeae0ead39fa6'
+    };
+    const TYPE = { POISON: '#b468b7', GRASS: '#71c558' };
+    // Placeholder status tags; swap for the status sprites
+    const STATUS = { SLP: '#585858', FRZ: '#70cbd4', BRN: '#E04030', PSN: '#b468b7', PAR: '#e5c531' };
+    const MOVES = [
+      { name: 'SLUDGE BOMB', type: 'POISON', cat: 'SPECIAL', power: '90', acc: '100', pp: 10, dmg: 0.3 },
+      { name: 'ENERGY BALL', type: 'GRASS', cat: 'SPECIAL', power: '80', acc: '100', pp: 10, dmg: 0.25 },
+      { name: 'SLEEP POWDER', type: 'GRASS', cat: 'STATUS', power: '---', acc: '75', pp: 15, msg: 'fell asleep!', status: 'SLP' },
+      { name: 'LEECH SEED', type: 'GRASS', cat: 'STATUS', power: '---', acc: '90', pp: 10, msg: 'was seeded!' }
+    ];
+    const s = this.state;
+    // Green, yellow under 51%, red under 15%
+    const color = (hp, max) => { const p = hp * 100 / max; return p < 15 ? '#E04030' : p < 51 ? '#F8B830' : '#40C048'; };
+    const side = (name, src, hp, max, status, ability) => ({
+      name, src, hp, max, ability,
+      pct: (hp * 100 / max) + '%',
+      color: color(hp, max),
+      status,
+      hasStatus: !!status,
+      statusColor: STATUS[status] || 'transparent'
+    });
+    const me = side('VENUSAUR', '/_blob/306822b5b874f91ba29da9143239f925', s.myHp, 155, s.myStatus, 'Overgrow');
+    const opp = side('GYARADOS', '/_blob/db7415dad60d2c609f07bc348686093b', s.oppHp, 170, s.oppStatus, 'Intimidate');
+    // The opponent's types show under their HP bar
+    opp.types = [{ name: 'WATER', color: '#539ae2' }, { name: 'FLYING', color: '#7da6de' }];
+
+    // Battle size from Home (prototype only, via localStorage)
+    let size = null;
+    try { size = parseInt(localStorage.getItem('picomon.battleSize'), 10); } catch (e) {}
+    const count = [3, 4, 6].includes(size) ? size : 6;
+
+    const use = (i) => {
+      const mv = MOVES[i];
+      const pp = s.pp.slice();
+      pp[i] -= 1;
+      const steps = [
+        // Both players pick before the turn plays out
+        { set: { mode: 'msg', hover: null, pp, msg: ['Waiting for ' + NAMES[2] + '...', ''] }, wait: 1200 },
+        { set: { msg: [me.name + ' used', mv.name + '!'] }, wait: 900 }
+      ];
+      let oppHp = s.oppHp;
+      let oppStatus = s.oppStatus;
+      if (mv.dmg) {
+        oppHp = Math.max(0, oppHp - Math.round(170 * mv.dmg));
+        steps.push({ set: { oppHp }, wait: 1400 });
+      } else {
+        if (mv.status) oppStatus = mv.status;
+        steps.push({ set: { oppStatus, msg: [opp.name, mv.msg] }, wait: 1800 });
+      }
+      if (oppHp === 0) {
+        steps.push({ set: { msg: [opp.name + ' fainted!', ''] }, wait: 2000 });
+      } else if (oppStatus === 'SLP') {
+        steps.push({ set: { msg: [opp.name + ' is', 'fast asleep.'] }, wait: 1800 });
+      } else {
+        const myHp = Math.max(0, s.myHp - 45);
+        steps.push({ set: { msg: [opp.name + ' used', 'WATERFALL!'] }, wait: 900 });
+        steps.push({ set: { myHp }, wait: 1400 });
+        if (myHp === 0) steps.push({ set: { msg: [me.name + ' fainted!', ''] }, wait: 2000 });
+      }
+      steps.push({ set: { mode: 'menu' } });
+      this.run(steps);
+    };
+
+    const hov = s.hover != null ? MOVES[s.hover] : null;
+    return {
+      oppName: NAMES[2],
+      me, opp,
+      trainer: s.trainer,
+      teamBalls: Array.from({ length: count }, (_, k) => k),
+      showOpp: s.showOpp,
+      showMe: s.showMe,
+      abilOpp: s.abil === 'opp',
+      abilMe: s.abil === 'me',
+      isMsg: s.mode === 'msg',
+      isMenu: s.mode === 'menu',
+      isFight: s.mode === 'fight',
+      hasOptions: s.mode === 'menu' || s.mode === 'fight',
+      msg1: s.msg[0],
+      msg2: s.msg[1],
+      openFight: () => this.setState({ mode: 'fight', hover: null }),
+      closeFight: () => this.setState({ mode: 'menu', hover: null }),
+      unhover: () => this.setState({ hover: null }),
+      showInfo: s.mode === 'fight' && !!hov,
+      info: hov ? {
+        cat: hov.cat,
+        catSrc: CAT[hov.cat],
+        type: hov.type,
+        typeColor: TYPE[hov.type],
+        powAcc: (hov.power === '---' ? '---' : hov.power + 'P') + '/' + hov.acc + '%',
+        pp: hov.pp,
+        left: s.pp[s.hover]
+      } : {},
+      moves: MOVES.map((mv, i) => ({
+        name: mv.name,
+        on: s.hover === i ? 'on' : '',
+        disabled: s.pp[i] <= 0,
+        hover: () => this.setState({ hover: i }),
+        use: () => use(i)
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

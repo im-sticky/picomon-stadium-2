@@ -103,6 +103,78 @@
       "w": 1200,
       "x": 1280,
       "y": 3760
+    },
+    "Battle.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "4a · Battle intro (plays)",
+      "w": 1200,
+      "x": 0,
+      "y": 5100
+    },
+    "BattleAbility.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "4b · Opponent's ability indicator",
+      "w": 1200,
+      "x": 1280,
+      "y": 5100
+    },
+    "BattleMenu.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "4c · Fight or Pokémon",
+      "w": 1200,
+      "x": 2560,
+      "y": 5100
+    },
+    "BattleFight.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "4d · Moves (hover)",
+      "w": 1200,
+      "x": 3840,
+      "y": 5100
+    },
+    "BattleTurn.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "4e · Turn messages",
+      "w": 1200,
+      "x": 5120,
+      "y": 5100
+    },
+    "Party.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "4f · Your Pokémon",
+      "w": 1200,
+      "x": 0,
+      "y": 6200
+    },
+    "DetailBattle.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "4g · Detail in battle",
+      "w": 1200,
+      "x": 1280,
+      "y": 6200
+    },
+    "DetailFainted.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "4h · Detail, fainted",
+      "w": 1200,
+      "x": 2560,
+      "y": 6200
+    },
+    "BattleAbilityYou.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "4i · Your ability indicator",
+      "w": 1200,
+      "x": 3840,
+      "y": 6200
     }
   },
   "createdOnFiles": {
@@ -145,6 +217,14 @@
       "w": 240,
       "x": 0,
       "y": 3460
+    },
+    "row4": {
+      "kind": "title1",
+      "maxW": 6320,
+      "text": "4 · Battle",
+      "w": 240,
+      "x": 0,
+      "y": 4800
     }
   },
   "order": [
@@ -160,7 +240,16 @@
     "DraftDone.dc.html",
     "DetailRented.dc.html",
     "TeamOrder.dc.html",
-    "TeamOrderLocked.dc.html"
+    "TeamOrderLocked.dc.html",
+    "Battle.dc.html",
+    "BattleAbility.dc.html",
+    "BattleMenu.dc.html",
+    "BattleFight.dc.html",
+    "BattleTurn.dc.html",
+    "Party.dc.html",
+    "DetailBattle.dc.html",
+    "DetailFainted.dc.html",
+    "BattleAbilityYou.dc.html"
   ],
   "pages": [],
   "title": "Picomon Stadium Layout"

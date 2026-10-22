@@ -38,7 +38,15 @@ a.btn{color:inherit;cursor:pointer;text-decoration:none}
 .hpbar{display:flex;align-items:center;height:18px;box-sizing:border-box;padding:3px 3px 3px 0;background:#181818;clip-path:polygon(3px 0,calc(100% - 3px) 0,calc(100% - 3px) 3px,100% 3px,100% calc(100% - 3px),calc(100% - 3px) calc(100% - 3px),calc(100% - 3px) 100%,3px 100%,3px calc(100% - 3px),0 calc(100% - 3px),0 3px,3px 3px)}
 .hplabel{font-size:12px;line-height:12px;color:#F8B830;padding:0 6px}
 .hptrack{flex:1;height:12px;background:#F8F8F8;overflow:hidden;clip-path:polygon(0 0,calc(100% - 3px) 0,calc(100% - 3px) 3px,100% 3px,100% calc(100% - 3px),calc(100% - 3px) calc(100% - 3px),calc(100% - 3px) 100%,0 100%)}
-.hpfill{height:100%;background:#40C048}/* Pixel corners: two 3px steps off the outer edge, a 3px square rounding the thick line's inner edge, one step off the thin line */
+.hpfill{height:100%}
+.sslot{display:flex;height:24px;flex:none}
+.stag{display:block;width:64px;height:24px;font-size:16px;line-height:24px;text-align:center;color:#F8F8F8;clip-path:polygon(4px 0,calc(100% - 4px) 0,calc(100% - 4px) 4px,100% 4px,100% calc(100% - 4px),calc(100% - 4px) calc(100% - 4px),calc(100% - 4px) 100%,4px 100%,4px calc(100% - 4px),0 calc(100% - 4px),0 4px,4px 4px)}
+.btn:disabled{cursor:default;opacity:.5}
+.btn:disabled .cur{visibility:hidden}
+/* Square arrow buttons that step through your team; the arrow is the label, so no hover cursor */
+.btn.arrow{width:108px;padding:36px 0}
+.btn.arrow:hover{background-color:#E8E8E8}
+/* Pixel corners: two 3px steps off the outer edge, a 3px square rounding the thick line's inner edge, one step off the thin line */
 .frame,.btn{--l:#181818;--e:var(--l);background-image:linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e));background-position:left 6px top 3px,left 6px bottom 3px,left 3px top 6px,right 3px top 6px,left top,right top,left bottom,right bottom;background-size:calc(100% - 12px) 3px,calc(100% - 12px) 3px,3px calc(100% - 12px),3px calc(100% - 12px),3px 3px,3px 3px,3px 3px,3px 3px;background-repeat:no-repeat}
 .frame,.btn{clip-path:polygon(6px 0,calc(100% - 6px) 0,calc(100% - 6px) 3px,calc(100% - 3px) 3px,calc(100% - 3px) 6px,100% 6px,100% calc(100% - 6px),calc(100% - 3px) calc(100% - 6px),calc(100% - 3px) calc(100% - 3px),calc(100% - 6px) calc(100% - 3px),calc(100% - 6px) 100%,6px 100%,6px calc(100% - 3px),3px calc(100% - 3px),3px calc(100% - 6px),0 calc(100% - 6px),0 6px,3px 6px,3px 3px,6px 3px)}
 </style>
@@ -47,15 +55,16 @@ a.btn{color:inherit;cursor:pointer;text-decoration:none}
   <h1 style="font-size: 32px; line-height: 48px; text-align: center">{{title}}</h1>
   <div class="frame" style="flex-grow: 1; padding: 18px 36px; display: flex; flex-direction: column; gap: 18px">
     <div style="display: flex; align-items: center; gap: 24px">
-      <div class="spr" style="width: 128px; height: 128px"><img class="pix" src="/_blob/306822b5b874f91ba29da9143239f925" alt="Venusaur" style="width: 128px; height: 256px"></div>
+      <div class="spr" style="width: 128px; height: 128px"><img class="pix" src="{{mon.src}}" alt="{{mon.name}}" style="width: 128px; height: 256px"></div>
       <div style="display: flex; flex-direction: column; gap: 8px">
         <div style="display: flex; align-items: center; gap: 12px">
           <img class="pix" src="{{ballSrc}}" alt="{{ballName}}" style="width: 32px; height: 32px">
-          <h2 style="font-size: 24px; line-height: 48px">VENUSAUR</h2>
+          <h2 style="font-size: 24px; line-height: 48px">{{mon.name}}</h2>
         </div>
         <div style="display: flex; gap: 12px">
-          <span class="tag" style="background: #71c558">GRASS</span>
-          <span class="tag" style="background: #b468b7">POISON</span>
+          <sc-for list="{{mon.types}}" as="t" hint-placeholder-count="2">
+            <span class="tag" style="background: {{t.color}}">{{t.name}}</span>
+          </sc-for>
         </div>
         <div aria-label="Held item" style="display: flex; align-items: center; gap: 12px; height: 32px">
           <img class="pix" src="/_blob/304d19156319bb03d1ef9b08ad02f23e" alt="Held item" style="width: 32px; height: 32px">
@@ -76,7 +85,7 @@ a.btn{color:inherit;cursor:pointer;text-decoration:none}
         <sc-for list="{{moves}}" as="m" hint-placeholder-count="4">
           <button class="move {{m.on}}" onMouseEnter="{{m.pick}}" onFocus="{{m.pick}}" onClick="{{m.pick}}">
             <span style="font-size: 24px; line-height: 32px">{{m.name}}</span>
-            <span style="font-size: 16px; line-height: 24px; text-align: right">PP {{m.pp}}/{{m.pp}}</span>
+            <span style="font-size: 16px; line-height: 24px; text-align: right">PP {{m.left}}/{{m.pp}}</span>
           </button>
         </sc-for>
       </section>
@@ -91,14 +100,15 @@ a.btn{color:inherit;cursor:pointer;text-decoration:none}
         <sc-if value="{{isCalc}}" hint-placeholder-val="{{ false }}">
           <div style="display: flex; justify-content: space-between; align-items: center; height: 32px">
             <span style="font-size: 16px">HP</span>
-            <span style="font-size: 16px">{{hp}}/{{hp}}</span>
+            <span class="sslot" style="width: 216px"><sc-if value="{{hasStatus}}" hint-placeholder-val="{{ false }}"><span class="stag" style="background: {{statusColor}}">{{status}}</span></sc-if></span>
           </div>
           <div style="display: flex; justify-content: flex-end; align-items: center; height: 24px">
-            <div class="hpbar" style="width: 216px">
+            <div class="hpbar" style="width: 216px" role="meter" aria-label="HP" aria-valuenow="{{hpNow}}" aria-valuemax="{{hp}}">
               <span class="hplabel">HP</span>
-              <div class="hptrack"><div class="hpfill" style="width: 100%"></div></div>
+              <div class="hptrack"><div class="hpfill" style="width: {{hpPct}}; background: {{hpColor}}"></div></div>
             </div>
           </div>
+          <p style="font-size: 16px; line-height: 24px; text-align: right">{{hpNow}}/{{hp}}</p>
           <sc-for list="{{calc}}" as="s" hint-placeholder-count="5">
             <div style="display: flex; justify-content: space-between; align-items: center; height: 32px">
               <span style="font-size: 16px">{{s.label}}</span>
@@ -131,20 +141,42 @@ a.btn{color:inherit;cursor:pointer;text-decoration:none}
     <p style="font-size: 24px; line-height: 48px">{{sel.effect}}</p>
   </div>
   <div style="display: flex; justify-content: center; gap: 48px">
+    <sc-if value="{{battle}}" hint-placeholder-val="{{ false }}">
+      <button type="button" class="btn arrow" onClick="{{prev}}" aria-label="Previous Pokémon" style="margin-right: auto">
+        <svg width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true" style="transform: scaleX(-1)"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
+      </button>
+    </sc-if>
     <sc-if value="{{canRent}}" hint-placeholder-val="{{ true }}">
       <a class="btn primary" href="DraftRented.dc.html">
         <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
         RENT
       </a>
     </sc-if>
-    <a class="btn" href="Draft.dc.html">
+    <sc-if value="{{canSwitch}}" hint-placeholder-val="{{ false }}">
+      <a class="btn primary" href="BattleMenu.dc.html">
+        <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
+        SWITCH
+      </a>
+    </sc-if>
+    <sc-if value="{{switchOff}}" hint-placeholder-val="{{ false }}">
+      <button type="button" class="btn primary" disabled>
+        <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
+        SWITCH
+      </button>
+    </sc-if>
+    <a class="btn" href="{{backHref}}">
       <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
       BACK
     </a>
+    <sc-if value="{{battle}}" hint-placeholder-val="{{ false }}">
+      <button type="button" class="btn arrow" onClick="{{next}}" aria-label="Next Pokémon" style="margin-left: auto">
+        <svg width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
+      </button>
+    </sc-if>
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"viewOnly":{"editor":"boolean","default":false},"rentedBy":{"editor":"text","default":"GOLD"},"ball":{"editor":"enum","options":["poke","great","ultra","master"],"default":"great"},"$preview":{"width":1200,"height":900}}'>
+<script type="text/x-dc" data-dc-script data-props='{"viewOnly":{"editor":"boolean","default":false},"rentedBy":{"editor":"text","default":"GOLD"},"ball":{"editor":"enum","options":["poke","great","ultra","master"],"default":"great"},"battle":{"editor":"boolean","default":false},"slot":{"editor":"int","min":0,"max":5,"default":0},"$preview":{"width":1200,"height":900}}'>
 class Component extends DCLogic {
   constructor(props) {
     super(props);
@@ -179,12 +211,64 @@ class Component extends DCLogic {
       ultra: ['/_blob/5741f1a3f9e2471912bd5560c0aea1a8', 'Ultra Ball'],
       master: ['/_blob/1232bfea6d5fbe714ce6f5a04bb1772c', 'Master Ball']
     };
-    const [ballSrc, ballName] = BALLS[this.props.ball] || BALLS.great;
+    // Battle: opened from your Pokémon screen, with this battle's HP, status and PP
+    const battle = this.props.battle === true || this.props.battle === 'true';
+    const TYPES = {
+      GRASS: '#71c558', POISON: '#b468b7', GHOST: '#846ab6', ROCK: '#b2a061', DARK: '#736c75',
+      ELECTRIC: '#e5c531', DRAGON: '#6a7baf', FLYING: '#7da6de', FIRE: '#ea7a3c'
+    };
+    // Your battle team, as on the Your Pokémon screen: name, icon, HP, max HP, status,
+    // types, ball. Only Venusaur has real moves, ability and stats; the others reuse them
+    const TEAM = [
+      ['VENUSAUR', '306822b5b874f91ba29da9143239f925', 97, 155, 'PSN', ['GRASS', 'POISON'], 'great'],
+      ['GENGAR', 'f777e20e17c63332aea4dab6a5721cbb', 0, 135, '', ['GHOST', 'POISON'], 'great'],
+      ['TYRANITAR', 'a0c6aad3e5c4a34d09bd20acb400ca99', 175, 175, 'FRZ', ['ROCK', 'DARK'], 'ultra'],
+      ['RAICHU', '12116b3c1ed02964fdf7c7c0ee361067', 42, 135, 'BRN', ['ELECTRIC'], 'great'],
+      ['DRAGONITE', '70fdd9aa41dfbf01ce9085c9ee344623', 19, 166, 'PAR', ['DRAGON', 'FLYING'], 'ultra'],
+      ['ARCANINE', 'b549b068a760cfac423e61bdb5d2cc64', 165, 165, 'SLP', ['FIRE'], 'great']
+    ];
+    // Battle size from Home (prototype only, via localStorage)
+    let size = null;
+    try { size = parseInt(localStorage.getItem('picomon.battleSize'), 10); } catch (e) {}
+    const count = [3, 4, 6].includes(size) ? size : 6;
+    const start = Math.min(count - 1, Math.max(0, parseInt(this.props.slot, 10) || 0));
+    const slot = this.state.slot != null ? this.state.slot : start;
+    const [mName, mId, mHp, mMax, mStatus, mTypes, mBall] = battle ? TEAM[slot] : TEAM[0];
+    const mon = {
+      name: mName,
+      src: '/_blob/' + mId,
+      types: (battle ? mTypes : ['GRASS', 'POISON']).map((t) => ({ name: t, color: TYPES[t] }))
+    };
+    const maxHp = battle ? mMax : calcStat(BASE[0][1], true);
+    const hpNow = battle ? mHp : maxHp;
+    const p = hpNow * 100 / maxHp;
+    const status = battle ? mStatus : '';
+    // Placeholder status tags; swap for the status sprites
+    const STATUS = { SLP: '#585858', FRZ: '#70cbd4', BRN: '#E04030', PSN: '#b468b7', PAR: '#e5c531' };
+    const ppLeft = battle ? [7, 10, 15, 9] : null;
+    const [ballSrc, ballName] = battle ? BALLS[mBall] : BALLS[this.props.ball] || BALLS.great;
+    // The arrows wrap around the team
+    const go = (d) => this.setState({ slot: (slot + d + count) % count, m: 0 });
     return {
       ballSrc,
       ballName,
-      title: viewOnly ? 'RENTED BY ' + String(this.props.rentedBy || 'GOLD').toUpperCase() : "GOLD'S CHOICE",
-      canRent: !viewOnly,
+      battle,
+      mon,
+      prev: () => go(-1),
+      next: () => go(1),
+      title: battle ? "GOLD'S POKéMON" : viewOnly ? 'RENTED BY ' + String(this.props.rentedBy || 'GOLD').toUpperCase() : "GOLD'S CHOICE",
+      canRent: !viewOnly && !battle,
+      // A fainted Pokémon can't be sent out
+      canSwitch: battle && hpNow > 0,
+      switchOff: battle && hpNow === 0,
+      backHref: battle ? 'Party.dc.html' : 'Draft.dc.html',
+      hpNow,
+      hpPct: p + '%',
+      // Green, yellow under 51%, red under 15%
+      hpColor: p < 15 ? '#E04030' : p < 51 ? '#F8B830' : '#40C048',
+      status,
+      hasStatus: !!status,
+      statusColor: STATUS[status] || 'transparent',
       // Every Pokémon holds an item; placeholder name
       item: 'Rocky Helmet',
       isBase: !isCalc,
@@ -193,7 +277,7 @@ class Component extends DCLogic {
       segCalc: isCalc ? 'on' : '',
       showBase: () => this.setState({ view: 'base' }),
       showCalc: () => this.setState({ view: 'calc' }),
-      hp: calcStat(BASE[0][1], true),
+      hp: maxHp,
       calc: BASE.slice(1).map(([label, value]) => ({
         label: label === 'ATTACK' ? 'Attack' : label === 'DEFENSE' ? 'Defense' : label === 'SP.ATK' ? 'Sp.Atk' : label === 'SP.DEF' ? 'Sp.Def' : 'Speed',
         value: calcStat(value, false)
@@ -201,6 +285,7 @@ class Component extends DCLogic {
       moves: MOVES.map((x, i) => ({
         ...x,
         catSrc: CAT[x.cat],
+        left: ppLeft ? ppLeft[i] : x.pp,
         on: i === m ? 'on' : '',
         pick: () => this.setState({ m: i })
       })),

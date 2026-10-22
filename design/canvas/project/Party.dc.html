@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Choose a Pokémon</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.gb{font-family:'Press Start 2P',monospace;color:#181818;background:#F8F8F8;-webkit-font-smoothing:none}
+.gb p,.gb h1,.gb h2{margin:0;font-weight:400}
+.frame{border:6px solid #181818;background-color:#F8F8F8;box-sizing:border-box}
+.pix{image-rendering:pixelated;display:block}
+.spr{overflow:hidden;flex:none}
+a{color:inherit;text-decoration:none}
+.cur{flex:none;visibility:hidden}
+.prow{display:grid;grid-template-columns:64px 1fr 384px;column-gap:24px;align-items:center;height:92px;padding:0 12px;border-radius:6px}
+.prow:hover,.prow:focus-visible{background:#E8E8E8;outline:none}
+.lvrow{display:flex;align-items:center;gap:12px;height:40px;font-size:24px;line-height:40px}
+.sslot{width:64px;height:24px;flex:none}
+.stag{display:block;width:64px;height:24px;font-size:16px;line-height:24px;text-align:center;color:#F8F8F8;clip-path:polygon(4px 0,calc(100% - 4px) 0,calc(100% - 4px) 4px,100% 4px,100% calc(100% - 4px),calc(100% - 4px) calc(100% - 4px),calc(100% - 4px) 100%,4px 100%,4px calc(100% - 4px),0 calc(100% - 4px),0 4px,4px 4px)}
+.hpbar{display:flex;align-items:center;height:18px;box-sizing:border-box;padding:3px 3px 3px 0;background:#181818;clip-path:polygon(3px 0,calc(100% - 3px) 0,calc(100% - 3px) 3px,100% 3px,100% calc(100% - 3px),calc(100% - 3px) calc(100% - 3px),calc(100% - 3px) 100%,3px 100%,3px calc(100% - 3px),0 calc(100% - 3px),0 3px,3px 3px)}
+.hplabel{font-size:12px;line-height:12px;color:#F8B830;padding:0 6px}
+.hptrack{flex:1;height:12px;background:#F8F8F8;overflow:hidden;clip-path:polygon(0 0,calc(100% - 3px) 0,calc(100% - 3px) 3px,100% 3px,100% calc(100% - 3px),calc(100% - 3px) calc(100% - 3px),calc(100% - 3px) 100%,0 100%)}
+.hpfill{height:100%}
+.item{display:flex;align-items:center;gap:12px;font-size:24px;line-height:48px}
+.item:hover .cur,.item:focus-visible .cur{visibility:visible}
+.item:focus-visible{outline:none}
+/* Pixel corners: two 3px steps off the outer edge, a 3px square rounding the thick line's inner edge, one step off the thin line */
+.frame{--l:#181818;--e:var(--l);background-image:linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e));background-position:left 6px top 3px,left 6px bottom 3px,left 3px top 6px,right 3px top 6px,left top,right top,left bottom,right bottom;background-size:calc(100% - 12px) 3px,calc(100% - 12px) 3px,3px calc(100% - 12px),3px calc(100% - 12px),3px 3px,3px 3px,3px 3px,3px 3px;background-repeat:no-repeat}
+.frame{clip-path:polygon(6px 0,calc(100% - 6px) 0,calc(100% - 6px) 3px,calc(100% - 3px) 3px,calc(100% - 3px) 6px,100% 6px,100% calc(100% - 6px),calc(100% - 3px) calc(100% - 6px),calc(100% - 3px) calc(100% - 3px),calc(100% - 6px) calc(100% - 3px),calc(100% - 6px) 100%,6px 100%,6px calc(100% - 3px),3px calc(100% - 3px),3px calc(100% - 6px),0 calc(100% - 6px),0 6px,3px 6px,3px 3px,6px 3px)}
+</style>
+</helmet>
+<div class="gb" style="width: 1200px; height: 900px; box-sizing: border-box; padding: 30px 72px; display: flex; flex-direction: column; gap: 12px">
+  <h1 style="font-size: 32px; line-height: 48px; text-align: center">{{title}}</h1>
+  <div aria-label="Your Pokémon" style="margin-top: auto; display: flex; flex-direction: column; gap: 4px">
+    <sc-for list="{{team}}" as="p" hint-placeholder-count="6">
+      <a class="prow" href="{{p.href}}" aria-label="{{p.aria}}">
+        <div class="spr" style="width: 64px; height: 64px"><img class="pix" src="{{p.src}}" alt="" style="width: 64px; height: 128px"></div>
+        <div>
+          <p style="font-size: 24px; line-height: 40px">{{p.name}}</p>
+          <div class="lvrow">
+            <span class="sslot"><sc-if value="{{p.hasStatus}}" hint-placeholder-val="{{ false }}"><span class="stag" style="background: {{p.statusColor}}">{{p.status}}</span></sc-if></span>
+            <span>L50</span>
+          </div>
+        </div>
+        <div>
+          <p style="font-size: 24px; line-height: 40px; text-align: right">{{p.hp}}/{{p.max}}</p>
+          <div style="height: 40px; display: flex; align-items: center">
+            <div class="hpbar" style="width: 384px">
+              <span class="hplabel">HP</span>
+              <div class="hptrack"><div class="hpfill" style="width: {{p.pct}}; background: {{p.color}}"></div></div>
+            </div>
+          </div>
+        </div>
+      </a>
+    </sc-for>
+  </div>
+  <!-- Same bottom layout as the battle's move list: message left, options box right -->
+  <div style="display: flex; gap: 12px; min-height: 168px">
+    <div class="frame" role="status" style="flex: 1; padding: 30px 42px; display: flex; flex-direction: column; justify-content: center">
+      <p style="font-size: 24px; line-height: 48px">Choose a POKéMON.</p>
+    </div>
+    <div class="frame" role="menu" style="width: 264px; padding: 24px; display: flex; flex-direction: column; justify-content: center; gap: 12px">
+      <a class="item" role="menuitem" href="BattleMenu.dc.html">
+        <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
+        BACK
+      </a>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    // Your battle team in order, mid-battle: current HP of max, and any status
+    const TEAM = [
+      ['VENUSAUR', '306822b5b874f91ba29da9143239f925', 97, 155, 'PSN'],
+      ['GENGAR', 'f777e20e17c63332aea4dab6a5721cbb', 0, 135, ''],
+      ['TYRANITAR', 'a0c6aad3e5c4a34d09bd20acb400ca99', 175, 175, 'FRZ'],
+      ['RAICHU', '12116b3c1ed02964fdf7c7c0ee361067', 42, 135, 'BRN'],
+      ['DRAGONITE', '70fdd9aa41dfbf01ce9085c9ee344623', 19, 166, 'PAR'],
+      ['ARCANINE', 'b549b068a760cfac423e61bdb5d2cc64', 165, 165, 'SLP']
+    ];
+    // Placeholder status tags; swap for the status sprites
+    const STATUS = { SLP: '#585858', FRZ: '#70cbd4', BRN: '#E04030', PSN: '#b468b7', PAR: '#e5c531' };
+    // Battle size from Home (prototype only, via localStorage)
+    let size = null;
+    try { size = parseInt(localStorage.getItem('picomon.battleSize'), 10); } catch (e) {}
+    const count = [3, 4, 6].includes(size) ? size : 6;
+    const color = (hp, max) => { const p = hp * 100 / max; return p < 15 ? '#E04030' : p < 51 ? '#F8B830' : '#40C048'; };
+    // Player 1 is always the host; names come from the room
+    const NAMES = { 1: 'GOLD', 2: 'SILVER' };
+    return {
+      title: NAMES[1] + "'S POKéMON",
+      team: TEAM.slice(0, count).map(([name, id, hp, max, status]) => ({
+        name, hp, max, status,
+        src: '/_blob/' + id,
+        pct: (hp * 100 / max) + '%',
+        color: color(hp, max),
+        hasStatus: !!status,
+        statusColor: STATUS[status] || 'transparent',
+        aria: name + ', ' + hp + ' of ' + max + ' HP' + (status ? ', ' + status : ''),
+        // Prototype: fainted Pokémon open the board with SWITCH disabled
+        href: hp === 0 ? 'DetailFainted.dc.html' : 'DetailBattle.dc.html'
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

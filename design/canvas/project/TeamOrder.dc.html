@@ -84,6 +84,7 @@ button:disabled{cursor:default}
     <p style="font-size: 24px; line-height: 48px">{{msg1}}</p>
     <p style="font-size: 24px; line-height: 48px">{{msg2}}</p>
   </div>
+  <a href="Battle.dc.html" ref="{{setGo}}" hidden aria-hidden="true" tabindex="-1"></a>
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"count":{"editor":"enum","options":["","3","4","6"],"default":""},"chosen":{"editor":"text","default":""},"oppFilled":{"editor":"int","min":0,"max":6,"default":2},"timeLeft":{"editor":"int","min":0,"max":75,"default":75},"$preview":{"width":1200,"height":900}}'>
@@ -104,6 +105,7 @@ class Component extends DCLogic {
   }
   componentWillUnmount() {
     clearInterval(this.tick);
+    clearTimeout(this.tg);
   }
   renderVals() {
     // Player 1 is always the host; names come from the room
@@ -143,6 +145,11 @@ class Component extends DCLogic {
     const pick = (i) => {
       if (locked || chosen.includes(i)) return;
       this.setState({ chosen: chosen.concat(i) });
+      // Prototype only: once you lock in, the battle starts 2 seconds later
+      if (chosen.length + 1 >= count) {
+        clearTimeout(this.tg);
+        this.tg = setTimeout(() => this.go && this.go.click(), 2000);
+      }
     };
 
     const mySlots = Array.from({ length: count }, (_, k) => {
@@ -181,7 +188,8 @@ class Component extends DCLogic {
       })),
       oppTeam: THEIRS.map(([name, id]) => ({ name, src: src(id) })),
       msg1,
-      msg2
+      msg2,
+      setGo: (el) => { this.go = el; }
     };
   }
 }
