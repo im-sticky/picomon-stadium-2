@@ -14,19 +14,22 @@
 body{margin:0}
 .gb{font-family:'Press Start 2P',monospace;color:#181818;background:#F8F8F8;-webkit-font-smoothing:none}
 .gb p,.gb h1,.gb h2{margin:0;font-weight:400}
-.frame{border:6px solid #181818;border-radius:6px;box-shadow:inset 0 0 0 3px #F8F8F8,inset 0 0 0 6px #181818;background:#F8F8F8}
+.frame{border:6px solid #181818;background-color:#F8F8F8}
 button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
 .cur{flex:none;visibility:hidden}
 .lbl{font-size:16px;line-height:32px;color:#585858}
 .cell{width:96px;height:120px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:64px;line-height:64px;padding-left:6px}
-.btn{position:relative;display:flex;align-items:center;justify-content:center;width:240px;box-sizing:border-box;padding:36px 24px;font-size:24px;border:6px solid #181818;border-radius:6px;box-shadow:inset 0 0 0 3px #F8F8F8,inset 0 0 0 6px #181818}
+.btn{position:relative;display:flex;align-items:center;justify-content:center;width:240px;box-sizing:border-box;padding:36px 24px;font-size:24px;border:6px solid #181818}
 .btn .cur{position:absolute;left:30px;top:50%;margin-top:-12px}
 .btn:hover .cur,.btn:focus-visible .cur{visibility:visible}
-.btn:focus-visible{outline:none;background:#E8E8E8}
+.btn:focus-visible{outline:none;background-color:#E8E8E8}
 a.btn{color:inherit;text-decoration:none}
-.btn.primary{background:#181818;color:#F8F8F8;box-shadow:inset 0 0 0 3px #181818,inset 0 0 0 6px #F8F8F8}
+.btn.primary{background-color:#181818;color:#F8F8F8;--l:#F8F8F8;--e:#181818}
 .btn.primary path{fill:#F8F8F8}
 .prow{display:flex;align-items:center;gap:24px;height:48px;font-size:24px}
+/* Pixel corners: two 3px steps off the outer edge, a 3px square rounding the thick line's inner edge, one step off the thin line */
+.frame,.btn{--l:#181818;--e:var(--l);background-image:linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e));background-position:left 6px top 3px,left 6px bottom 3px,left 3px top 6px,right 3px top 6px,left top,right top,left bottom,right bottom;background-size:calc(100% - 12px) 3px,calc(100% - 12px) 3px,3px calc(100% - 12px),3px calc(100% - 12px),3px 3px,3px 3px,3px 3px,3px 3px;background-repeat:no-repeat}
+.frame,.btn{clip-path:polygon(6px 0,calc(100% - 6px) 0,calc(100% - 6px) 3px,calc(100% - 3px) 3px,calc(100% - 3px) 6px,100% 6px,100% calc(100% - 6px),calc(100% - 3px) calc(100% - 6px),calc(100% - 3px) calc(100% - 3px),calc(100% - 6px) calc(100% - 3px),calc(100% - 6px) 100%,6px 100%,6px calc(100% - 3px),3px calc(100% - 3px),3px calc(100% - 6px),0 calc(100% - 6px),0 6px,3px 6px,3px 3px,6px 3px)}
 </style>
 </helmet>
 <div class="gb" style="width: 1200px; height: 900px; box-sizing: border-box; padding: 24px 72px; display: flex; flex-direction: column; gap: 18px">
