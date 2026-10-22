@@ -241,6 +241,27 @@
   }
 }
 
+/* A battle sprite (80, 96 or 112px) at the bottom centre of a 112px box, as in the
+   game, so Pokémon of different sizes line up. */
+.pokemonSprite {
+  display: flex;
+  flex: none;
+  align-items: flex-end;
+  justify-content: center;
+  width: 112px;
+  height: 112px;
+
+  /* The front strip: square frames stacked vertically, one shown at a time. */
+  &__front {
+    @include pixelated;
+    background-repeat: no-repeat;
+  }
+
+  &__back {
+    @include pixelated;
+  }
+}
+
 @keyframes spriteFrames {
   from {
     transform: translateY(0);
