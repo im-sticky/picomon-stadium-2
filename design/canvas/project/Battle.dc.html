@@ -21,6 +21,9 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 button:disabled{cursor:default}
 a{color:inherit;text-decoration:none}
 .abs{position:absolute}
+/* Battle sprites: the PokemonFront / PokemonBack box at 3× the PNGs (6px per Game Boy pixel): 336px, art bottom-centred */
+.mon{width:336px;height:336px;display:flex;align-items:flex-end;justify-content:center}
+.front{display:block;width:336px;height:336px;background-size:336px auto;background-repeat:no-repeat;image-rendering:pixelated}
 .cur{flex:none;visibility:hidden}
 .nm{font-size:24px;line-height:48px}
 .lvrow{display:flex;align-items:center;gap:12px;height:32px;font-size:24px;line-height:32px}
@@ -89,13 +92,15 @@ a{color:inherit;text-decoration:none}
         </sc-for>
       </div>
     </section>
-    <div class="abs spr" style="right: 120px; top: 36px; width: 192px; height: 192px"><img class="pix" src="{{opp.src}}" alt="{{opp.name}}" style="width: 192px; height: 384px"></div>
+    <!-- Front battle sprite (PokemonFront): one frame of the strip at a time, bottom-centred in the box -->
+    <div class="abs mon" style="right: 132px; top: 12px"><span class="front" role="img" aria-label="{{opp.name}}" style="background-image: url({{opp.front}}); background-position: 0 {{opp.framePos}}"></span></div>
   </sc-if>
 
-  <!-- You: sprite bottom left (mirrored icon until battle sprites exist), info right with HP numbers -->
+  <!-- You: back battle sprite (PokemonBack) bottom left, info right with HP numbers -->
   <sc-if value="{{showMe}}" hint-placeholder-val="{{ true }}">
-    <div class="abs spr" style="left: 120px; top: 372px; width: 192px; height: 192px; transform: scaleX(-1)"><img class="pix" src="{{me.src}}" alt="{{me.name}}" style="width: 192px; height: 384px"></div>
-    <section class="abs" aria-label="{{me.name}}" style="right: 72px; top: 324px; width: 384px">
+    <!-- The back pic's bottom sits on the top of the bottom boxes -->
+    <div class="abs mon" style="left: 132px; top: 276px"><img class="pix" src="{{me.back}}" alt="{{me.name}}" style="width: 288px; height: 288px"></div>
+    <section class="abs" aria-label="{{me.name}}" style="right: 72px; top: 420px; width: 384px">
       <p class="nm">{{me.name}}</p>
       <div class="lvrow">
         <span class="sslot"><sc-if value="{{me.hasStatus}}" hint-placeholder-val="{{ false }}"><span class="stag" style="background: {{me.statusColor}}">{{me.status}}</span></sc-if></span>
@@ -113,27 +118,15 @@ a{color:inherit;text-decoration:none}
 
   <!-- Ability indicator: shows for a couple of seconds beside whoever triggered it -->
   <sc-if value="{{abilOpp}}" hint-placeholder-val="{{ false }}">
-    <div class="abs abil opp" role="status" style="top: 120px">
+    <div class="abs abil opp" role="status" style="top: 132px">
       <p>{{opp.name}}'s</p>
       <p>{{opp.ability}}</p>
     </div>
   </sc-if>
   <sc-if value="{{abilMe}}" hint-placeholder-val="{{ false }}">
-    <div class="abs abil me" role="status" style="top: 444px">
+    <div class="abs abil me" role="status" style="top: 420px">
       <p>{{me.name}}'s</p>
       <p>{{me.ability}}</p>
-    </div>
-  </sc-if>
-
-  <!-- Move info: only while a move is hovered; it covers your sprite -->
-  <sc-if value="{{showInfo}}" hint-placeholder-val="{{ false }}">
-    <div class="abs frame" aria-live="polite" style="left: 72px; top: 360px; width: 456px; height: 240px; padding: 18px 30px; display: flex; flex-direction: column; justify-content: center">
-      <div style="display: flex; align-items: center; gap: 12px; height: 48px">
-        <img class="pix" src="{{info.catSrc}}" alt="{{info.cat}}" style="width: 64px; height: 32px">
-        <span class="tag" style="background: {{info.typeColor}}">{{info.type}}</span>
-      </div>
-      <p style="font-size: 24px; line-height: 48px">{{info.powAcc}}</p>
-      <p style="font-size: 24px; line-height: 48px">PP {{info.left}}/{{info.pp}}</p>
     </div>
   </sc-if>
 
@@ -152,13 +145,26 @@ a{color:inherit;text-decoration:none}
       </div>
     </sc-if>
     <sc-if value="{{isFight}}" hint-placeholder-val="{{ false }}">
-      <div class="frame" role="menu" aria-label="Moves" style="flex: 1; padding: 24px 42px; display: flex; flex-direction: column; justify-content: center">
-        <sc-for list="{{moves}}" as="m" hint-placeholder-count="4">
-          <button type="button" class="item {{m.on}}" role="menuitem" disabled="{{m.disabled}}" onMouseEnter="{{m.hover}}" onFocus="{{m.hover}}" onMouseLeave="{{unhover}}" onBlur="{{unhover}}" onClick="{{m.use}}">
-            <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
-            {{m.name}}
-          </button>
-        </sc-for>
+      <!-- Moves on the left; the hovered move's info on the right of the same box -->
+      <div class="frame" style="flex: 1; padding: 24px; display: flex; align-items: center; gap: 48px">
+        <div role="menu" aria-label="Moves" style="display: flex; flex-direction: column">
+          <sc-for list="{{moves}}" as="m" hint-placeholder-count="4">
+            <button type="button" class="item {{m.on}}" role="menuitem" disabled="{{m.disabled}}" onMouseEnter="{{m.hover}}" onFocus="{{m.hover}}" onMouseLeave="{{unhover}}" onBlur="{{unhover}}" onClick="{{m.use}}">
+              <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
+              {{m.name}}
+            </button>
+          </sc-for>
+        </div>
+        <sc-if value="{{showInfo}}" hint-placeholder-val="{{ false }}">
+          <div aria-live="polite" style="margin-left: auto; width: 228px">
+            <div style="display: flex; align-items: center; gap: 12px; height: 48px">
+              <img class="pix" src="{{info.catSrc}}" alt="{{info.cat}}" style="width: 64px; height: 32px">
+              <span class="tag" style="background: {{info.typeColor}}">{{info.type}}</span>
+            </div>
+            <p style="font-size: 24px; line-height: 48px">{{info.powAcc}}</p>
+            <p style="font-size: 24px; line-height: 48px">PP {{info.left}}/{{info.pp}}</p>
+          </div>
+        </sc-if>
       </div>
     </sc-if>
     <!-- One options box on the right: FIGHT / POKéMON in the menu, BACK in the move list -->
@@ -193,7 +199,7 @@ class Component extends DCLogic {
     const base = {
       myHp: num(props.myHp, 155), oppHp: num(props.oppHp, 170),
       myStatus: props.myStatus || '', oppStatus: props.oppStatus || '',
-      pp: [10, 10, 15, 10], hover: null, abil: null,
+      pp: [10, 10, 15, 10], hover: null, abil: null, oppFrame: 0,
       trainer: false, showOpp: true, showMe: true, mode: 'menu', msg: ['', '']
     };
     // Each board starts at one moment of the battle; the plain board plays the intro
@@ -212,7 +218,7 @@ class Component extends DCLogic {
     if (this.props.view) return;
     this.run([
       { wait: 2200 },
-      { set: { trainer: false, showOpp: true, msg: ['SILVER sent out', 'GYARADOS!'] }, wait: 1800 },
+      { set: { trainer: false, showOpp: true, msg: ['SILVER sent out', 'GYARADOS!'] }, fn: () => this.playFront(), wait: 1800 },
       { set: { showMe: true, msg: ['Go! VENUSAUR!', ''] }, wait: 1500 },
       // The ability box shows first, then the bottom box says what it did
       { set: { abil: 'opp' }, wait: 2000 },
@@ -222,6 +228,20 @@ class Component extends DCLogic {
   }
   componentWillUnmount() {
     clearTimeout(this.t);
+    clearTimeout(this.ft);
+  }
+  // Like PokemonFront: play the sprite's anim once when it appears, then rest on frame 0.
+  // Steps are [frame, duration in game frames]; a game frame is 1000 / 59.7275 ms.
+  playFront() {
+    const ANIM = [[1, 11], [2, 11], [1, 11], [2, 11]];
+    const FRAME_MS = 1000 / 59.7275;
+    clearTimeout(this.ft);
+    const step = (i) => {
+      if (i === ANIM.length) return this.setState({ oppFrame: 0 });
+      this.setState({ oppFrame: ANIM[i][0] });
+      this.ft = setTimeout(() => step(i + 1), ANIM[i][1] * FRAME_MS);
+    };
+    step(0);
   }
   // Prototype only: plays a list of steps on timers. In the app the server's battle
   // log drives these messages and HP changes.
@@ -230,6 +250,7 @@ class Component extends DCLogic {
     const go = (i) => {
       if (i >= steps.length) return;
       if (steps[i].set) this.setState(steps[i].set);
+      if (steps[i].fn) steps[i].fn();
       this.t = setTimeout(() => go(i + 1), steps[i].wait || 0);
     };
     go(0);
@@ -263,6 +284,10 @@ class Component extends DCLogic {
     });
     const me = side('VENUSAUR', '/_blob/306822b5b874f91ba29da9143239f925', s.myHp, 155, s.myStatus, 'Overgrow');
     const opp = side('GYARADOS', '/_blob/db7415dad60d2c609f07bc348686093b', s.oppHp, 170, s.oppStatus, 'Intimidate');
+    // Battle sprites: the opponent's front strip (4 frames) and your back pic
+    opp.front = '/_blob/a5445b854864987a5abeb6793b815d30';
+    opp.framePos = -(s.oppFrame * 336) + 'px';
+    me.back = '/_blob/139a7a8fd91133ddb653d5268489e64d';
     // The opponent's types show under their HP bar
     opp.types = [{ name: 'WATER', color: '#539ae2' }, { name: 'FLYING', color: '#7da6de' }];
 

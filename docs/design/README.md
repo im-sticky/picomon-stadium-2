@@ -325,9 +325,17 @@ is absolutely placed on the 1200×900 board.
   `L50`, HP bar (384px) and your HP numbers below the bar, right-aligned
   ("97/155", 24px).
 - No experience bar and no gender icon.
-- Sprites: there are no battle sprites yet, so the design uses the 32px Pokémon
-  icons at 6× (192px), your own mirrored to face the opponent. Swap these for front
-  and back battle sprites.
+- Sprites: the opponent uses `PokemonFront` (`app/ui/pokemon-front.tsx`) and you use
+  `PokemonBack` (`app/ui/pokemon-back.tsx`), with the sprites from
+  `data/pokemon-sprites.ts`. Both sit bottom-centred in a square box.
+  - The board draws them at 3× the PNGs (6px per Game Boy pixel): a 336px box,
+    the front frame at 336px and the 96px back pic at 288px. That's 3× the
+    components' native 112px box; scale the box to match in the app.
+  - Opponent's box: right 132, top 12. Yours: left 132, with the back pic's bottom
+    on the top edge of the bottom boxes (612px).
+  - Your info block sits at right 72, top 420, clear of the opponent's sprite.
+  - The front sprite plays its `anim` once when the Pokémon is sent out, then rests
+    on frame 0 (no idle loop), as `PokemonFront` does by default.
 - HP bar: the same component as Detail (black notched bar, yellow "HP" label, light
   track). The fill is current / max HP: green `#40C048`, yellow `#F8B830` below
   51%, red `#E04030` below 15%. It animates to the new value when HP changes.
@@ -348,9 +356,10 @@ is absolutely placed on the 1200×900 board.
     items change. Items are menu items, not framed buttons: 24px text with the ▶
     cursor on hover/focus, centred vertically, 12px apart. 264px is the narrowest
     that fits POKéMON plus the cursor.
-- Move info box (only while a move is hovered): 456×240 at the left, sitting on top
-  of your sprite. Category icon and type badge, then `90P/100%` (`---` for status
-  moves), then `PP x/y` (PP left this battle / max).
+- Move info (only while a move is hovered): inside the moves box, to the right of
+  the list (228px column, right-aligned to the box's padding, 48px from the list).
+  Category icon and type badge, then `90P/100%` (`---` for status moves), then
+  `PP x/y` (PP left this battle / max). The moves box has 24px padding.
 - After choosing a move the message box shows "Waiting for SILVER..." until the
   opponent has chosen, then the turn plays out as messages ("VENUSAUR used SLUDGE
   BOMB!", effects, HP bars moving) before the menu comes back. The prototype fakes
@@ -619,8 +628,8 @@ early on but are no longer used.
 - Player names (GOLD, SILVER) and the room code (K7QM) are samples.
 - Both FIRST and SECOND go to the same draft board. A board where P2 drafts first
   doesn't exist yet.
-- Battle: trainer sprites are dashed placeholder boxes, Pokémon use their icons at
-  6× until battle sprites exist, and status sprites are placeholder tags. The
+- Battle: trainer sprites are dashed placeholder boxes and status sprites are
+  placeholder tags. The
   turn, damage and messages in the prototype are faked on timers. Every team row
   and SWITCH open the same Venusaur boards.
 - The designs are fixed 1200×900. Scaling to the window, and phone layouts, haven't
