@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import type { PoolMove, PoolPokemon, StatKey } from "@/lib/draft-pool";
+import { BallIcon } from "@/app/ui/ball-icon";
 import { Button } from "@/app/ui/button";
 import { Frame } from "@/app/ui/frame";
 import { HeldItem } from "@/app/ui/held-item";
@@ -75,7 +76,10 @@ export function DetailScreen({
         <div className={styles.detail__top}>
           <PokemonIcon src={pokemon.sprite} size={128} alt={pokemon.name} />
           <div className={styles.detail__nameBlock}>
-            <h2 className={styles.detail__name}>{pokemon.name.toUpperCase()}</h2>
+            <div className={styles.detail__nameRow}>
+              <BallIcon pokemon={pokemon} />
+              <h2 className={styles.detail__name}>{pokemon.name.toUpperCase()}</h2>
+            </div>
             <div className={styles.detail__badges}>
               {pokemon.types.map((t) => (
                 <TypeBadge key={t} type={t} />

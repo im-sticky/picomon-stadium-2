@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "snorlax",
   sprite: "/sprites/pokemon-icons/snorlax.png",
+  isGreat: true,
   ability: "Thick Fat",
   set: {
     moves: ["Body Slam", "Crunch", "Rest", "Sleep Talk"],

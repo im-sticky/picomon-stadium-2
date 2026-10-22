@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "lickilicky",
   sprite: "/sprites/pokemon-icons/lickilicky.png",
+  isGreat: true,
   ability: "Own Tempo",
   set: {
     moves: ["Swords Dance", "Return", "Earthquake", "Power Whip"],

@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "crobat",
   sprite: "/sprites/pokemon-icons/crobat.png",
+  isGreat: true,
   ability: "Infiltrator",
   set: {
     moves: ["Brave Bird", "U-turn", "Roost", "Taunt"],

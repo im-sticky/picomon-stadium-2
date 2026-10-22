@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "gyarados",
   sprite: "/sprites/pokemon-icons/gyarados.png",
+  isGreat: true,
   ability: "Intimidate",
   set: {
     moves: ["Waterfall", "Earthquake", "Dragon Dance", "Stone Edge"],

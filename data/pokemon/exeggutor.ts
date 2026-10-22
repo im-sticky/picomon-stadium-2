@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "exeggutor",
   sprite: "/sprites/pokemon-icons/exeggutor.png",
+  isGreat: true,
   ability: "Harvest",
   set: {
     moves: ["Giga Drain", "Psychic", "Sleep Powder", "Leech Seed"],

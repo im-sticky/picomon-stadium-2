@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "jolteon",
   sprite: "/sprites/pokemon-icons/jolteon.png",
+  isGreat: true,
   ability: "Volt Absorb",
   set: {
     moves: ["Thunderbolt", "Volt Switch", "Shadow Ball", "Signal Beam"],

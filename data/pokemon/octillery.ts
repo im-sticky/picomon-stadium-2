@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "octillery",
   sprite: "/sprites/pokemon-icons/octillery.png",
+  isGreat: true,
   ability: "Sniper",
   types: ["Water", "Fire"],
   set: {

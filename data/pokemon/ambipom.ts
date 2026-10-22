@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "ambipom",
   sprite: "/sprites/pokemon-icons/ambipom.png",
+  isGreat: true,
   ability: "Technician",
   set: {
     moves: ["Fake Out", "Double Hit", "Knock Off", "U-turn"],

@@ -73,7 +73,8 @@ export default {
 | `id` | Showdown species ID. Must match the file name. |
 | `sprite` | Public path of the image the front end shows. Typed as `` `/sprites/${string}.png` ``. |
 | `isMaster` | Draft only. Optional, defaults to `false`. `true` shows a Master Ball (`icon-masterball.png`) on the draft screen instead of a Poké Ball (`icon-pokeballball.png`), and each player may draft at most one master. It has no effect on battles. |
-| `isUltra` | Draft only. Optional, defaults to `false`. Set on Pokémon with a base stat total of 580 to 600 (they are not masters). `true` shows an Ultra Ball on the draft screen (for now the Poké Ball icon hue-shifted to yellow, until `icon-ultraball.png` exists), and each player may draft at most one ultra Pokémon, on top of their one master. It has no effect on battles. |
+| `isUltra` | Draft only. Optional, defaults to `false`. Set on Pokémon with a base stat total of 580 to 600 (they are not masters). `true` shows an Ultra Ball on the draft screen (`icon-ultraball.png`), and each player may draft at most one ultra Pokémon, on top of their one master. It has no effect on battles. |
+| `isGreat` | Draft only. Optional, defaults to `false`. Set on Pokémon with a base stat total of 480 to 579 (below ultra). `true` shows a Great Ball on the draft screen (`icon-greatball.png`). There is no draft limit on great Pokémon, and it has no effect on battles. |
 | `ability` | The one ability this Pokémon has (§17.3). Always set. It replaces all of the species' gen6 abilities, in battle and in the dex. |
 | `types` | §17.1 types. Leave it out to keep the gen6 types. |
 | `baseStats` | §17.2 stats, all six. Leave it out to keep the gen6 stats. |

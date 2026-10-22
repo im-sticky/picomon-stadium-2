@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "tangrowth",
   sprite: "/sprites/pokemon-icons/tangrowth.png",
+  isGreat: true,
   ability: "Regenerator",
   set: {
     moves: ["Giga Drain", "Knock Off", "Sleep Powder", "Leech Seed"],

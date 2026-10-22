@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "flareon",
   sprite: "/sprites/pokemon-icons/flareon.png",
+  isGreat: true,
   ability: "Guts",
   set: {
     moves: ["Flare Blitz", "Facade", "Superpower", "Quick Attack"],

@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "rhyperior",
   sprite: "/sprites/pokemon-icons/rhyperior.png",
+  isGreat: true,
   ability: "Solid Rock",
   types: ["Steel", "Rock"],
   baseStats: { hp: 120, atk: 140, def: 130, spa: 55, spd: 60, spe: 40 },

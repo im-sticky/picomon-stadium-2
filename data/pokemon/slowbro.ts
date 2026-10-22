@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "slowbro",
   sprite: "/sprites/pokemon-icons/slowbro.png",
+  isGreat: true,
   ability: "Regenerator",
   baseStats: { hp: 95, atk: 75, def: 120, spa: 100, spd: 80, spe: 30 },
   set: {

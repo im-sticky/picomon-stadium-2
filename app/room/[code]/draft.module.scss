@@ -174,16 +174,6 @@
     line-height: 32px;
   }
 
-  /* The pokéball / master ball beside the name. */
-  &__infoIcon {
-    @include pixelated;
-  }
-
-  /* Stand-in Ultra Ball until its icon exists: the Poké Ball turned yellow. */
-  &__infoIcon--ultra {
-    filter: hue-rotate(85deg) brightness(3);
-  }
-
   &__badges {
     display: flex;
     gap: 12px;

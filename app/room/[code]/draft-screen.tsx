@@ -5,6 +5,7 @@ import Image from "next/image";
 import { draftTurn, PICKS_PER_PLAYER, picksLeftInTurn, TOTAL_PICKS } from "@/lib/draft";
 import type { PoolPokemon } from "@/lib/draft-pool";
 import type { DraftView, RoomState, Slot } from "@/lib/types";
+import { BallIcon } from "@/app/ui/ball-icon";
 import { Button } from "@/app/ui/button";
 import { Frame } from "@/app/ui/frame";
 import { HeldItem } from "@/app/ui/held-item";
@@ -21,7 +22,6 @@ const PROMPT: Message = ["Hover a POKéMON to see its moves.", "Click one to see
 const FAILED: Message = ["Something went wrong.", "Try again."];
 const POKEBALL = "/sprites/misc/pokeball.png";
 const BALL_ICON = "/sprites/misc/icon-pokeballball.png";
-const MASTER_BALL_ICON = "/sprites/misc/icon-masterball.png";
 
 /** Which Detail is open: a free Pokémon to rent, or a rented one to look at. */
 type Open = { id: string; viewOnly: boolean };
@@ -256,14 +256,7 @@ export function DraftScreen({
             <div className={styles.draft__infoRow}>
               <div className={styles.draft__infoLeft}>
                 <div className={styles.draft__infoName}>
-                  <Image
-                    className={`${styles.draft__infoIcon} ${hovered.isUltra ? styles["draft__infoIcon--ultra"] : ""}`}
-                    src={hovered.isMaster ? MASTER_BALL_ICON : BALL_ICON}
-                    alt={hovered.isMaster ? "Master" : hovered.isUltra ? "Ultra" : ""}
-                    width={32}
-                    height={32}
-                    unoptimized
-                  />
+                  <BallIcon pokemon={hovered} />
                   <p>{hovered.name.toUpperCase()}</p>
                 </div>
                 <div className={styles.draft__badges}>

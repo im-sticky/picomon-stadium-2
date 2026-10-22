@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "sunflora",
   sprite: "/sprites/pokemon-icons/sunflora.png",
+  isGreat: true,
   ability: "Early Bird",
   types: ["Grass", "Fire"],
   baseStats: { hp: 75, atk: 55, def: 75, spa: 105, spd: 85, spe: 85 },

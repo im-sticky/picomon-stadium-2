@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "victreebel",
   sprite: "/sprites/pokemon-icons/victreebel.png",
+  isGreat: true,
   ability: "Gluttony",
   baseStats: { hp: 80, atk: 115, def: 65, spa: 110, spd: 70, spe: 70 },
   set: {

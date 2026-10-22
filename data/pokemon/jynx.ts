@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "jynx",
   sprite: "/sprites/pokemon-icons/jynx.png",
+  isGreat: true,
   ability: "Dry Skin",
   baseStats: { hp: 70, atk: 60, def: 40, spa: 120, spd: 100, spe: 95 },
   set: {

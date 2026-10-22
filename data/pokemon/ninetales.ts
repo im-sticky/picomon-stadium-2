@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "ninetales",
   sprite: "/sprites/pokemon-icons/ninetales.png",
+  isGreat: true,
   ability: "Drought",
   types: ["Fire", "Ghost"],
   set: {

@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "vaporeon",
   sprite: "/sprites/pokemon-icons/vaporeon.png",
+  isGreat: true,
   ability: "Water Absorb",
   set: {
     moves: ["Scald", "Ice Beam", "Wish", "Protect"],

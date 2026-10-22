@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "donphan",
   sprite: "/sprites/pokemon-icons/donphan.png",
+  isGreat: true,
   ability: "Sturdy",
   set: {
     moves: ["Earthquake", "Ice Shard", "Knock Off", "Rapid Spin"],

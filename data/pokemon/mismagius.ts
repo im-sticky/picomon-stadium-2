@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "mismagius",
   sprite: "/sprites/pokemon-icons/mismagius.png",
+  isGreat: true,
   ability: "Levitate",
   types: ["Ghost", "Fairy"],
   baseStats: { hp: 60, atk: 60, def: 60, spa: 110, spd: 110, spe: 110 },
