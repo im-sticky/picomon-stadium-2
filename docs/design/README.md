@@ -68,8 +68,9 @@ Shared building blocks live in `app/styles/_mixins.scss`; pull them in with
 
 | Mixin | Use |
 |---|---|
-| `crystal-frame` | The full Crystal frame: 6px border plus the inner double line. |
-| `double-line($line, $gap)` | Just the inner double line (e.g. a selected option, a focused field). |
+| `crystal-frame` | The full Crystal frame: 6px border plus the inner double line, two-step 3px pixel corners. |
+| `pixel-steps($n)` | Cuts a two-step staircase of `$n` steps from each corner (Crystal frames). |
+| `double-line($line, $edge)` | Just the inner double line, and corner squares in the thick line's colour `$edge` (defaults to `$line`) (e.g. a selected option). The gap is the background colour, so change fills with `background-color`. |
 | `pixel-notch($n)` | Cuts an `$n` pixel block from each corner (type badges 4px, HP bar 3px). |
 | `pixelated` | `display: block` and pixelated scaling for sprites. |
 | `bare-list` / `bare-button` | Strip a list's or button's default spacing and styling. |
@@ -375,11 +376,14 @@ Base stat bar colour by value:
 ### Components
 
 **Crystal frame** (text boxes, panels, fields, code cells): a thick outer line, a gap,
-then a thin inner line.
+then a thin inner line. Every corner is pixelated: the outer edge has a staircase of two
+3px steps cut away, a 3px ink square fills the gap's corner so the thick line's inner
+edge is rounded too, and the thin inner line has one 3px step cut from each corner.
 ```css
 border: 6px solid #181818;
-border-radius: 6px;
-box-shadow: inset 0 0 0 3px #F8F8F8, inset 0 0 0 6px #181818;
+background-color: #F8F8F8;
+background-image: /* double-line: thin line strips + gap corner squares */;
+clip-path: /* pixel-steps, n = 3px */;
 ```
 The inner line takes up the first 6px inside the border, so leave padding beyond that.
 
@@ -395,8 +399,9 @@ wrap. Padding is 36px top and bottom and 60px each side.
 - The cursor must never overlap the label, and showing it must never resize the
   button. The 60px side padding clears the cursor (30px in, 24px wide, 6px gap),
   and the cursor is only hidden with `visibility`, never removed from the page.
-- Primary (RENT, HOST, FIRST, START BATTLE): `background:#181818; color:#F8F8F8;
-  box-shadow: inset 0 0 0 3px #181818, inset 0 0 0 6px #F8F8F8`.
+- Primary (RENT, HOST, FIRST, START BATTLE): `background-color:#181818; color:#F8F8F8`, with
+  the inner line drawn in `#F8F8F8` and the corner squares in `#181818`
+  (`double-line($line: var(--bg), $edge: var(--ink))`).
 - Longer labels widen the button and keep the 108px height. A 4-letter label fits
   240px, START BATTLE is 420px (the canvas shows 384px, but the label can't be
   centred at that width without running under the cursor), and COPY is fixed at

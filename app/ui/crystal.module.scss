@@ -68,8 +68,7 @@
   }
 
   &:focus {
-    background: var(--hover);
-    @include double-line($gap: var(--hover));
+    background-color: var(--hover);
   }
 }
 
@@ -93,14 +92,14 @@
 
   &:focus-visible {
     outline: none;
-    background: var(--hover);
+    background-color: var(--hover);
   }
 
   &--primary,
   &--primary:focus-visible {
     color: var(--bg);
-    background: var(--ink);
-    @include double-line($line: var(--bg), $gap: var(--ink));
+    background-color: var(--ink);
+    @include double-line($line: var(--bg), $edge: var(--ink));
   }
 
   &:disabled {

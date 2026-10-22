@@ -59,7 +59,7 @@
     text-align: left;
     background: none;
     border: 6px solid transparent;
-    border-radius: 6px;
+    @include pixel-steps(3px);
 
     &--right {
       flex-direction: row-reverse;
@@ -77,7 +77,7 @@
     &:enabled:hover,
     &:focus-visible {
       outline: none;
-      background: var(--hover);
+      background-color: var(--hover);
     }
   }
 
