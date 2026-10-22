@@ -49,7 +49,10 @@ a.btn{color:inherit;cursor:pointer;text-decoration:none}
     <div style="display: flex; align-items: center; gap: 24px">
       <div class="spr" style="width: 128px; height: 128px"><img class="pix" src="/_blob/306822b5b874f91ba29da9143239f925" alt="Venusaur" style="width: 128px; height: 256px"></div>
       <div style="display: flex; flex-direction: column; gap: 8px">
-        <h2 style="font-size: 32px; line-height: 48px">VENUSAUR</h2>
+        <div style="display: flex; align-items: center; gap: 12px">
+          <img class="pix" src="{{ballSrc}}" alt="{{ballName}}" style="width: 32px; height: 32px">
+          <h2 style="font-size: 24px; line-height: 48px">VENUSAUR</h2>
+        </div>
         <div style="display: flex; gap: 12px">
           <span class="tag" style="background: #71c558">GRASS</span>
           <span class="tag" style="background: #b468b7">POISON</span>
@@ -141,7 +144,7 @@ a.btn{color:inherit;cursor:pointer;text-decoration:none}
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"viewOnly":{"editor":"boolean","default":false},"rentedBy":{"editor":"text","default":"GOLD"},"$preview":{"width":1200,"height":900}}'>
+<script type="text/x-dc" data-dc-script data-props='{"viewOnly":{"editor":"boolean","default":false},"rentedBy":{"editor":"text","default":"GOLD"},"ball":{"editor":"enum","options":["poke","great","ultra","master"],"default":"great"},"$preview":{"width":1200,"height":900}}'>
 class Component extends DCLogic {
   constructor(props) {
     super(props);
@@ -169,7 +172,17 @@ class Component extends DCLogic {
     const isCalc = this.state.view === 'calc';
     // View-only: opened from a team slot for an already drafted Pokémon
     const viewOnly = this.props.viewOnly === true || this.props.viewOnly === 'true';
+    // Each Pokémon's ball tier comes from its data (Venusaur is a Great Ball)
+    const BALLS = {
+      poke: ['/_blob/42adad1d7cf5061d3889e683f8adb86c', 'Poké Ball'],
+      great: ['/_blob/d6bf1b8384a3ccb2f30658b5dced077a', 'Great Ball'],
+      ultra: ['/_blob/5741f1a3f9e2471912bd5560c0aea1a8', 'Ultra Ball'],
+      master: ['/_blob/1232bfea6d5fbe714ce6f5a04bb1772c', 'Master Ball']
+    };
+    const [ballSrc, ballName] = BALLS[this.props.ball] || BALLS.great;
     return {
+      ballSrc,
+      ballName,
       title: viewOnly ? 'RENTED BY ' + String(this.props.rentedBy || 'GOLD').toUpperCase() : "GOLD'S CHOICE",
       canRent: !viewOnly,
       // Every Pokémon holds an item; placeholder name
