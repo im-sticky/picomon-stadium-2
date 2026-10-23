@@ -346,7 +346,7 @@ beside the names.
   the name is a row of faded pokéball slots, like the draft's team strip (64px
   slots, 32px `icon-pokeballball.png` at 20% opacity, 8px gaps). P2's balls are
   tinted blue.
-- Timer: a 75-second countdown ("1:15" → "0:00", 32px ink, turning red
+- Timer: an 80-second countdown ("1:20" → "0:00", 32px ink, turning red
   `#C03028` at 0:15 and below) sits at the top of
   the centre gap, level with the player names, below the title and above the
   format. It's the deadline for choosing an order. The app should drive it from the
@@ -459,7 +459,7 @@ is absolutely placed on the 1200×900 board.
     sprite, the arrow on the right pointing right. Slides in from the left.
   - The slide-in is 0.25s in 5 steps.
 - POKéMON opens the Your Pokémon screen.
-- Countdown: each step has a 75-second deadline, shown as `m:ss` in 32px ink on
+- Countdown: each step has an 80-second deadline, shown as `m:ss` in 32px ink on
   a 48px line, turning red `#C03028` at 0:15 and below, the same as the Battle
   order timer. Drive it from the server's `deadline`, not a local clock. It
   appears in three places:

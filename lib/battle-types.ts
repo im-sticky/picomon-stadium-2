@@ -3,7 +3,7 @@ import type { BattleSize, Slot } from "@/lib/types";
 // The battle as the API and clients see it. No `@pkmn/sim` import, so client code can use it.
 
 /** Every choice the battle asks for gets this long. */
-export const TIMER_MS = 75_000;
+export const TIMER_MS = 80_000;
 /** Timeouts apply this long after the deadline, so a click just before it isn't a strike. */
 export const GRACE_MS = 1000;
 /** Timeouts in a row that forfeit the battle. */
