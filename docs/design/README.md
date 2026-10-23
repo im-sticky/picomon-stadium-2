@@ -480,8 +480,8 @@ is absolutely placed on the 1200×900 board.
 
 ### Your Pokémon (`Party.dc.html`)
 - Title "GOLD'S POKéMON" (the player's name, 32px) at the top, like other screens.
-- Your battle team in battle order (3, 4 or 6), rows 4px apart, sitting just above
-  the bottom row (12px gap), so any spare space falls under the title. Each row is 92px: 64px icon; name over
+- Your battle team in battle order (3, 4 or 6), rows 4px apart, starting under
+  the title (12px gap), so with fewer than 6 any spare space falls above the bottom row. Each row is 92px: 64px icon; name over
   the status slot + `L50`; on the right the HP numbers over a 384px HP bar.
 - Rows are links with a light grey hover. Clicking one opens Detail for that
   Pokémon in battle mode.

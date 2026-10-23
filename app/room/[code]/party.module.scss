@@ -11,13 +11,12 @@
     @include screen-title;
   }
 
-  /* Rows sit just above the bottom row; any spare space falls under the title. */
+  /* Rows start under the title; any spare space falls above the bottom row. */
   &__team {
     @include bare-list;
     display: flex;
     flex-direction: column;
     gap: 4px;
-    margin-top: auto;
   }
 
   /* 92px rows: icon, name over status + level, HP numbers over the bar. Grey on hover. */
@@ -88,6 +87,7 @@
     display: flex;
     gap: 12px;
     min-height: 168px;
+    margin-top: auto;
   }
 
   &__message {
