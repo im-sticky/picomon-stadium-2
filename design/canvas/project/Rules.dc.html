@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Draft rules</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.gb{font-family:'Press Start 2P',monospace;color:#181818;background:#F8F8F8;-webkit-font-smoothing:none}
+.gb p,.gb h1,.gb h2{margin:0;font-weight:400}
+.frame{border:6px solid #181818;background-color:#F8F8F8}
+.pix{image-rendering:pixelated;display:block}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+.cur{flex:none;visibility:hidden}
+a.btn{color:inherit;text-decoration:none}
+.btn{position:relative;display:flex;align-items:center;justify-content:center;width:240px;box-sizing:border-box;padding:36px 24px;font-size:24px;border:6px solid #181818}
+.btn .cur{position:absolute;left:30px;top:50%;margin-top:-12px}
+.btn:hover .cur,.btn:focus-visible .cur{visibility:visible}
+.btn:focus-visible{outline:none;background-color:#E8E8E8}
+.btn.primary{background-color:#181818;color:#F8F8F8;--l:#F8F8F8;--e:#181818}
+.btn.primary path{fill:#F8F8F8}
+/* Pixel corners: two 3px steps off the outer edge, a 3px square rounding the thick line's inner edge, one step off the thin line */
+.frame,.btn{--l:#181818;--e:var(--l);background-image:linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e));background-position:left 6px top 3px,left 6px bottom 3px,left 3px top 6px,right 3px top 6px,left top,right top,left bottom,right bottom;background-size:calc(100% - 12px) 3px,calc(100% - 12px) 3px,3px calc(100% - 12px),3px calc(100% - 12px),3px 3px,3px 3px,3px 3px,3px 3px;background-repeat:no-repeat}
+.frame,.btn{clip-path:polygon(6px 0,calc(100% - 6px) 0,calc(100% - 6px) 3px,calc(100% - 3px) 3px,calc(100% - 3px) 6px,100% 6px,100% calc(100% - 6px),calc(100% - 3px) calc(100% - 6px),calc(100% - 3px) calc(100% - 3px),calc(100% - 6px) calc(100% - 3px),calc(100% - 6px) 100%,6px 100%,6px calc(100% - 3px),3px calc(100% - 3px),3px calc(100% - 6px),0 calc(100% - 6px),0 6px,3px 6px,3px 3px,6px 3px)}
+.rules{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px}
+/* Draft type headings between the rule groups */
+.gb .mode{margin:24px 0 12px;font-size:24px;line-height:36px;text-align:left}
+.rules li{position:relative;padding-left:36px;font-size:24px;line-height:36px}
+/* Square pixel bullet, centred on the first line */
+.rules li::before{content:'';position:absolute;left:0;top:12px;width:12px;height:12px;background:#181818}
+.ball{display:inline-block;width:32px;height:32px;vertical-align:-6px;margin:0 12px 0 18px;image-rendering:pixelated}
+</style>
+</helmet>
+<div class="gb" style="width: 1200px; height: 900px; box-sizing: border-box; padding: 36px 72px; display: flex; flex-direction: column; gap: 24px">
+  <h1 style="font-size: 32px; line-height: 48px; text-align: center">DRAFT RULES</h1>
+  <section class="frame" aria-label="Draft rules" style="flex: 1; padding: 30px 42px; box-sizing: border-box">
+    <ul class="rules">
+      <li>Each POKéMON can only be picked once.</li>
+      <li>The first player picks 1 POKéMON. Then each player picks 2 until both have 6.</li>
+      <li>Only one of each held item per team.</li>
+    </ul>
+    <h2 class="mode">Standard Draft</h2>
+    <ul class="rules">
+      <li>Only 1<img class="ball" src="/_blob/5741f1a3f9e2471912bd5560c0aea1a8" alt="">Ultra Ball POKéMON per team.</li>
+      <li>Only 1<img class="ball" src="/_blob/1232bfea6d5fbe714ce6f5a04bb1772c" alt="">Master Ball POKéMON per team.</li>
+    </ul>
+    <h2 class="mode">Unlimited Draft</h2>
+    <ul class="rules">
+      <li>No limits to rank of POKéMON.</li>
+    </ul>
+    <h2 class="mode">Poké Ball Draft</h2>
+    <ul class="rules">
+      <li>Only<img class="ball" src="/_blob/42adad1d7cf5061d3889e683f8adb86c" alt="">Poké Ball POKéMON allowed.</li>
+    </ul>
+  </section>
+  <div style="display: flex; justify-content: center">
+    <a class="btn" href="Home.dc.html">
+      <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
+      BACK
+    </a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

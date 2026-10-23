@@ -170,7 +170,7 @@ a.btn.primary{color:#F8F8F8}
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"p1picks":{"editor":"text","default":""},"p2picks":{"editor":"text","default":""},"hover":{"editor":"int","min":0,"max":38,"default":1},"$preview":{"width":1200,"height":900}}'>
+<script type="text/x-dc" data-dc-script data-props='{"p1picks":{"editor":"text","default":""},"p2picks":{"editor":"text","default":""},"hover":{"editor":"int","min":0,"max":41,"default":1},"draft":{"editor":"enum","options":["","pokeball"],"default":""},"$preview":{"width":1200,"height":900}}'>
 class Component extends DCLogic {
   constructor(props) {
     super(props);
@@ -222,7 +222,7 @@ class Component extends DCLogic {
       window.addEventListener('pointerup', up);
     };
     // Draft pool: [name, types, icon blob id]
-    const POOL = [
+    const STANDARD = [
       ['VENUSAUR', 'GRASS POISON', '306822b5b874f91ba29da9143239f925'],
       ['CHARIZARD', 'FIRE FLYING', 'fdc9afe1d3ee4535cc58e8d64c0fa82d'],
       ['BLASTOISE', 'WATER', '17fbd00ba256194c1bb6229c837a8236'],
@@ -265,9 +265,53 @@ class Component extends DCLogic {
       ['MILTANK', 'NORMAL', 'b90aa033e69727c1872aecaa302dd7bb'],
       ['ZAPDOS', 'ELECTRIC FLYING', '3caaf4f1640a8b9d31be5b3059e23bf2']
     ];
+    // Poké Ball draft: only Poké Ball tier Pokémon, i.e. not isGreat, isUltra or isMaster
+    // in data/pokemon (all of them as of this design)
+    const POKEBALL = [
+      ['ARBOK', 'POISON', '5d7e961fedfeb81b4296a743b40601e3'],
+      ['ARIADOS', 'BUG POISON', 'ff018a24c26b2add41cc062e264e89c3'],
+      ['AZUMARILL', 'WATER FAIRY', '1b280762d3f2ec9199baaf6a45f05f97'],
+      ['BEEDRILL', 'BUG POISON', 'f4bce01dc52169b215692931e1619310'],
+      ['BUTTERFREE', 'BUG FLYING', '212fbf85ed652bebf9cc0934e9c05b2c'],
+      ['CORSOLA', 'WATER ROCK', 'ad79e62f370240a0046cf55d2130fb06'],
+      ['DELIBIRD', 'ICE FLYING', '8d3f421c805ce82802d979ef95d00cbd'],
+      ['DITTO', 'NORMAL', '4c4e5c48569af323ffe5b7e42ab31f74'],
+      ['DODRIO', 'NORMAL FLYING', 'b8f6a2189b7e9d1169b4f0b9a07d4a4b'],
+      ['DUGTRIO', 'GROUND', '2497d61bb8c8b57d0f3dfe051ff0bf46'],
+      ['DUNSPARCE', 'NORMAL', '4a8120292e40727839151ccf64d5b212'],
+      ['FARFETCH\'D', 'NORMAL FLYING', '04ba8e591ab4d97caf4ce62afbcf347e'],
+      ['FEAROW', 'NORMAL FLYING', 'd956a677ae1e840a552914c76fa5bdc9'],
+      ['FORRETRESS', 'BUG STEEL', '25af020b4e0830c11873723ffd291f9d'],
+      ['FURRET', 'NORMAL', '91e7ab0737bd7df59ce135dfdeec7e5a'],
+      ['GIRAFARIG', 'NORMAL PSYCHIC', 'b4cef90cfa8cbd2ab5f2173ca159bca3'],
+      ['GRANBULL', 'FAIRY', '12c45b9027afd86410d4619f78959186'],
+      ['HITMONCHAN', 'FIGHTING', '335d1b270593c05df63b64ea90eadac2'],
+      ['HITMONLEE', 'FIGHTING', 'a1e262295af140c75ffcf5a875a8f70f'],
+      ['HITMONTOP', 'FIGHTING', '1e700218e93ebc4a251a8cf4ed5e7b7b'],
+      ['KINGLER', 'WATER', 'e51218b789118b301f7fd16ec4ed9f88'],
+      ['LEDIAN', 'BUG FLYING', 'e3a9a8a726faa0e44251aa55ea54f19b'],
+      ['MANTINE', 'WATER FLYING', '4895dd543ff02fa462a8b9bedbf4a551'],
+      ['MAROWAK', 'GROUND', '6b9965cc4f4cd61c9d61e8074c695779'],
+      ['NOCTOWL', 'NORMAL FLYING', '2dcdb92213097311fb730556e658a7fe'],
+      ['PARASECT', 'BUG GRASS', '1c98d130bba7446abb5d592ee163232b'],
+      ['PERSIAN', 'NORMAL', 'e21c62cf534f90717a4e979c60c56f9a'],
+      ['PRIMEAPE', 'FIGHTING', 'c41c9b96a821c94fca6faf6394720a12'],
+      ['QUAGSIRE', 'WATER GROUND', '2e8daa756049961df385df3b743fc43b'],
+      ['QWILFISH', 'WATER POISON', '2301f2396158a582722158b9ebdf31ba'],
+      ['RATICATE', 'NORMAL', 'a1864dfb932b7703c6406173b1126fef'],
+      ['SANDSLASH', 'GROUND', 'd9e04542a4af0465b0247f3da9af2e76'],
+      ['SMEARGLE', 'NORMAL', '133b0a415e72e418b2995da20dd6f9a1'],
+      ['STANTLER', 'NORMAL', '9cbb5132ac884dda181328d99a51dff5'],
+      ['SUDOWOODO', 'ROCK', '11b1cc36a1f085661660d6bc85cbcc35'],
+      ['VENOMOTH', 'BUG POISON', 'ebb525fd2de3e96b6c474e6ccc45c287'],
+      ['WIGGLYTUFF', 'NORMAL FAIRY', 'a94e91679945d1e8cc560d9848bab357'],
+      ['WOBBUFFET', 'PSYCHIC', 'e1528a34abb1219f67185b5d05b48edd']
+    ];
+    const pokeBall = this.props.draft === 'pokeball';
+    const POOL = pokeBall ? POKEBALL : STANDARD;
     const IDS = POOL.map((p) => p[2]);
-    // Sample: pool numbers that get a Master Ball (Dragonite, Tyranitar, Zapdos)
-    const MASTER = [19, 35, 41];
+    // Sample: pool numbers that get a Master Ball (Dragonite, Tyranitar, Zapdos); none in a Poké Ball draft
+    const MASTER = pokeBall ? [] : [19, 35, 41];
     const TYPE = {
       BUG: '#94bc4a', DARK: '#736c75', DRAGON: '#6a7baf', ELECTRIC: '#e5c531', FAIRY: '#e397d1',
       FIGHTING: '#cb5f48', FIRE: '#ea7a3c', FLYING: '#7da6de', GHOST: '#846ab6', GRASS: '#71c558',
@@ -275,10 +319,10 @@ class Component extends DCLogic {
       ROCK: '#b2a061', STEEL: '#89a1b0', WATER: '#539ae2', '???': '#81a596'
     };
     // [name, PP] per move; only Venusaur has real data so far
-    const MOVES = {
+    const MOVES = pokeBall ? {} : {
       1: [['SLUDGE BOMB', 10], ['ENERGY BALL', 10], ['SLEEP POWDER', 15], ['LEECH SEED', 10]]
     };
-    const ABILITY = { 1: 'Overgrow' };
+    const ABILITY = pokeBall ? {} : { 1: 'Overgrow' };
     const pad = (n) => (n < 10 ? '0' : '') + n;
     const dex = (n) => ({
       name: POOL[n - 1][0],
@@ -357,7 +401,8 @@ class Component extends DCLogic {
     }
 
     return {
-      title: turn ? NAMES[turn] + "'S CHOICE" : 'DRAFT COMPLETE',
+      // Your turn says YOUR, so it's clear even if both players picked the same trainer
+      title: turn === 1 ? 'YOUR CHOICE' : turn ? NAMES[turn] + "'S CHOICE" : 'DRAFT COMPLETE',
       pickNo: Math.min(n + 1, 12),
       left: turn ? left + (left === 1 ? ' PICK' : ' PICKS') : '',
       p1leftVis: turn === 1 ? 'visible' : 'hidden',

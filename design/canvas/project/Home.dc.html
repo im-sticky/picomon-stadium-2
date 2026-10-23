@@ -18,6 +18,7 @@ body{margin:0}
 .pix{image-rendering:pixelated;display:block}
 button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
 .cur{flex:none;visibility:hidden}
+a.btn{color:inherit;text-decoration:none}
 .lbl{display:block;font-size:16px;line-height:32px;color:#585858}
 .field{display:block;width:100%;height:84px;box-sizing:border-box;padding:0 24px;font:inherit;font-size:24px;color:#181818;text-transform:uppercase;background:#F8F8F8;border:6px solid #181818;;outline:none}
 .field::placeholder{color:#A8A8A8}
@@ -44,12 +45,9 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
     <h1 style="font-size: 40px; line-height: 48px">PICOMON STADIUM</h1>
     <img class="pix" src="/_blob/fb383c33e038829411911e9eeb755646" alt="" style="width: 64px; height: 64px">
   </div>
-  <form class="frame" onSubmit="{{submit}}" style="width: 768px; box-sizing: border-box; padding: 30px 42px; display: flex; flex-direction: column; gap: 24px">
-    <div>
-      <label class="lbl" for="home-name">NAME</label>
-      <input id="home-name" class="field" value="{{name}}" onChange="{{setName}}" maxlength="10" placeholder="YOUR NAME" autocomplete="off">
-    </div>
-    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 48px">
+  <!-- The NAME field (.field) is kept in the styles but no longer used: your trainer's name is your player name -->
+  <form class="frame" onSubmit="{{submit}}" style="align-self: stretch; box-sizing: border-box; padding: 30px 42px">
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 48px">
       <div style="display: flex; flex-direction: column; gap: 24px">
         <div>
           <p class="lbl">NEW ROOM</p>
@@ -67,6 +65,14 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
             </label>
           </sc-for>
         </fieldset>
+        <fieldset aria-label="Draft type" style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+          <sc-for list="{{drafts}}" as="o" hint-placeholder-count="3">
+            <label class="radio" style="height: 32px">
+              <input type="radio" name="draft-type" value="{{o.value}}" checked="{{o.checked}}" onChange="{{o.pick}}">
+              <span>{{o.label}}</span>
+            </label>
+          </sc-for>
+        </fieldset>
       </div>
       <div style="display: flex; flex-direction: column; gap: 24px">
         <div>
@@ -77,7 +83,25 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
           <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
           JOIN
         </button>
+        <!-- Pushed to the bottom of the column so it lines up with CHANGE -->
+        <a class="btn" href="Rules.dc.html" style="margin-top: auto">
+          <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
+          RULES
+        </a>
       </div>
+      <section aria-label="Your trainer" style="display: flex; flex-direction: column; gap: 24px">
+        <div>
+          <p class="lbl">TRAINER</p>
+          <p style="font-size: 24px; line-height: 32px; margin-bottom: 12px">{{trainer.name}}</p>
+          <div class="frame" style="width: 240px; height: 204px; box-sizing: border-box; display: flex; align-items: center; justify-content: center">
+            <img class="pix" src="{{trainer.src}}" alt="{{trainer.name}}" style="width: 168px; height: 168px">
+          </div>
+        </div>
+        <a class="btn" href="Trainers.dc.html">
+          <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
+          CHANGE
+        </a>
+      </section>
     </div>
   </form>
   <div class="frame" role="status" style="align-self: stretch; padding: 30px 42px; display: flex; flex-direction: column; justify-content: center; min-height: 168px; box-sizing: border-box">
@@ -88,7 +112,7 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
   <a href="LobbyFull.dc.html" ref="{{setGoJoin}}" hidden aria-hidden="true" tabindex="-1"></a>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"error":{"editor":"text","default":""},"name":{"editor":"text","default":""},"code":{"editor":"text","default":""},"$preview":{"width":1200,"height":900}}'>
+<script type="text/x-dc" data-dc-script data-props='{"error":{"editor":"text","default":""},"code":{"editor":"text","default":""},"$preview":{"width":1200,"height":900}}'>
 class Component extends DCLogic {
   constructor(props) {
     super(props);
@@ -99,24 +123,69 @@ class Component extends DCLogic {
       const saved = parseInt(localStorage.getItem('picomon.battleSize'), 10);
       if ([3, 4, 6].includes(saved)) size = saved;
     } catch (e) {}
-    this.state = { name: props.name || '', code: props.code || '', error: props.error || '', size };
+    // Your trainer: the one you picked on Choose a Trainer, or a random one the first
+    // time (prototype only, via localStorage; the app keeps it with the player)
+    let trainer = null;
+    try { trainer = localStorage.getItem('picomon.trainer'); } catch (e) {}
+    // Draft type, chosen by the host: standard by default (prototype only, via localStorage)
+    let draft = 'standard';
+    try {
+      const saved = localStorage.getItem('picomon.draftType');
+      if (['standard', 'unlimited', 'pokeball'].includes(saved)) draft = saved;
+    } catch (e) {}
+    this.state = { code: props.code || '', error: props.error || '', size, trainer, draft };
   }
   renderVals() {
+    // public/sprites/trainers: [file name, blob id]. The name is the file name in title case.
+    // Order: Gold, Kris, Silver; Johto gym leaders; Johto Elite Four and champion;
+    // Kanto gym leaders (as in Gold/Silver); Red; the rest of Kanto's Elite Four; Giovanni
+    const TRAINERS = [
+      ['gold', '7f637d61cab3e8387ee08d8d25e9aaff'],
+      ['kris', 'c76b836c1bfafdbd78deeff9250a2095'],
+      ['silver', '8dd7d340721b49346e7d79dd082fbf28'],
+      ['falkner', '3633e800b02d55550e59ce2c19661332'],
+      ['bugsy', '2c34c60ea3b7d0e560ecee5f8882649c'],
+      ['whitney', '3f1d1e51f188d576cdf6ff213244de92'],
+      ['morty', '31c7c66349950053d289e7009b0cef41'],
+      ['chuck', 'ef6a283f9174874dcefcfd29675ab0e8'],
+      ['jasmine', 'ab587a0fea49e1e45d255933a2a9b20f'],
+      ['pryce', '57019ed49172f8938e4e86b36b6d4563'],
+      ['clair', 'eec8625311a09aa930d1723b3599577a'],
+      ['will', 'bcb5249fab074b00df80918074911aab'],
+      ['koga', '3136d5c922788f1acc09f150aed31e3a'],
+      ['bruno', '6631192fbea7e4aa039ca91b9cf07022'],
+      ['karen', '849cce6ecd797a181b1a8e27a2d104f8'],
+      ['lance', 'b295f6a618643524a9cff8a444cd7bac'],
+      ['brock', '274e0824a621ddde57e070372450a1c9'],
+      ['misty', '652b71cb448e2cac7967510c0f3e536e'],
+      ['lt_surge', 'c4df8e31b8efae8697939eabb05b9f80'],
+      ['erika', '7732cb788bc91f428fae8f78c4bc6760'],
+      ['janine', '23d0dc64e78dd6952e8daff8be2f8c9a'],
+      ['sabrina', '34326cb277f15d19c7b72abbc55ab960'],
+      ['blaine', '71f4fc3456a69c5cffbe00e89a2f2f14'],
+      ['blue', 'e3b1a84563374ad85508630487a1b2cb'],
+      ['red', '54b041d4226b8eb651ebf309fb29c2ae'],
+      ['lorelei', '98d1406c9bd7119af50f4d63130141ae'],
+      ['agatha', 'fa3130ff22b78328859c618dbaeae44c'],
+      ['giovanni', '18da1034643f5b00a284aab3d6bf6e40']
+    ];
+    const title = (key) => key.split('_').map((w) => w[0].toUpperCase() + w.slice(1)).join(' ');
+    let key = this.state.trainer;
+    if (!TRAINERS.some(([k]) => k === key)) {
+      key = TRAINERS[Math.floor(Math.random() * TRAINERS.length)][0];
+      try { localStorage.setItem('picomon.trainer', key); } catch (e) {}
+      this.state.trainer = key;
+    }
+    const trainer = { name: title(key), src: '/_blob/' + TRAINERS.find(([k]) => k === key)[1] };
     const ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-    const { name, code, error } = this.state;
+    const { code, error } = this.state;
     const fail = (e) => this.setState({ error: e });
-    const validName = () => {
-      const n = name.trim();
-      return n.length >= 1 && n.length <= 10;
-    };
     const host = () => {
-      if (!validName()) return fail('name');
       this.setState({ error: '' });
       if (this.goHost) this.goHost.click();
     };
     const submit = (e) => {
       e.preventDefault();
-      if (!validName()) return fail('name');
       const c = code.trim().toUpperCase();
       if (c.length !== 4) return fail('code');
       if (![...c].every((ch) => ALPHABET.includes(ch))) return fail('not-found');
@@ -125,8 +194,7 @@ class Component extends DCLogic {
     };
 
     const MSG = {
-      '': ['Enter your name, then host a', 'room or join one with a code.'],
-      name: ['Enter a name.', 'It can be 1-10 characters.'],
+      '': ['Host a room, or enter a', 'room code to join one.'],
       code: ['Enter a 4-character', 'room code.'],
       'not-found': ['Room not found.', 'Check the code and try again.']
     };
@@ -143,9 +211,18 @@ class Component extends DCLogic {
       }
     }));
 
+    const drafts = [['standard', 'Standard Draft'], ['unlimited', 'Unlimited Draft'], ['pokeball', 'Poké Ball Draft']].map(([value, label]) => ({
+      value,
+      label,
+      checked: this.state.draft === value,
+      pick: () => {
+        try { localStorage.setItem('picomon.draftType', value); } catch (e) {}
+        this.setState({ draft: value });
+      }
+    }));
+
     return {
-      name, code, msg1, msg2, host, submit, sizes,
-      setName: (e) => this.setState({ name: e.target.value }),
+      code, msg1, msg2, host, submit, sizes, drafts, trainer,
       setCode: (e) => this.setState({ code: e.target.value.toUpperCase() }),
       setGoHost: (el) => { this.goHost = el; },
       setGoJoin: (el) => { this.goJoin = el; }

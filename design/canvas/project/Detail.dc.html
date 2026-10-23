@@ -256,7 +256,7 @@ class Component extends DCLogic {
       mon,
       prev: () => go(-1),
       next: () => go(1),
-      title: battle ? "GOLD'S POKéMON" : viewOnly ? 'RENTED BY ' + String(this.props.rentedBy || 'GOLD').toUpperCase() : "GOLD'S CHOICE",
+      title: battle ? "GOLD'S POKéMON" : viewOnly ? 'RENTED BY ' + String(this.props.rentedBy || 'GOLD').toUpperCase() : 'YOUR CHOICE',
       canRent: !viewOnly && !battle,
       // A fainted Pokémon can't be sent out
       canSwitch: battle && hpNow > 0,

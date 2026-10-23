@@ -99,7 +99,9 @@ Home ──JOIN──▶ Lobby (full)
 
 | Board | File | What it shows |
 |---|---|---|
-| 0a Host or join | `Home.dc.html` | Name field, HOST, room code field, JOIN, message box |
+| 0a Host or join | `Home.dc.html` | HOST, battle size; room code field, JOIN, RULES; your trainer and CHANGE; message box |
+| 0e Draft rules | `Rules.dc.html` | The draft rules as a bulleted list, BACK |
+| 0f Choose a trainer | `Trainers.dc.html` | 4-column scrolling grid of trainers; picking one returns to Home |
 | 0b Join error | `HomeError.dc.html` | `Home` with `error="not-found"` |
 | 0c Waiting room | `Lobby.dc.html` | Room code cells, COPY, players list with empty P2 |
 | 0d Both players in | `LobbyFull.dc.html` | `Lobby` with `full`: both players, START BATTLE |
@@ -110,6 +112,7 @@ Home ──JOIN──▶ Lobby (full)
 | 2c Draft after rentals | `DraftRented.dc.html` | `Draft` with P1 and P2 rentals shown as pokéballs |
 | 2e Draft complete | `DraftDone.dc.html` | `Draft` with all 12 picks made: START BATTLE in the bottom box |
 | 2f Detail, view only | `DetailRented.dc.html` | `Detail` with `viewOnly` and `rentedBy="GOLD"`: opened from a team slot, BACK only |
+| 2g Poké Ball draft | `DraftPokeBall.dc.html` | `Draft` with `draft="pokeball"`: only Poké Ball tier Pokémon in the pool |
 | 3a Choose your order | `TeamOrder.dc.html` | Both teams in columns, pick your battle order into the pokéball slots |
 | 3b Locked in | `TeamOrderLocked.dc.html` | `TeamOrder` with your full order chosen and the opponent 4 of 6 in |
 | 4a Battle intro | `Battle.dc.html` | Plays the intro: "<NAME> wants to battle!", send-outs, an ability, then the menu |
@@ -135,12 +138,25 @@ exception is the lobby's players list, which keeps short red P1 / blue P2 labels
 beside the names.
 
 ### Home (`Home.dc.html`)
-- Name field: 1–10 characters, shown uppercase. The cap is 10 so the longest
-  name fits at 32px in every title and the type-select centre gap (the app's
-  `lib/names.ts` currently allows 12 and needs lowering to match).
+- No name field any more: your **trainer's name is your player name**. Keep the
+  name field's styles and component in the app (unused) in case it comes back.
+- The form box fills the content width (1056px, 72px from each side) and holds
+  three equal columns 48px apart, with 30px/42px padding. The controls inside keep
+  their sizes (buttons 240×108, code field 240px).
+  1. NEW ROOM: label and "Host a room and share its code." (16px, wraps to two
+     lines), HOST (dark primary), the battle size radios, then the draft type
+     radios.
+  2. ROOM CODE: the code field, JOIN, then RULES at the bottom of the column, level
+     with CHANGE.
+  3. TRAINER: label, the trainer's name (24px, title case, e.g. "Lt Surge"), a
+     240×204 Crystal frame with the trainer sprite at 168px centred in it, then
+     CHANGE.
+- Trainer: a random one the first time; after that whoever you last chose on
+  Choose a Trainer. CHANGE opens Choose a Trainer.
+- RULES opens Draft Rules.
 - Room code field: 4 characters from `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (matches
   `lib/codes.ts`).
-- HOST (dark primary button) validates the name, then creates a room.
+- HOST creates a room; there's no name to validate any more.
 - Battle size: three radio options under HOST: 3V3, 4V4 and 6V6 (6V6 selected
   by default). They sit on one 32px row, 24px apart, grouped as "Battle size" for
   screen readers.
@@ -149,23 +165,78 @@ beside the names.
   - The host's choice sets how many Pokémon each player sends into battle, which
     is the number of slots on the Battle order screen. It doesn't change the
     draft: each player always drafts 6.
-  - The form's padding and gaps are 30/24px (not 36px) so the extra row fits.
-- JOIN (submit, so Enter joins) validates the name and code, then joins.
+- Draft type: three radios stacked vertically under the battle size: "Standard
+  Draft" (selected by default), "Unlimited Draft" and "Poké Ball Draft". Same 24px
+  pixel radios and 16px labels as the battle size, each row 32px tall and 8px
+  apart, 24px below the battle size row, grouped as "Draft type" for screen
+  readers. The host's choice is stored on the room. What each type changes about
+  the draft isn't designed yet.
+- JOIN (submit, so Enter joins) validates the code, then joins.
 - The message box at the bottom shows the hint or the error:
-  - default: "Enter your name, then host a / room or join one with a code."
-  - no name: "Enter a name. / It can be 1-10 characters."
+  - default: "Host a room, or enter a / room code to join one."
   - wrong code length: "Enter a 4-character / room code."
   - unknown room: "Room not found. / Check the code and try again."
   - room full (from the server, no design copy): "Room is full." with a blank
     second line
   - any other failure: "Something went wrong. / Try again."
-- The name field is limited to 10 characters and the code field to 4.
+- The code field is limited to 4 characters.
+
+### Draft rules (`Rules.dc.html`)
+- Title "DRAFT RULES", a Crystal frame filling the space below it (30px/42px
+  padding), then BACK centred underneath, which returns to Home. The page padding
+  is 36px top and bottom, with 24px gaps.
+- The rules are bulleted lists, 24px text on 36px lines, 12px between rules. Each
+  bullet is a 12px ink square, 24px left of the text. Rules for every draft come
+  first, then a left-aligned 24px heading for each draft type with its own rules
+  below (24px above each heading, 12px below):
+  - Each POKéMON can only be picked once.
+  - The first player picks 1 POKéMON. Then each player picks 2 until both have 6.
+  - Only one of each held item per team.
+  - **Standard Draft**
+    - Only 1 [Ultra Ball icon] Ultra Ball POKéMON per team.
+    - Only 1 [Master Ball icon] Master Ball POKéMON per team.
+  - **Unlimited Draft**
+    - No limits to rank of POKéMON.
+  - **Poké Ball Draft**
+    - Only [Poké Ball icon] Poké Ball POKéMON allowed.
+- The ball icons are `icon-ultraball.png`, `icon-masterball.png` and
+  `icon-pokeballball.png` at 32px, inline before the ball's name.
+- The draft types match the Home radios (Standard, Unlimited, Poké Ball).
+- The second rule says "the first player", not "Player 1", following the player
+  names rule.
+
+### Choose a trainer (`Trainers.dc.html`)
+- Title "CHOOSE A TRAINER", then a 744px-tall scrolling grid with the same custom
+  pixel scrollbar as the draft (36px wide, 12px gap, up/down buttons, dithered
+  track, draggable thumb).
+- 4 columns. Each trainer is a 240px button: the name (24px, title case) above the
+  sprite (168px), 12px vertical padding, rows 12px apart. Light grey on hover; your
+  current trainer has the Crystal double-line frame.
+- Clicking a trainer makes it yours and returns to Home.
+- Order: Gold, Kris, Silver; the Johto gym leaders (Falkner, Bugsy, Whitney,
+  Morty, Chuck, Jasmine, Pryce, Clair); the Johto Elite Four and champion (Will,
+  Koga, Bruno, Karen, Lance); the Kanto gym leaders as in Gold/Silver (Brock,
+  Misty, Lt Surge, Erika, Janine, Sabrina, Blaine, Blue); Red; the rest of
+  Kanto's Elite Four (Lorelei, Agatha; Bruno and Lance are already listed); Giovanni.
+- Trainers are the files in `public/sprites/trainers/` (112px PNGs, drawn at 1.5×);
+  the name is the file name in title case with `_` as a space (`lt_surge.png` →
+  "Lt Surge"). All names are 10 characters or fewer.
+- The chosen trainer's name is the player's name everywhere a name appears
+  (uppercase in titles and lists, e.g. the lobby's "LT SURGE"), replacing the old
+  name field value through the same flow: it's sent when hosting or joining and
+  stored on the room. The prototype hands it between boards in `localStorage` key
+  `picomon.trainer`; only the lobby reads it, the later boards still show GOLD.
 
 ### Lobby (`Lobby.dc.html`)
 - Waiting: title "WAITING ROOM", the code as four framed 96×120 letter cells, and a
   COPY button that copies the code and shows "COPIED!" for 1.5s. The app shows
   "COPIED!" only once the copy succeeds. COPY is 300px wide so it fits "COPIED!"
-  without resizing.
+  without resizing. It sits right after the letter cells, 24px from the last one
+  (not pushed to the right edge).
+- On the right of the room code box, right-aligned and vertically centred on the
+  letter cells: the host's battle size ("6V6", 32px on a 48px line) over their
+  draft type ("Standard Draft", 16px on a 32px line, one line). Both lobby states
+  show it, so the guest sees the host's choices too.
 - Players list: a red `P1` label (`#C03028`, 48px wide) then the host's name with a
   HOST tag, and a blue `P2` label (`#2860B8`) then the guest's name, shown as
   `- - - - - -` until someone joins. The labels appear only in this list (0c and
@@ -194,7 +265,15 @@ beside the names.
   choosing the order...". A draw shows an AGAIN button that resets.
 
 ### Draft (`Draft.dc.html`)
-- Title: "<NAME>'S CHOICE" with the name of whoever's turn it is.
+- Draft type changes the pool. In a Poké Ball draft (2g) the grid shows only Poké
+  Ball tier Pokémon: those with none of `isGreat`, `isUltra` or `isMaster` in
+  `data/pokemon`. That's 38 right now (Arbok to Wobbuffet, alphabetical in the
+  design), so the grid is 5 rows and still scrolls. Every Pokémon's info box shows
+  the Poké Ball icon. Standard and Unlimited use the full pool.
+- Title: "YOUR CHOICE" on your turn, "<NAME>'S CHOICE" (the opponent's name) on
+  theirs, "DRAFT COMPLETE" at the end. Saying YOUR keeps it clear even when both
+  players picked the same trainer. Detail opened during your turn says "YOUR
+  CHOICE" too.
 - Team strip: six 64px slots per player (P1 left, P2 right). Picked slots show the
   Pokémon's icon, empty slots a faint pokéball.
   - Above the strip of whoever's turn it is, "N PICKS" (or "1 PICK") shows how
