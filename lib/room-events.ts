@@ -173,11 +173,12 @@ export function progress(state: RoomState): number {
 
 /** The parts of the state two clients must agree on, as a comparable string. */
 export function stateKey(state: RoomState): string {
-  const { phase, battleSize, players, typeBattle: tb, draft, battle } = state;
+  const { phase, battleSize, draftType, players, typeBattle: tb, draft, battle } = state;
   return JSON.stringify({
     phase,
     battleSize,
-    players: players.map((p) => [p.id, p.name, p.slot]),
+    draftType,
+    players: players.map((p) => [p.id, p.name, p.trainer, p.slot]),
     typeBattle: tb && [tb.round, tb.yourPick, tb.opponentPick, tb.winner, tb.firstDrafter],
     draft: draft && [draft.firstDrafter, draft.picks.map((p) => [p.slot, p.pokemonId])],
     battle: battle && [battle.stage, battle.result?.winner, battle.result?.reason],

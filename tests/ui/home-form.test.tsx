@@ -20,42 +20,29 @@ function expectMessage(line1: string, line2: string) {
 }
 
 beforeEach(() => {
+  // Your trainer, as remembered from Choose a Trainer.
+  localStorage.setItem("picomon.trainer", "lt_surge");
   push.mockReset();
   vi.unstubAllGlobals();
 });
 
 describe("HomeForm", () => {
-  it("shows name error when hosting with blank name", async () => {
-    const fetchFn = mockFetch(201, { code: "K7PQ" });
-    render(<HomeForm />);
-    await userEvent.click(screen.getByRole("button", { name: "HOST" }));
-    expectMessage("Enter a name.", "It can be 1-10 characters.");
-    expect(fetchFn).not.toHaveBeenCalled();
-  });
-
   it("shows code error when joining without a code", async () => {
     const fetchFn = mockFetch(200, { code: "K7PQ" });
     render(<HomeForm />);
-    await userEvent.type(screen.getByLabelText("NAME"), "Ash");
     await userEvent.click(screen.getByRole("button", { name: "JOIN" }));
     expectMessage("Enter a 4-character", "room code.");
     expect(fetchFn).not.toHaveBeenCalled();
   });
 
-  it("limits the name field to 10 characters", () => {
-    render(<HomeForm />);
-    expect(screen.getByLabelText("NAME")).toHaveAttribute("maxLength", "10");
-  });
-
   it("shows the hint before any error", () => {
     render(<HomeForm />);
-    expectMessage("Enter your name, then host a", "room or join one with a code.");
+    expectMessage("Host a room, or enter a", "room code to join one.");
   });
 
   it('shows "Room not found." for a 4-character code with excluded characters', async () => {
     const fetchFn = mockFetch(200, { code: "K7PQ" });
     render(<HomeForm />);
-    await userEvent.type(screen.getByLabelText("NAME"), "Ash");
     await userEvent.type(screen.getByLabelText("ROOM CODE"), "K0PQ");
     await userEvent.click(screen.getByRole("button", { name: "JOIN" }));
     expectMessage("Room not found.", "Check the code and try again.");
@@ -65,7 +52,6 @@ describe("HomeForm", () => {
   it("joins when Enter is pressed in the code field", async () => {
     const fetchFn = mockFetch(200, { code: "K7PQ" });
     render(<HomeForm />);
-    await userEvent.type(screen.getByLabelText("NAME"), "Ash");
     await userEvent.type(screen.getByLabelText("ROOM CODE"), "k7pq{Enter}");
     await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/room/K7PQ"));
     expect(fetchFn).toHaveBeenCalledWith("/api/rooms/K7PQ/join", expect.anything());
@@ -74,7 +60,6 @@ describe("HomeForm", () => {
   it('shows "Room is full." from a 409', async () => {
     mockFetch(409, { error: "Room is full." });
     render(<HomeForm />);
-    await userEvent.type(screen.getByLabelText("NAME"), "Ash");
     await userEvent.type(screen.getByLabelText("ROOM CODE"), "k7pq");
     await userEvent.click(screen.getByRole("button", { name: "JOIN" }));
     expect(await screen.findByText("Room is full.")).toBeInTheDocument();
@@ -84,7 +69,6 @@ describe("HomeForm", () => {
   it("navigates to /room/K7PQ after hosting", async () => {
     mockFetch(201, { code: "K7PQ" });
     render(<HomeForm />);
-    await userEvent.type(screen.getByLabelText("NAME"), "Ash");
     await userEvent.click(screen.getByRole("button", { name: "HOST" }));
     await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/room/K7PQ"));
   });
@@ -93,18 +77,16 @@ describe("HomeForm", () => {
     const fetchFn = mockFetch(201, { code: "K7PQ" });
     render(<HomeForm />);
     expect(screen.getByRole("radio", { name: "6V6" })).toBeChecked();
-    await userEvent.type(screen.getByLabelText("NAME"), "Ash");
     await userEvent.click(screen.getByRole("radio", { name: "4V4" }));
     await userEvent.click(screen.getByRole("button", { name: "HOST" }));
     await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/room/K7PQ"));
     const [, init] = fetchFn.mock.calls[0] as unknown as [string, RequestInit];
-    expect(JSON.parse(init.body as string)).toEqual({ name: "Ash", battleSize: 4 });
+    expect(JSON.parse(init.body as string)).toEqual({ trainer: "lt_surge", battleSize: 4, draftType: "standard" });
   });
 
   it('shows "Room not found." from a 404', async () => {
     mockFetch(404, { error: "Room not found." });
     render(<HomeForm />);
-    await userEvent.type(screen.getByLabelText("NAME"), "Ash");
     await userEvent.type(screen.getByLabelText("ROOM CODE"), "k7pq");
     await userEvent.click(screen.getByRole("button", { name: "JOIN" }));
     expect(await screen.findByText("Room not found.")).toBeInTheDocument();
@@ -114,7 +96,6 @@ describe("HomeForm", () => {
   it("shows a generic error from a 500", async () => {
     mockFetch(500, {});
     render(<HomeForm />);
-    await userEvent.type(screen.getByLabelText("NAME"), "Ash");
     await userEvent.click(screen.getByRole("button", { name: "HOST" }));
     expect(await screen.findByText("Something went wrong.")).toBeInTheDocument();
     expectMessage("Something went wrong.", "Try again.");
@@ -137,7 +118,6 @@ describe("HomeForm when preserved by Activity", () => {
       </Activity>
     );
     const { rerender } = render(ui("visible"));
-    await userEvent.type(screen.getByLabelText("NAME"), "Ash");
     await userEvent.click(screen.getByRole("button", { name: "HOST" }));
     await vi.waitFor(() => expect(push).toHaveBeenCalled());
     expect(screen.getByRole("button", { name: "HOST" })).toBeDisabled();

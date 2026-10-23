@@ -87,6 +87,8 @@
   font: inherit;
   font-size: 24px;
   color: var(--ink);
+  /* `ButtonLink` renders an <a>. */
+  text-decoration: none;
   @include crystal-frame;
   cursor: pointer;
 
@@ -122,8 +124,9 @@
     fill: var(--bg);
   }
 
-  &:enabled:hover &__cursor,
-  &:enabled:focus-visible &__cursor {
+  /* :not(:disabled) also matches links, which are never :enabled. */
+  &:not(:disabled):hover &__cursor,
+  &:not(:disabled):focus-visible &__cursor {
     visibility: visible;
   }
 }
@@ -145,6 +148,18 @@
     font-size: 16px;
     line-height: 24px;
     cursor: pointer;
+  }
+
+  /* Stacked: one 32px row per option, 8px apart (the draft type). */
+  &--vertical {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    height: auto;
+  }
+
+  &--vertical &__option {
+    height: 32px;
   }
 
   &__input {
@@ -218,10 +233,27 @@
       calc(100% - 3px) calc(100% - 3px), calc(100% - 3px) 100%, 0 100%);
   }
 
+  /* Green; yellow below 51%, red below 15%. */
   &__fill {
     height: 100%;
     background: #40c048;
+
+    &--low {
+      background: #f8b830;
+    }
+
+    &--critical {
+      background: #e04030;
+    }
   }
+}
+
+/* The 64×24 status slot (left of the level in battle, beside "HP" on Detail). Always
+   reserved so nothing moves; empty outside battle. */
+.statusSlot {
+  display: flex;
+  flex: none;
+  height: 24px;
 }
 
 /* Shows one frame of a two-frame sprite sheet at a time. */

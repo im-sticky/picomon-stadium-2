@@ -181,6 +181,17 @@
     width: 216px;
   }
 
+  /* Above the bar's left end. */
+  &__status {
+    width: 216px;
+  }
+
+  &__hpNumbers {
+    font-size: 16px;
+    line-height: 24px;
+    text-align: right;
+  }
+
   &__baseRow {
     display: grid;
     grid-template-columns: 168px 84px 1fr;

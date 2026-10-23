@@ -3,15 +3,15 @@ import { applyEvent, isWaitingOnOpponent, parseRoomEvent, progress, stateKey, ty
 import type { DraftPick, PublicPlayer, RoomState, TypeBattleView } from "@/lib/types";
 
 const players: PublicPlayer[] = [
-  { id: "a", name: "Ash", slot: 1 },
-  { id: "b", name: "Bea", slot: 2 },
+  { id: "a", name: "Ash", trainer: null, slot: 1 },
+  { id: "b", name: "Bea", trainer: null, slot: 2 },
 ];
 const lobby: RoomState = {
   code: "ABCD",
   you: { id: "a", slot: 1 },
   players,
   phase: "lobby",
-  battleSize: 6,
+  battleSize: 6, draftType: "standard",
   typeBattle: null,
   draft: null,
   battle: null,

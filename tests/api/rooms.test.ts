@@ -46,8 +46,8 @@ function cookieOf(res: Response): string {
   return (res.headers.get('set-cookie') ?? '').split(';')[0];
 }
 
-async function host(name = 'Ash') {
-  const res = await createRoomRoute(req('/api/rooms', 'POST', { name }));
+async function host(trainer = 'gold', settings: object = {}) {
+  const res = await createRoomRoute(req('/api/rooms', 'POST', { trainer, ...settings }));
   const { code } = await res.json();
   return { code: code as string, cookie: cookieOf(res), res };
 }
@@ -68,28 +68,51 @@ describe('rooms API', () => {
     expect(sc).toContain('HttpOnly');
   });
 
-  it('create with blank name is 400', async () => {
-    const res = await createRoomRoute(req('/api/rooms', 'POST', { name: '  ' }));
+  it.each([undefined, '', 'Gold', 'ash', 42])('create with trainer %j is 400', async (trainer) => {
+    const res = await createRoomRoute(req('/api/rooms', 'POST', { trainer }));
     expect(res.status).toBe(400);
-    expect(await res.json()).toEqual({ error: 'invalid-name' });
+    expect(await res.json()).toEqual({ error: 'invalid-trainer' });
   });
 
-  it('create with an 11-character name is 400', async () => {
-    const res = await createRoomRoute(req('/api/rooms', 'POST', { name: 'a'.repeat(11) }));
-    expect(res.status).toBe(400);
-    expect(await res.json()).toEqual({ error: 'invalid-name' });
+  it("stores each player's trainer and its name, and both players may be the same trainer", async () => {
+    const { code, cookie } = await host('lt_surge');
+    const joined = await joinRoute(req(`/api/rooms/${code}/join`, 'POST', { trainer: 'lt_surge' }), ctx(code));
+    expect(joined.status).toBe(200);
+    for (const c of [cookie, cookieOf(joined)]) {
+      const state = await stateRoute(req(`/api/rooms/${code}`, 'GET', undefined, c), ctx(code));
+      expect((await state.json()).players).toEqual([
+        expect.objectContaining({ slot: 1, name: 'Lt Surge', trainer: 'lt_surge' }),
+        expect.objectContaining({ slot: 2, name: 'Lt Surge', trainer: 'lt_surge' }),
+      ]);
+    }
   });
 
-  it('create with a 10-character name is 201', async () => {
-    const res = await createRoomRoute(req('/api/rooms', 'POST', { name: 'a'.repeat(10) }));
-    expect(res.status).toBe(201);
+  it.each(['standard', 'unlimited', 'pokeball'])('a %s draft room reports its draft type to both players', async (draftType) => {
+    const { code, cookie } = await host('gold', { draftType });
+    const joined = await joinRoute(req(`/api/rooms/${code}/join`, 'POST', { trainer: 'silver' }), ctx(code));
+    for (const c of [cookie, cookieOf(joined)]) {
+      const state = await stateRoute(req(`/api/rooms/${code}`, 'GET', undefined, c), ctx(code));
+      expect((await state.json()).draftType).toBe(draftType);
+    }
+  });
+
+  it('create without a draft type defaults to standard', async () => {
+    const { code, cookie } = await host();
+    const state = await stateRoute(req(`/api/rooms/${code}`, 'GET', undefined, cookie), ctx(code));
+    expect((await state.json()).draftType).toBe('standard');
+  });
+
+  it.each(['Standard', 'poke-ball', null, 1])('create with draft type %j is 400', async (draftType) => {
+    const res = await createRoomRoute(req('/api/rooms', 'POST', { trainer: 'gold', draftType }));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: 'invalid-draft-type' });
   });
 
   it.each([3, 4, 6])('a %iv%i room reports its size to both players', async (size) => {
-    const res = await createRoomRoute(req('/api/rooms', 'POST', { name: 'Ash', battleSize: size }));
+    const res = await createRoomRoute(req('/api/rooms', 'POST', { trainer: 'gold', battleSize: size }));
     expect(res.status).toBe(201);
     const { code } = await res.json();
-    const joined = await joinRoute(req(`/api/rooms/${code}/join`, 'POST', { name: 'Misty' }), ctx(code));
+    const joined = await joinRoute(req(`/api/rooms/${code}/join`, 'POST', { trainer: 'misty' }), ctx(code));
     for (const cookie of [cookieOf(res), cookieOf(joined)]) {
       const state = await stateRoute(req(`/api/rooms/${code}`, 'GET', undefined, cookie), ctx(code));
       expect((await state.json()).battleSize).toBe(size);
@@ -103,7 +126,7 @@ describe('rooms API', () => {
   });
 
   it.each([5, 0, '4', null, 4.5])('create with battle size %j is 400', async (battleSize) => {
-    const res = await createRoomRoute(req('/api/rooms', 'POST', { name: 'Ash', battleSize }));
+    const res = await createRoomRoute(req('/api/rooms', 'POST', { trainer: 'gold', battleSize }));
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({ error: 'invalid-battle-size' });
   });
@@ -111,7 +134,7 @@ describe('rooms API', () => {
   it('friend joins with lowercase code', async () => {
     const { code } = await host();
     const res = await joinRoute(
-      req(`/api/rooms/${code.toLowerCase()}/join`, 'POST', { name: 'Misty' }),
+      req(`/api/rooms/${code.toLowerCase()}/join`, 'POST', { trainer: 'misty' }),
       ctx(code.toLowerCase()),
     );
     expect(res.status).toBe(200);
@@ -119,43 +142,37 @@ describe('rooms API', () => {
     expect(res.headers.get('set-cookie')).toContain('picomon_player=');
     expect(publishPlayerJoined).toHaveBeenCalledTimes(1);
     expect(publishPlayerJoined).toHaveBeenCalledWith(code, [
-      expect.objectContaining({ slot: 1, name: 'Ash' }),
-      expect.objectContaining({ slot: 2, name: 'Misty' }),
+      expect.objectContaining({ slot: 1, name: 'Gold', trainer: 'gold' }),
+      expect.objectContaining({ slot: 2, name: 'Misty', trainer: 'misty' }),
     ]);
   });
 
   it('third person gets 409 Room is full.', async () => {
     const { code } = await host();
-    await joinRoute(req(`/api/rooms/${code}/join`, 'POST', { name: 'Misty' }), ctx(code));
-    const res = await joinRoute(req(`/api/rooms/${code}/join`, 'POST', { name: 'Brock' }), ctx(code));
+    await joinRoute(req(`/api/rooms/${code}/join`, 'POST', { trainer: 'misty' }), ctx(code));
+    const res = await joinRoute(req(`/api/rooms/${code}/join`, 'POST', { trainer: 'brock' }), ctx(code));
     expect(res.status).toBe(409);
     expect(await res.json()).toEqual({ error: 'Room is full.' });
   });
 
   it('unknown code gets 404 Room not found.', async () => {
-    const res = await joinRoute(req('/api/rooms/ZZZZ/join', 'POST', { name: 'Misty' }), ctx('ZZZZ'));
+    const res = await joinRoute(req('/api/rooms/ZZZZ/join', 'POST', { trainer: 'misty' }), ctx('ZZZZ'));
     expect(res.status).toBe(404);
     expect(await res.json()).toEqual({ error: 'Room not found.' });
-    const bad = await joinRoute(req('/api/rooms/!!/join', 'POST', { name: 'Misty' }), ctx('!!'));
+    const bad = await joinRoute(req('/api/rooms/!!/join', 'POST', { trainer: 'misty' }), ctx('!!'));
     expect(bad.status).toBe(404);
   });
 
-  it('join with invalid name is 400', async () => {
+  it.each([undefined, '', 'Misty', 'a'.repeat(11)])('join with trainer %j is 400', async (trainer) => {
     const { code } = await host();
-    const res = await joinRoute(req(`/api/rooms/${code}/join`, 'POST', { name: '' }), ctx(code));
+    const res = await joinRoute(req(`/api/rooms/${code}/join`, 'POST', { trainer }), ctx(code));
     expect(res.status).toBe(400);
-  });
-
-  it('join with an 11-character name is 400', async () => {
-    const { code } = await host();
-    const res = await joinRoute(req(`/api/rooms/${code}/join`, 'POST', { name: 'a'.repeat(11) }), ctx(code));
-    expect(res.status).toBe(400);
-    expect(await res.json()).toEqual({ error: 'invalid-name' });
+    expect(await res.json()).toEqual({ error: 'invalid-trainer' });
   });
 
   it('host re-entering own code gets 200 and no publish', async () => {
     const { code, cookie } = await host();
-    const res = await joinRoute(req(`/api/rooms/${code}/join`, 'POST', { name: 'Ash' }, cookie), ctx(code));
+    const res = await joinRoute(req(`/api/rooms/${code}/join`, 'POST', { trainer: 'gold' }, cookie), ctx(code));
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ code });
     expect(res.headers.get('set-cookie')).toBeNull();
@@ -166,7 +183,7 @@ describe('rooms API', () => {
     vi.mocked(publishPlayerJoined).mockRejectedValue(new Error('ably down'));
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const { code } = await host();
-    const res = await joinRoute(req(`/api/rooms/${code}/join`, 'POST', { name: 'Misty' }), ctx(code));
+    const res = await joinRoute(req(`/api/rooms/${code}/join`, 'POST', { trainer: 'misty' }), ctx(code));
     expect(res.status).toBe(200);
     expect(res.headers.get('set-cookie')).toBeTruthy();
     expect(spy).toHaveBeenCalled();
@@ -175,7 +192,7 @@ describe('rooms API', () => {
 
   it('GET room state with host cookie returns both players', async () => {
     const { code, cookie } = await host();
-    await joinRoute(req(`/api/rooms/${code}/join`, 'POST', { name: 'Misty' }), ctx(code));
+    await joinRoute(req(`/api/rooms/${code}/join`, 'POST', { trainer: 'misty' }), ctx(code));
     const res = await stateRoute(req(`/api/rooms/${code}`, 'GET', undefined, cookie), ctx(code));
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -192,8 +209,8 @@ describe('rooms API', () => {
   });
 
   it('GET with a cookie from another room is 404', async () => {
-    const a = await host('Ash');
-    const b = await host('Gary');
+    const a = await host('gold');
+    const b = await host('blue');
     const res = await stateRoute(req(`/api/rooms/${a.code}`, 'GET', undefined, b.cookie), ctx(a.code));
     expect(res.status).toBe(404);
   });
@@ -226,8 +243,8 @@ describe('rooms API', () => {
 
 describe('type battle API', () => {
   async function started() {
-    const h = await host('Ash');
-    const joined = await joinRoute(req(`/api/rooms/${h.code}/join`, 'POST', { name: 'Misty' }), ctx(h.code));
+    const h = await host('gold');
+    const joined = await joinRoute(req(`/api/rooms/${h.code}/join`, 'POST', { trainer: 'misty' }), ctx(h.code));
     const guest = cookieOf(joined);
     const res = await startRoute(req(`/api/rooms/${h.code}/start`, 'POST', {}, h.cookie), ctx(h.code));
     expect(res.status).toBe(200);
@@ -240,8 +257,8 @@ describe('type battle API', () => {
     (await stateRoute(req(`/api/rooms/${code}`, 'GET', undefined, cookie), ctx(code))).json();
 
   it('only the host can start; starting tells both players', async () => {
-    const h = await host('Ash');
-    const joined = await joinRoute(req(`/api/rooms/${h.code}/join`, 'POST', { name: 'Misty' }), ctx(h.code));
+    const h = await host('gold');
+    const joined = await joinRoute(req(`/api/rooms/${h.code}/join`, 'POST', { trainer: 'misty' }), ctx(h.code));
     const guest = cookieOf(joined);
     const asGuest = await startRoute(req(`/api/rooms/${h.code}/start`, 'POST', {}, guest), ctx(h.code));
     expect(asGuest.status).toBe(403);
@@ -347,5 +364,26 @@ describe('type battle API', () => {
     expect((await draftPick(guest, first)).status).toBe(409);
     expect((await getState(code, guest)).draft).toEqual({ firstDrafter: 1, picks: [{ slot: 1, pokemonId: first }] });
     expect((await draftPick(guest, second)).status).toBe(200);
+  });
+
+  it('a Poké Ball draft rejects a forced rent of a Pokémon outside its pool', async () => {
+    const h = await host('gold', { draftType: 'pokeball' });
+    const joined = await joinRoute(req(`/api/rooms/${h.code}/join`, 'POST', { trainer: 'gold' }), ctx(h.code));
+    const guest = cookieOf(joined);
+    await startRoute(req(`/api/rooms/${h.code}/start`, 'POST', {}, h.cookie), ctx(h.code));
+    await pick(h.code, h.cookie, 'grass');
+    await pick(h.code, guest, 'water');
+    await orderRoute(req(`/api/rooms/${h.code}/order`, 'POST', { order: 'first' }, h.cookie), ctx(h.code));
+    vi.mocked(notifyRoomEvent).mockClear();
+
+    const great = POKEMON.find((p) => p.isGreat && !p.isUltra && !p.isMaster)!.id;
+    const pokeBall = POKEMON.find((p) => !p.isGreat && !p.isUltra && !p.isMaster)!.id;
+    const draftPick = (pokemonId: string) =>
+      draftPickRoute(req(`/api/rooms/${h.code}/draft-pick`, 'POST', { pokemonId }, h.cookie), ctx(h.code));
+    const rejected = await draftPick(great);
+    expect(rejected.status).toBe(409);
+    expect(await rejected.json()).toEqual({ error: 'Only Poké Ball POKéMON allowed.' });
+    expect(notifyRoomEvent).not.toHaveBeenCalled();
+    expect((await draftPick(pokeBall)).status).toBe(200);
   });
 });
