@@ -307,7 +307,8 @@ export type TeamMember = {
 export type MoveOption = {
   move: number;                // 1-based; the body's `move`
   id: string; name: string;
-  pp: number; maxpp: number;   // base PP (§6.1)
+  pp: number | null; maxpp: number | null; // base PP (§6.1); null when the engine gives none:
+                               // a locked move (Outrage, a charge turn), Recharge, Struggle
   disabled: boolean; target: string;
 };
 
@@ -337,7 +338,7 @@ export type BattleView = {
 
 `playerRequest` maps the engine's `side.activeRequest` (research §14.4) into this shape:
 
-- `active[0].moves` becomes `moves`;
+- `active[0].moves` becomes `moves`. The engine leaves `pp`/`maxpp` out for a locked move, Recharge and Struggle; those are sent as null (not 0, which would read as "out of PP"), and the client treats them as usable;
 - `forceSwitch` becomes `switch`;
 - `wait` becomes `wait`;
 - `teamPreview` becomes `team`;
@@ -536,6 +537,8 @@ All events are published **after the commit**, in order, from the request that c
 The POST bodies above already carry `events` (exactly what was published) and the player's `view` (private, including the new request and their own lines with exact HP). The client applies both and skips the refetch, as in realtime spec §4.3.
 
 The **opponent** of the resolving player gets the public `battle-step` and starts animating its public lines straight away. It then fetches `GET …/battle?from=<step>` at once for its new request and its own exact-HP lines. The animation takes seconds and the fetch takes well under one, so the player never waits on it.
+
+**As built (battle screens):** the client fetches its own view first and plays its own lines (exact HP), and only plays the event's public lines if that view hasn't arrived 1.5 s after the event. The fetch is needed anyway for the request, and swapping the public lines for the private ones mid-playback isn't worth it; "Waiting for <OPP>..." stays up for the fraction of a second the fetch takes. While waiting on the opponent (or behind the server), the battle screen also re-fetches its view every 15 s, like room sync's idle check, in case a publish was lost.
 
 **Decision:** one shared channel plus a fetch for the private half. **Rejected for now:** a per-player private channel (`room:<code>:p<slot>`, with the token granting only your own). That would save the fetch, but it means a second capability, a second subscription and two more publishes per step for no visible gain (settled, §16).
 

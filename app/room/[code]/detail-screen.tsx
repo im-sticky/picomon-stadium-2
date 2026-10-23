@@ -48,6 +48,8 @@ function barColour(value: number): string {
  */
 export type BattleDetail = {
   member: TeamMember;
+  /** The item it holds now (after Knock Off or an eaten Berry), by name. */
+  item: string;
   clock: Clock | null;
   /** False for a fainted or active Pokémon, or when you can't switch. */
   canSwitch: boolean;
@@ -126,7 +128,7 @@ export function DetailScreen({
                 <TypeBadge key={t} type={t} />
               ))}
             </div>
-            <HeldItem item={pokemon.item} />
+            <HeldItem item={battle?.item ?? pokemon.item} />
           </div>
           <section aria-label="Ability" className={styles.detail__ability}>
             <p className={styles.detail__label}>ABILITY</p>

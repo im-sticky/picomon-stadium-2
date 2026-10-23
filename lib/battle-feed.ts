@@ -1,4 +1,4 @@
-import { GRACE_MS, type Asked, type BattleEvent, type BattleResult, type BattleView } from "@/lib/battle-types";
+import { GRACE_MS, type Asked, type BattleEvent, type BattleResult, type BattleView, type MoveOption } from "@/lib/battle-types";
 import type { Slot } from "@/lib/types";
 
 // Client-side ordering of battle steps (spec §9.4) and the countdown clock (§10.3).
@@ -120,3 +120,9 @@ export function timeoutDelay(clock: Clock, localNow: number, lastTrigger: number
   const due = clock.deadline + TIMEOUT_DELAY_MS - clock.offset;
   return Math.max(due - localNow, lastTrigger + TIMEOUT_EVERY_MS - localNow, 0);
 }
+
+/**
+ * Whether a move can be clicked: not disabled, and not out of PP. A move with no PP
+ * of its own (null: a locked move, Recharge, Struggle) is always usable.
+ */
+export const isMoveUsable = (move: Pick<MoveOption, "disabled" | "pp">) => !move.disabled && (move.pp === null || move.pp > 0);

@@ -84,6 +84,11 @@ export function RoomView({ code, pool }: { code: string; pool: readonly PoolPoke
             // The battle screen plays it; the room state refetch picks up a new stage.
             toBattle(step);
             onEvent(null);
+          } else if (typeof msg.name === "string" && msg.name.startsWith("battle-") && !parseRoomEvent(msg.data)) {
+            // A battle event this client can't read (battle-started is a room event): the
+            // battle screens resync from the server.
+            toBattle(null);
+            onEvent(null);
           } else if (msg.name === "player-joined") {
             onEvent(Array.isArray(players) ? { kind: "player-joined", players } : null);
           } else {

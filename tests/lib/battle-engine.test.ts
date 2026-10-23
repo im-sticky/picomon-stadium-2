@@ -113,6 +113,20 @@ describe('base PP', () => {
     expect(sludge(restoreBattle(serialize(engine)))).toMatchObject({ pp: 10, maxpp: 10 });
   });
 
+  it('a move with no PP of its own (Recharge, a locked Outrage) has null PP, not 0, and stays usable', () => {
+    const recharge = duel([set('Tauros', ['Hyper Beam', 'Outrage'])], [set('Blissey', ['Splash'])]);
+    turn(recharge, 'move 1', 'move 1');
+    const after = playerRequest(recharge.battle, 1);
+    expect(after).toMatchObject({ kind: 'move', moves: [{ move: 1, id: 'recharge', pp: null, maxpp: null, disabled: false }] });
+    expect(choose(recharge, 1, 'move 1')).toEqual({ ok: true });
+
+    const locked = duel([set('Tauros', ['Outrage', 'Hyper Beam'])], [set('Blissey', ['Splash'])]);
+    turn(locked, 'move 1', 'move 1');
+    const request = playerRequest(locked.battle, 1);
+    expect(request).toMatchObject({ kind: 'move', moves: [{ move: 1, id: 'outrage', pp: null, maxpp: null, disabled: false }] });
+    expect(choose(locked, 1, 'move 1')).toEqual({ ok: true });
+  });
+
   it("each team member carries its own PP left, the bench included, in its moves' order", () => {
     const engine = duel([set('Gengar', ['Shadow Ball', 'Splash']), set('Alakazam', ['Psychic'])], [set('Snorlax', ['Splash'])]);
     turn(engine, 'move 1', 'move 1');

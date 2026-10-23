@@ -43,8 +43,9 @@ export type MoveOption = {
   move: number;
   id: string;
   name: string;
-  pp: number;
-  maxpp: number;
+  /** Null when the move has no PP to show: a locked move (Outrage, a charge turn), Recharge, Struggle. */
+  pp: number | null;
+  maxpp: number | null;
   disabled: boolean;
   target: string;
 };

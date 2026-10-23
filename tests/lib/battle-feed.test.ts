@@ -3,6 +3,7 @@ import {
   clockFromEvent,
   clockFromView,
   formatClock,
+  isMoveUsable,
   newerClock,
   parseBattleStep,
   planEvent,
@@ -125,5 +126,16 @@ describe("the clock", () => {
     expect(timeoutDelay(clock, due, 0)).toBe(0);
     expect(timeoutDelay(clock, due + 500, due)).toBe(1_500);
     expect(timeoutDelay(clock, due + 5_000, due)).toBe(0);
+  });
+});
+
+describe("isMoveUsable", () => {
+  it("disables a disabled move or one out of PP, never one with no PP of its own", () => {
+    expect(isMoveUsable({ disabled: false, pp: 10 })).toBe(true);
+    expect(isMoveUsable({ disabled: false, pp: 0 })).toBe(false);
+    expect(isMoveUsable({ disabled: true, pp: 10 })).toBe(false);
+    // Recharge, a locked Outrage or Struggle: the request has no PP for them.
+    expect(isMoveUsable({ disabled: false, pp: null })).toBe(true);
+    expect(isMoveUsable({ disabled: true, pp: null })).toBe(false);
   });
 });

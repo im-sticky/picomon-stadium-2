@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { pokemonSprites } from "@/data/pokemon-sprites";
 import {
+  isMoveUsable,
   clockFromEvent,
   clockFromView,
   newerClock,
@@ -48,8 +49,12 @@ import styles from "./battle.module.scss";
 const BALL_ICON = "/sprites/misc/icon-pokeballball.png";
 /** After a `battle-step`, wait this long for your own view (exact HP) before playing the public lines. */
 const VIEW_WAIT_MS = 1500;
-/** Retry delays for a failed view fetch. */
-const FETCH_RETRY_MS = [500, 1500, 4000];
+/** Backoff before each retry of a failed view fetch; the last one repeats while the screen is up. */
+const FETCH_RETRY_MS = [500, 1500, 4000, 8000];
+/** A step that's ahead of the next one waits this long for the missing one before a fetch (spec §9.4). */
+const GAP_HOLD_MS = 500;
+/** While waiting on the opponent (or behind), check the server this often in case a publish was lost. */
+const IDLE_RESYNC_MS = 15_000;
 const FAILED: Message = ["Something went wrong.", "Try again."];
 /** Struggle isn't in any set, so the pool doesn't have it. */
 const STRUGGLE: PoolMove = { name: "Struggle", type: "Normal", category: "Physical", power: 50, accuracy: null, pp: 1, effect: "" };
@@ -90,11 +95,22 @@ export function BattleScreen({
 }) {
   const { code, players, you, battleSize } = state;
   const opponent: Slot = you.slot === 1 ? 2 : 1;
-  const name = useCallback(
-    (slot: Slot) => (players.find((p) => p.slot === slot)?.name ?? "").toUpperCase(),
-    [players],
-  );
+  const name = (slot: Slot) => (players.find((p) => p.slot === slot)?.name ?? "").toUpperCase();
+  // Room state updates give `players` a new identity; the playback reads names through
+  // a ref so its callbacks (and the subscription effect) stay stable.
+  const names = { 1: name(1), 2: name(2) };
+  const namesKey = `${you.slot}|${names[1]}|${names[2]}`;
+  const script = useRef({ you: you.slot, names });
+  const closedRef = useRef(onClosed);
+  useEffect(() => {
+    const [slot, n1, n2] = namesKey.split("|");
+    script.current = { you: Number(slot) as Slot, names: { 1: n1, 2: n2 } };
+  }, [namesKey]);
+  useEffect(() => {
+    closedRef.current = onClosed;
+  }, [onClosed]);
   const byId = useMemo(() => new Map(pool.map((p) => [p.id, p])), [pool]);
+  const itemNames = useMemo(() => new Map(pool.map((p) => [toId(p.item), p.item])), [pool]);
   const movesById = useMemo(() => {
     const map = new Map<string, PoolMove>([["struggle", STRUGGLE]]);
     for (const p of pool) for (const m of p.moves) map.set(toId(m.name), m);
@@ -112,7 +128,8 @@ export function BattleScreen({
   const [detail, setDetail] = useState(0);
   const [hover, setHover] = useState<number | null>(null);
   const [sending, setSending] = useState(false);
-  const [failed, setFailed] = useState(false);
+  /** The step a choice failed on: the notice shows only while that step is current. */
+  const [failedStep, setFailedStep] = useState<number | null>(null);
   const [quitting, setQuitting] = useState(false);
 
   const viewRef = useRef<BattleView | null>(null);
@@ -123,6 +140,8 @@ export function BattleScreen({
   const fetching = useRef<number | null>(null);
   const refetchFrom = useRef<number | null>(null);
   const waitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const gapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resyncRef = useRef<(from?: number) => Promise<void>>(async () => {});
   const lastTrigger = useRef(0);
   const live = useRef(true);
 
@@ -154,8 +173,7 @@ export function BattleScreen({
       for (const s of steps) {
         if (s.step <= playedRef.current) continue;
         const beats = stepBeats(s.lines, {
-          you: you.slot,
-          names: { 1: name(1), 2: name(2) },
+          ...script.current,
           exact: s.exact,
           maxHpOf: (mon) => team.find((m) => m.details.split(",")[0] === mon)?.maxhp,
         });
@@ -166,19 +184,28 @@ export function BattleScreen({
       setPlayed(playedRef.current);
       kick();
     },
-    [you.slot, name, kick],
+    [kick],
   );
 
   /** Takes a view of yours: queues its new steps and keeps its request, deadline and result. */
   const applyView = useCallback(
-    (next: BattleView) => {
+    (incoming: BattleView) => {
+      let next = incoming;
       const current = viewRef.current;
       // An older step's view (a slow response) has nothing new.
       if (current && next.step < current.step) return;
+      // A late read of the same step can't take back a choice you've made.
+      if (current && next.step === current.step && current.chosen && !next.chosen) next = { ...next, chosen: true };
       viewRef.current = next;
       setView(next);
       setClock((c) => newerClock(c, clockFromView(next, Date.now())));
       if (next.result) setResult({ step: next.step, result: next.result });
+      // A view that starts after a step you haven't played (e.g. a timeout's, from
+      // its step + 1) leaves a gap: keep its request and clock, and fetch the rest.
+      if (loaded.current && next.log.from > playedRef.current + 1) {
+        void resyncRef.current(playedRef.current + 1);
+        return;
+      }
       // On the first load only the intro (step 1) plays; a later step is rebuilt at once.
       const animate = loaded.current || next.step <= 1;
       loaded.current = true;
@@ -199,7 +226,7 @@ export function BattleScreen({
         for (let attempt = 0; ; attempt++) {
           try {
             const res = await fetch(`/api/rooms/${code}/battle?from=${from}`);
-            if (res.status === 404) return onClosed();
+            if (res.status === 404) return closedRef.current();
             if (res.ok) {
               if (live.current) applyView((await res.json()) as BattleView);
               return;
@@ -207,8 +234,9 @@ export function BattleScreen({
           } catch {
             // Retried below.
           }
-          if (attempt >= FETCH_RETRY_MS.length || !live.current) return;
-          await sleep(FETCH_RETRY_MS[attempt]);
+          // Keep trying while the screen is up: the next step can't be played without it.
+          if (!live.current) return;
+          await sleep(FETCH_RETRY_MS[Math.min(attempt, FETCH_RETRY_MS.length - 1)]);
         }
       } finally {
         fetching.current = null;
@@ -217,8 +245,11 @@ export function BattleScreen({
         if (again !== null && live.current) void resync(Math.min(again, playedRef.current + 1));
       }
     },
-    [code, applyView, onClosed],
+    [code, applyView],
   );
+  useEffect(() => {
+    resyncRef.current = resync;
+  }, [resync]);
 
   // Subscribe to battle steps; resync on mount, reconnects and tab switches. Next keeps
   // earlier routes alive in <Activity>, which runs this cleanup when hidden, so the
@@ -234,7 +265,16 @@ export function BattleScreen({
       if (event.result) setResult({ step: event.step, result: event.result });
       const plan = planEvent(playedRef.current, event);
       if (plan.kind === "duplicate") return;
-      if (plan.kind === "gap" || plan.lines === null) return void resync(playedRef.current + 1);
+      if (plan.kind === "gap") {
+        // Hold it briefly for the missing step's own event, then fetch (spec §9.4).
+        if (gapTimer.current) return;
+        gapTimer.current = setTimeout(() => {
+          gapTimer.current = null;
+          if (playedRef.current < event.step) void resync(playedRef.current + 1);
+        }, GAP_HOLD_MS);
+        return;
+      }
+      if (plan.lines === null) return void resync(event.step);
       // Your own view has your exact HP: fetch it, and play the public lines only if it's slow.
       const lines = plan.lines;
       void resync(event.step);
@@ -251,8 +291,8 @@ export function BattleScreen({
       beatTimer.current = null;
       if (waitTimer.current) clearTimeout(waitTimer.current);
       waitTimer.current = null;
-      setSending(false);
-      setQuitting(false);
+      if (gapTimer.current) clearTimeout(gapTimer.current);
+      gapTimer.current = null;
     };
   }, [subscribeBattle, resync, kick, enqueue]);
 
@@ -278,7 +318,7 @@ export function BattleScreen({
     const current = viewRef.current;
     if (!current || sending) return;
     setSending(true);
-    setFailed(false);
+    setFailedStep(null);
     setMode("battle");
     setHover(null);
     try {
@@ -302,13 +342,13 @@ export function BattleScreen({
         // each carries the server's view, which says what happens next.
         if (body?.view) {
           applyView(body.view);
-          if (res.status === 422) setFailed(true);
+          if (res.status === 422) setFailedStep(body.view.step);
           return;
         }
         if (res.status === 404) return onClosed();
         break;
       }
-      setFailed(true);
+      setFailedStep(current.step);
       await resync(playedRef.current + 1);
     } finally {
       setSending(false);
@@ -337,6 +377,16 @@ export function BattleScreen({
   const team: TeamMember[] = request?.team ?? view?.request?.team ?? [];
   const canSwitch = request?.kind === "switch" || (request?.kind === "move" && request.canSwitch);
   const forced = canAct && request?.kind === "switch";
+  const failed = failedStep !== null && view?.step === failedStep;
+  // Waiting on the opponent, or behind the server with nothing playing: check in now and then.
+  const idle = !playing && (waiting || !caughtUp) && !ended;
+  useEffect(() => {
+    if (!idle) return;
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") void resyncRef.current();
+    }, IDLE_RESYNC_MS);
+    return () => clearInterval(id);
+  }, [idle]);
 
   // Your info block: exact HP from your lines, or from the request once caught up.
   const activeMember = caughtUp ? team.find((m) => m.active) : undefined;
@@ -364,6 +414,7 @@ export function BattleScreen({
           onBack={() => setMode("party")}
           battle={{
             member,
+            item: member.item ? (itemNames.get(member.item) ?? member.item) : "None",
             clock,
             canSwitch: !!canSwitch && !member.fainted && !member.active,
             onSwitch: () => void choose({ kind: "switch", slot: member.position as 2 }),
@@ -405,7 +456,7 @@ export function BattleScreen({
               <MenuItem
                 key={m.id}
                 on={hover === i}
-                disabled={m.disabled || m.pp <= 0}
+                disabled={!isMoveUsable(m)}
                 onMouseEnter={() => setHover(i)}
                 onFocus={() => setHover(i)}
                 onMouseLeave={() => setHover(null)}
@@ -571,7 +622,7 @@ export function BattleScreen({
   );
 }
 
-/** The hovered move's category, type, power/accuracy and PP left. */
+/** The hovered move's category, type, power/accuracy and PP left. Recharge and the like have no entry and no PP. */
 function MoveInfo({ move, info }: { move: MoveOption; info: PoolMove | undefined }) {
   const power = info?.power ? `${info.power}P` : "---";
   const accuracy = info?.accuracy ? `${info.accuracy}%` : "---";
@@ -579,24 +630,25 @@ function MoveInfo({ move, info }: { move: MoveOption; info: PoolMove | undefined
     <div className={styles.battle__moveInfo} aria-live="polite">
       <div className={styles.battle__moveType}>
         {info && (
-          <Image
-            className={styles.battle__category}
-            src={`/sprites/misc/icon-${info.category.toLowerCase()}.png`}
-            alt={info.category}
-            width={64}
-            height={32}
-            unoptimized
-          />
+          <>
+            <Image
+              className={styles.battle__category}
+              src={`/sprites/misc/icon-${info.category.toLowerCase()}.png`}
+              alt={info.category}
+              width={64}
+              height={32}
+              unoptimized
+            />
+            <TypeBadge type={info.type} />
+          </>
         )}
-        <TypeBadge type={info?.type ?? "???"} />
       </div>
       <p className={styles.battle__moveLine}>
         {power}/{accuracy}
       </p>
       <p className={styles.battle__moveLine}>
-        PP {move.pp}/{move.maxpp}
+        {move.pp === null ? "PP --" : `PP ${move.pp}/${move.maxpp}`}
       </p>
     </div>
   );
 }
-
