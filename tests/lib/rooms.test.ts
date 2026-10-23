@@ -32,6 +32,27 @@ describe('rooms', () => {
     expect((await getRoomState(db, code, joined.secret, T0))?.battleSize).toBe(3);
   });
 
+  it('createRoom stores the draft type and both players read it', async () => {
+    const db = await createTestDb();
+    const { code, secret } = await createRoom(db, 'Ash', T0, 4, { draftType: 'pokeball' });
+    const joined = await joinRoom(db, code, 'Misty', T0, null);
+    if (joined.kind !== 'joined') throw new Error(joined.kind);
+    expect((await getRoomState(db, code, secret, T0))?.draftType).toBe('pokeball');
+    expect((await getRoomState(db, code, joined.secret, T0))?.draftType).toBe('pokeball');
+  });
+
+  it("stores each player's trainer name and key, even when both are the same trainer", async () => {
+    const db = await createTestDb();
+    const { code, secret } = await createRoom(db, 'Lt Surge', T0, 6, { trainer: 'lt_surge' });
+    const joined = await joinRoom(db, code, 'Lt Surge', T0, null, 'lt_surge');
+    if (joined.kind !== 'joined') throw new Error(joined.kind);
+    expect(joined.players.map(({ name, trainer, slot }) => ({ name, trainer, slot }))).toEqual([
+      { name: 'Lt Surge', trainer: 'lt_surge', slot: 1 },
+      { name: 'Lt Surge', trainer: 'lt_surge', slot: 2 },
+    ]);
+    expect((await getRoomState(db, code, secret, T0))?.players).toEqual(joined.players);
+  });
+
   it('createRoom returns a valid code and the host can read the room', async () => {
     const db = await createTestDb();
     const { code, secret, playerId } = await createRoom(db, 'Ash', T0);
@@ -39,9 +60,10 @@ describe('rooms', () => {
     expect(await getRoomState(db, code, secret, T0)).toEqual({
       code,
       you: { id: playerId, slot: 1 },
-      players: [{ id: playerId, name: 'Ash', slot: 1 }],
+      players: [{ id: playerId, name: 'Ash', trainer: null, slot: 1 }],
       phase: 'lobby',
       battleSize: 6,
+      draftType: 'standard',
       typeBattle: null,
       draft: null,
       battle: null,

@@ -5,7 +5,7 @@ import { POKEMON } from '@/data/pokemon';
 import { createTestDb } from '@/tests/helpers/test-db';
 import { chooseDraftOrder, createRoom, getRoomState, joinRoom, pickPokemon, pickType, startTypeBattle } from '@/lib/rooms';
 import { draftTurn, TOTAL_PICKS } from '@/lib/draft';
-import type { Slot } from '@/lib/types';
+import type { DraftType, Slot } from '@/lib/types';
 
 const T0 = 1_000_000;
 const masters = POKEMON.filter((p) => p.isMaster).map((p) => p.id);
@@ -13,9 +13,16 @@ const masters = POKEMON.filter((p) => p.isMaster).map((p) => p.id);
 const plain = POKEMON.filter((p) => !p.isMaster && !p.isUltra);
 const others = [...new Map(plain.map((p) => [p.set.item, p.id])).values()];
 
+// One per item, so any two of a tier can share a team.
+const oneEach = (list: typeof POKEMON) => [...new Map(list.map((p) => [p.set.item, p.id])).values()];
+const ultras = oneEach(POKEMON.filter((p) => p.isUltra && !p.isMaster));
+const distinctMasters = oneEach(POKEMON.filter((p) => p.isMaster));
+const greats = POKEMON.filter((p) => p.isGreat && !p.isUltra && !p.isMaster).map((p) => p.id);
+const pokeBalls = POKEMON.filter((p) => !p.isGreat && !p.isUltra && !p.isMaster);
+
 /** A room where the guest won the type battle and chose `order`. */
-async function draftRoom(db: Db, order: 'first' | 'second') {
-  const host = await createRoom(db, 'Ash', T0);
+async function draftRoom(db: Db, order: 'first' | 'second', draftType: DraftType = 'standard') {
+  const host = await createRoom(db, 'Ash', T0, 6, { draftType });
   const joined = await joinRoom(db, host.code, 'Misty', T0, null);
   if (joined.kind !== 'joined') throw new Error('join failed');
   const room = { code: host.code, 1: host.secret, 2: joined.secret } as const;
@@ -87,5 +94,61 @@ describe('draft', () => {
     const other = await createRoom(db, 'Gary', T0);
     expect(await pickPokemon(db, room.code, other.secret, others[0], T0)).toEqual({ kind: 'not-found' });
     expect(await pickPokemon(db, room.code, null, others[0], T0)).toEqual({ kind: 'not-found' });
+  });
+
+  /** The guest drafts first: guest, host, host, guest, guest, ... Returns after the guest's first pick. */
+  async function twoUltrasFor(draftType: DraftType) {
+    expect(ultras.length).toBeGreaterThanOrEqual(2);
+    const db = await createTestDb();
+    const room = await draftRoom(db, 'first', draftType);
+    expect(await pickPokemon(db, room.code, room[2], ultras[0], T0)).toMatchObject({ kind: 'picked' });
+    await pickPokemon(db, room.code, room[1], others[0], T0);
+    await pickPokemon(db, room.code, room[1], others[1], T0);
+    return pickPokemon(db, room.code, room[2], ultras[1], T0);
+  }
+
+  it('a standard draft allows one Ultra Ball Pokémon per team', async () => {
+    expect(await twoUltrasFor('standard')).toEqual({ kind: 'ultra-limit' });
+  });
+
+  it('an unlimited draft allows two Ultra Ball Pokémon, and two masters, on one team', async () => {
+    expect(await twoUltrasFor('unlimited')).toMatchObject({ kind: 'picked', slot: 2 });
+    const db = await createTestDb();
+    const room = await draftRoom(db, 'first', 'unlimited');
+    expect(distinctMasters.length).toBeGreaterThanOrEqual(2);
+    await pickPokemon(db, room.code, room[2], distinctMasters[0], T0);
+    await pickPokemon(db, room.code, room[1], others[0], T0);
+    await pickPokemon(db, room.code, room[1], others[1], T0);
+    expect(await pickPokemon(db, room.code, room[2], distinctMasters[1], T0)).toMatchObject({ kind: 'picked' });
+  });
+
+  it('an unlimited draft still allows each Pokémon once', async () => {
+    const db = await createTestDb();
+    const room = await draftRoom(db, 'first', 'unlimited');
+    await pickPokemon(db, room.code, room[2], ultras[0], T0);
+    expect(await pickPokemon(db, room.code, room[1], ultras[0], T0)).toEqual({ kind: 'taken' });
+  });
+
+  it('a Poké Ball draft rejects any Pokémon outside its pool', async () => {
+    const db = await createTestDb();
+    const room = await draftRoom(db, 'first', 'pokeball');
+    for (const id of [greats[0], ultras[0], masters[0]]) {
+      expect(await pickPokemon(db, room.code, room[2], id, T0)).toEqual({ kind: 'not-in-pool' });
+    }
+    expect(await pickPokemon(db, room.code, room[2], pokeBalls[0].id, T0)).toMatchObject({ kind: 'picked' });
+    expect((await state(db, room.code, room[1])).draftType).toBe('pokeball');
+  });
+
+  it('a Poké Ball draft still allows each item once per team', async () => {
+    const db = await createTestDb();
+    const room = await draftRoom(db, 'first', 'pokeball');
+    const byItem = new Map<string, string[]>();
+    for (const p of pokeBalls) byItem.set(p.set.item, [...(byItem.get(p.set.item) ?? []), p.id]);
+    const [item, pair] = [...byItem.entries()].find(([, ids]) => ids.length >= 2)!;
+    const filler = pokeBalls.filter((p) => p.set.item !== item);
+    await pickPokemon(db, room.code, room[2], pair[0], T0);
+    await pickPokemon(db, room.code, room[1], filler[0].id, T0);
+    await pickPokemon(db, room.code, room[1], filler[1].id, T0);
+    expect(await pickPokemon(db, room.code, room[2], pair[1], T0)).toEqual({ kind: 'item-limit' });
   });
 });

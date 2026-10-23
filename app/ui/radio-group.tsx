@@ -2,13 +2,17 @@ import styles from "./crystal.module.scss";
 
 export type RadioOption<T> = { value: T; label: string };
 
-/** One row of pixel-square radios; `label` names the group for screen readers. */
+/**
+ * Pixel-square radios, one row of them (or stacked with `vertical`); `label` names the
+ * group for screen readers.
+ */
 export function RadioGroup<T extends string | number>({
   label,
   name,
   options,
   value,
   onChange,
+  vertical,
   className,
 }: {
   label: string;
@@ -16,10 +20,14 @@ export function RadioGroup<T extends string | number>({
   options: readonly RadioOption<T>[];
   value: T;
   onChange: (value: T) => void;
+  vertical?: boolean;
   className?: string;
 }) {
   return (
-    <fieldset className={`${styles.radioGroup} ${className ?? ""}`} aria-label={label}>
+    <fieldset
+      className={[styles.radioGroup, vertical && styles["radioGroup--vertical"], className].filter(Boolean).join(" ")}
+      aria-label={label}
+    >
       {options.map((option) => (
         <label key={option.value} className={styles.radioGroup__option}>
           <input

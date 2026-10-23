@@ -1,0 +1,65 @@
+/* Draft rules (board 0e). BEM block `rules`. */
+@use "../styles/mixins" as *;
+
+.rules {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 36px 72px;
+
+  &__title {
+    @include screen-title;
+  }
+
+  /* Fills the space between the title and BACK. */
+  &__panel {
+    flex: 1;
+    box-sizing: border-box;
+    padding: 30px 42px;
+  }
+
+  &__list {
+    @include bare-list;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  &__rule {
+    position: relative;
+    padding-left: 36px;
+    font-size: 24px;
+    line-height: 36px;
+
+    /* A 12px ink square, 24px left of the text, centred on the first line. */
+    &::before {
+      content: "";
+      position: absolute;
+      top: 12px;
+      left: 0;
+      width: 12px;
+      height: 12px;
+      background: var(--ink);
+    }
+  }
+
+  /* A draft type's heading, left-aligned over its rules. */
+  &__heading {
+    margin: 24px 0 12px;
+    font-size: 24px;
+    font-weight: 400;
+    line-height: 36px;
+  }
+
+  &__ball {
+    display: inline-block;
+    margin: 0 12px 0 18px;
+    vertical-align: -6px;
+    image-rendering: pixelated;
+  }
+
+  &__buttons {
+    display: flex;
+    justify-content: center;
+  }
+}

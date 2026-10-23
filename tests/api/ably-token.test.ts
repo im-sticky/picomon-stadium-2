@@ -32,7 +32,7 @@ describe('ably-server', () => {
 
   it('publishPlayerJoined publishes player-joined', async () => {
     process.env.ABLY_API_KEY = 'test.key:secret';
-    const players = [{ id: 'a', name: 'Ash', slot: 1 as const }];
+    const players = [{ id: 'a', name: 'Ash', trainer: null, slot: 1 as const }];
     await publishPlayerJoined('K7PQ', players);
     expect(get).toHaveBeenCalledWith('room:K7PQ');
     expect(publish).toHaveBeenCalledWith('player-joined', { players });

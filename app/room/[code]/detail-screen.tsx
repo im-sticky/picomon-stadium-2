@@ -7,7 +7,7 @@ import { BallIcon } from "@/app/ui/ball-icon";
 import { Button } from "@/app/ui/button";
 import { Frame } from "@/app/ui/frame";
 import { HeldItem } from "@/app/ui/held-item";
-import { HpBar } from "@/app/ui/hp-bar";
+import { HpBar, StatusSlot } from "@/app/ui/hp-bar";
 import { PokemonIcon } from "@/app/ui/pokemon-icon";
 import { Stage } from "@/app/ui/stage";
 import { TypeBadge } from "@/app/ui/type-badge";
@@ -139,15 +139,17 @@ export function DetailScreen({
             </div>
             {view === "calc" ? (
               <>
+                {/* "HP" and the status slot (empty outside battle), the bar, then the numbers. */}
                 <div className={styles.detail__statRow}>
                   <span>HP</span>
-                  <span>
-                    {hp}/{hp}
-                  </span>
+                  <StatusSlot className={styles.detail__status} />
                 </div>
                 <div className={styles.detail__hpRow}>
                   <HpBar value={hp} max={hp} className={styles.detail__hpBar} />
                 </div>
+                <p className={styles.detail__hpNumbers}>
+                  {hp}/{hp}
+                </p>
                 {STATS.slice(1).map((s) => (
                   <div key={s.key} className={styles.detail__statRow}>
                     <span>{s.calc}</span>

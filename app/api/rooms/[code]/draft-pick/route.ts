@@ -27,6 +27,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ cod
       return NextResponse.json({ error: 'Not drafting.' }, { status: 409 });
     case 'draft-complete':
       return NextResponse.json({ error: 'The draft is complete.' }, { status: 409 });
+    case 'not-in-pool':
+      return NextResponse.json({ error: 'Only Poké Ball POKéMON allowed.' }, { status: 409 });
     case 'taken':
       return NextResponse.json({ error: 'Already rented.' }, { status: 409 });
     case 'master-limit':

@@ -2,7 +2,15 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { draftTurn, PICKS_PER_PLAYER, picksLeftInTurn, TOTAL_PICKS } from "@/lib/draft";
+import {
+  draftTurn,
+  inDraftPool,
+  PICKS_PER_PLAYER,
+  picksLeftInTurn,
+  teamLimitError,
+  TOTAL_PICKS,
+  type TeamLimitError,
+} from "@/lib/draft";
 import type { PoolPokemon } from "@/lib/draft-pool";
 import type { DraftView, RoomState, Slot } from "@/lib/types";
 import { BallIcon } from "@/app/ui/ball-icon";
@@ -22,14 +30,20 @@ const PROMPT: Message = ["Hover a POKéMON to see its moves.", "Click one to see
 const FAILED: Message = ["Something went wrong.", "Try again."];
 const POKEBALL = "/sprites/misc/pokeball.png";
 const BALL_ICON = "/sprites/misc/icon-pokeballball.png";
+const LIMIT_REASONS: Record<TeamLimitError, string> = {
+  "master-limit": "Only 1 master pokemon allowed.",
+  "ultra-limit": "Only 1 ultra pokemon allowed.",
+  "item-limit": "Item already used on team.",
+};
 
 /** Which Detail is open: a free Pokémon to rent, or a rented one to look at. */
 type Open = { id: string; viewOnly: boolean };
 
 /**
  * The draft: a snake draft of 12 picks (6 each) from the pool, with the Detail
- * screen for one Pokémon on top. The server decides whose turn it is and which
- * picks are allowed; this screen only mirrors those rules to grey things out.
+ * screen for one Pokémon on top. The room's draft type sets the rules (a Poké Ball
+ * draft shows only Poké Ball tier Pokémon). The server decides whose turn it is and
+ * which picks are allowed; this screen only mirrors those rules to grey things out.
  */
 export function DraftScreen({
   state,
@@ -44,7 +58,7 @@ export function DraftScreen({
   notice?: Message;
   onAction: RoomAction;
 }) {
-  const { players, you, battleSize } = state;
+  const { players, you, battleSize, draftType } = state;
   const { firstDrafter, picks } = draft;
   const [open, setOpen] = useState<Open | null>(null);
   const [hover, setHover] = useState<string | null>(null);
@@ -64,20 +78,17 @@ export function DraftScreen({
 
   const name = (slot: Slot) => (players.find((p) => p.slot === slot)?.name ?? "").toUpperCase();
   const byId = new Map(pool.map((p) => [p.id, p]));
+  const grid = pool.filter((p) => inDraftPool(draftType, p));
   const rentedBy = new Map(picks.map((p) => [p.pokemonId, p.slot]));
   const team = (slot: Slot) => picks.filter((p) => p.slot === slot).map((p) => p.pokemonId);
   const turn = draftTurn(firstDrafter, picks.length);
   const done = picks.length >= TOTAL_PICKS;
   const left = picksLeftInTurn(firstDrafter, picks.length);
-  const youHaveMaster = team(you.slot).some((id) => byId.get(id)?.isMaster);
-  const youHaveUltra = team(you.slot).some((id) => byId.get(id)?.isUltra);
-  const yourItems = new Set(team(you.slot).map((id) => byId.get(id)?.item));
-  /** Why one of your team's limits rules `p` out, or null. */
+  const yourTeam = team(you.slot).map((id) => byId.get(id));
+  /** Why one of your team's limits rules `p` out under this draft type, or null. */
   const limitReason = (p: PoolPokemon): string | null => {
-    if (p.isMaster && youHaveMaster) return "Only 1 master pokemon allowed.";
-    if (p.isUltra && youHaveUltra) return "Only 1 ultra pokemon allowed.";
-    if (yourItems.has(p.item)) return "Item already used on team.";
-    return null;
+    const error = teamLimitError(draftType, yourTeam, p);
+    return error && LIMIT_REASONS[error];
   };
   const blocked = (p: PoolPokemon) => limitReason(p) !== null;
   /** Why the open Pokémon can't be rented, shown by RENT. Null while it can be (or mid-rent). */
@@ -86,7 +97,8 @@ export function DraftScreen({
     if (turn !== you.slot) return "Not your turn.";
     return limitReason(p);
   };
-  const title = turn ? `${name(turn)}'S CHOICE` : "DRAFT COMPLETE";
+  // "YOUR" keeps your turns clear even when both players are the same trainer.
+  const title = turn === you.slot ? "YOUR CHOICE" : turn ? `${name(turn)}'S CHOICE` : "DRAFT COMPLETE";
 
   async function rent(id: string) {
     setBusy(true);
@@ -183,7 +195,7 @@ export function DraftScreen({
 
       <PixelScroll label="Pokémon available to rent, scrollable" height={432} step={108}>
         <ul className={styles.draft__grid} aria-label="Pokémon available to rent">
-          {pool.map((p) => {
+          {grid.map((p) => {
             const owner = rentedBy.get(p.id);
             const label = p.name.toUpperCase();
             const on = !done && hover === p.id ? styles["draft__cell--active"] : "";

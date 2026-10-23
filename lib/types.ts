@@ -4,7 +4,10 @@ export type Slot = 1 | 2;
 
 export type PublicPlayer = {
   id: string;
+  /** The player's trainer's name in title case (e.g. "Lt Surge"). Screens show it in uppercase. */
   name: string;
+  /** The trainer key (`lib/trainers.ts`), for the sprite. Null for players from before trainers. */
+  trainer: string | null;
   slot: Slot;
 };
 
@@ -14,6 +17,20 @@ export type Phase = "lobby" | "type-battle" | "draft" | "battle";
 export const BATTLE_SIZES = [3, 4, 6] as const;
 export type BattleSize = (typeof BATTLE_SIZES)[number];
 export const DEFAULT_BATTLE_SIZE: BattleSize = 6;
+
+/**
+ * The host's draft rules. Standard: one Ultra Ball and one Master Ball Pokémon per team.
+ * Unlimited: no ball limits. Poké Ball: only Poké Ball tier Pokémon. Every type keeps
+ * pick-once and one-of-each-item (`lib/draft.ts`).
+ */
+export const DRAFT_TYPES = ["standard", "unlimited", "pokeball"] as const;
+export type DraftType = (typeof DRAFT_TYPES)[number];
+export const DEFAULT_DRAFT_TYPE: DraftType = "standard";
+export const DRAFT_TYPE_LABELS: Record<DraftType, string> = {
+  standard: "Standard Draft",
+  unlimited: "Unlimited Draft",
+  pokeball: "Poké Ball Draft",
+};
 
 export const TYPE_CHOICES = ["grass", "water", "fire"] as const;
 export type TypeChoice = (typeof TYPE_CHOICES)[number];
@@ -45,6 +62,7 @@ export type RoomState = {
   players: PublicPlayer[];
   phase: Phase;
   battleSize: BattleSize;
+  draftType: DraftType;
   /** Set only in the type-battle phase. */
   typeBattle: TypeBattleView | null;
   /** Set in the draft and battle phases: the Battle order screen shows both drafted teams. */
