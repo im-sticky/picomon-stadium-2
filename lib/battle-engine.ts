@@ -174,6 +174,7 @@ function teamOf(battle: Battle, slot: Slot, request: Request): TeamMember[] {
       item: p.item,
       ability: p.baseAbility,
       moves: [...p.moves],
+      movePp: pokemon[i].moveSlots.map((m) => ({ pp: m.pp, maxpp: m.maxpp })),
     };
   });
 }

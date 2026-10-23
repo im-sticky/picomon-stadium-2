@@ -34,6 +34,8 @@ export type TeamMember = {
   item: string;
   ability: string;
   moves: string[];
+  /** PP left and max for each of `moves`, in the same order: the move request only has the active Pokémon's. */
+  movePp: { pp: number; maxpp: number }[];
 };
 
 export type MoveOption = {

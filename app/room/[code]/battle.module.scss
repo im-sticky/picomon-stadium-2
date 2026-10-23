@@ -1,0 +1,310 @@
+/* The battle (boards 4a–4e, 4i). Everything is absolutely placed on the 1200×900
+   board, with the sizes in docs/design/README.md. BEM blocks `battle`, `menuItem`
+   and `countdown`. */
+@use "../../styles/mixins" as *;
+
+.battle {
+  position: relative;
+  overflow: hidden;
+
+  /* The opponent's trainer, in the opponent's Pokémon box: the 112px PNG at 3×. */
+  &__trainer {
+    position: absolute;
+    top: 12px;
+    right: 132px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    width: 336px;
+    height: 336px;
+  }
+
+  &__trainerImage {
+    @include pixelated;
+  }
+
+  /* Each team as a row of 32px balls on a 3px line with an end stroke. */
+  &__balls {
+    position: absolute;
+    display: flex;
+    gap: 12px;
+    padding: 0 12px 9px;
+    border-bottom: 3px solid var(--ink);
+
+    &--opp {
+      top: 96px;
+      left: 72px;
+      border-left: 3px solid var(--ink);
+    }
+
+    &--me {
+      top: 456px;
+      right: 72px;
+      border-right: 3px solid var(--ink);
+    }
+  }
+
+  &__ball {
+    @include pixelated;
+
+    &--p2 {
+      filter: hue-rotate(235deg);
+    }
+  }
+
+  /* Name, status slot + L50, the 384px HP bar; then types (opponent) or HP numbers (you). */
+  &__info {
+    position: absolute;
+    width: 384px;
+
+    &--opp {
+      top: 48px;
+      left: 72px;
+    }
+
+    &--me {
+      top: 420px;
+      right: 72px;
+    }
+  }
+
+  &__name {
+    font-size: 24px;
+    line-height: 48px;
+  }
+
+  &__level {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 32px;
+    font-size: 24px;
+    line-height: 32px;
+  }
+
+  &__status {
+    width: 64px;
+  }
+
+  &__hpRow {
+    display: flex;
+    align-items: center;
+    height: 24px;
+  }
+
+  &__hpBar {
+    width: 384px;
+  }
+
+  &__types {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  &__hpNumbers {
+    font-size: 24px;
+    line-height: 48px;
+    text-align: right;
+  }
+
+  /* The sprites at 3× the components' 112px box: a 336px box, art bottom-centred. */
+  &__spriteBox {
+    position: absolute;
+    width: 336px;
+    height: 336px;
+
+    &--opp {
+      top: 12px;
+      right: 132px;
+    }
+
+    /* The back pic's bottom sits on the bottom boxes' top edge (612px). */
+    &--me {
+      top: 276px;
+      left: 132px;
+    }
+  }
+
+  &__sprite {
+    zoom: 3;
+  }
+
+  /* The ability box: 480×96, sliding out from that Pokémon's side over its sprite,
+     the far end a stepped pixel arrow (seven 6px steps to a 12px tip). */
+  &__ability {
+    position: absolute;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 480px;
+    height: 96px;
+    box-sizing: border-box;
+    font-size: 24px;
+    line-height: 36px;
+    color: var(--bg);
+    background: var(--ink);
+
+    &--opp {
+      top: 120px;
+      right: 72px;
+      padding: 0 36px 0 60px;
+      clip-path: polygon(
+        42px 0, 100% 0, 100% 100%, 42px 100%, 42px 90px, 36px 90px, 36px 84px, 30px 84px, 30px 78px,
+        24px 78px, 24px 72px, 18px 72px, 18px 66px, 12px 66px, 12px 60px, 6px 60px, 6px 54px, 0 54px,
+        0 42px, 6px 42px, 6px 36px, 12px 36px, 12px 30px, 18px 30px, 18px 24px, 24px 24px, 24px 18px,
+        30px 18px, 30px 12px, 36px 12px, 36px 6px, 42px 6px
+      );
+      animation: abilityFromRight 0.25s steps(5) both;
+    }
+
+    &--me {
+      top: 444px;
+      left: 72px;
+      padding: 0 60px 0 36px;
+      clip-path: polygon(
+        calc(100% - 42px) 0, 0 0, 0 100%, calc(100% - 42px) 100%, calc(100% - 42px) 90px,
+        calc(100% - 36px) 90px, calc(100% - 36px) 84px, calc(100% - 30px) 84px, calc(100% - 30px) 78px,
+        calc(100% - 24px) 78px, calc(100% - 24px) 72px, calc(100% - 18px) 72px, calc(100% - 18px) 66px,
+        calc(100% - 12px) 66px, calc(100% - 12px) 60px, calc(100% - 6px) 60px, calc(100% - 6px) 54px,
+        100% 54px, 100% 42px, calc(100% - 6px) 42px, calc(100% - 6px) 36px, calc(100% - 12px) 36px,
+        calc(100% - 12px) 30px, calc(100% - 18px) 30px, calc(100% - 18px) 24px, calc(100% - 24px) 24px,
+        calc(100% - 24px) 18px, calc(100% - 30px) 18px, calc(100% - 30px) 12px, calc(100% - 36px) 12px,
+        calc(100% - 36px) 6px, calc(100% - 42px) 6px
+      );
+      animation: abilityFromLeft 0.25s steps(5) both;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+  }
+
+  /* Staggered: the name on the left, the ability on the right. */
+  &__abilityName {
+    text-align: right;
+  }
+
+  /* The bottom area: 72px from each side, 252px tall, 36px from the bottom. */
+  &__bottom {
+    position: absolute;
+    top: 612px;
+    left: 72px;
+    display: flex;
+    gap: 12px;
+    width: 1056px;
+    height: 252px;
+  }
+
+  /* Tag-qualified so it outranks the shared message box's own sizing. */
+  @at-root div#{&}__message {
+    flex: 1;
+  }
+
+  /* The moves on the left, the hovered move's info on the right. */
+  &__moves {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 48px;
+    padding: 24px;
+  }
+
+  &__moveList {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__moveInfo {
+    width: 228px;
+    margin-left: auto;
+  }
+
+  &__moveType {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 48px;
+  }
+
+  &__category {
+    @include pixelated;
+  }
+
+  &__moveLine {
+    font-size: 24px;
+    line-height: 48px;
+  }
+
+  /* One 264px options box that stays put; only its items change. */
+  &__options {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+    width: 264px;
+    box-sizing: border-box;
+    padding: 24px;
+  }
+}
+
+@keyframes abilityFromRight {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes abilityFromLeft {
+  from {
+    transform: translateX(-100%);
+  }
+}
+
+/* Menu items: 24px text with the ▶ cursor on hover/focus, not framed buttons. */
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  @include bare-button;
+  font-size: 24px;
+  line-height: 48px;
+  text-align: left;
+  white-space: nowrap;
+  border: 0;
+  cursor: pointer;
+
+  &__cursor {
+    flex: none;
+    visibility: hidden;
+    fill: var(--ink);
+  }
+
+  &:enabled:hover &__cursor,
+  &:focus-visible &__cursor,
+  &--on:enabled &__cursor {
+    visibility: visible;
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
+}
+
+/* The step's countdown: m:ss in 32px on a 48px line, red from 0:15. */
+.countdown {
+  flex: none;
+  font-size: 32px;
+  line-height: 48px;
+  white-space: nowrap;
+
+  &--warn {
+    color: var(--p1);
+  }
+}

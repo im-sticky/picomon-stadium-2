@@ -15,6 +15,17 @@ export type RoomEvent =
   | { kind: "battle-started"; battleSize: BattleSize; deadline: number; at: number };
 
 /**
+ * The host pressed QUIT after the battle: the room is closed, and both players go
+ * back to Home. It isn't a `RoomEvent`, because there's no room state left to apply it to.
+ */
+export type RoomClosedEvent = { kind: "room-closed" };
+
+/** Whether an Ably message's data is the room-closed event. */
+export function isRoomClosed(data: unknown): data is RoomClosedEvent {
+  return (data as { kind?: unknown } | null)?.kind === "room-closed";
+}
+
+/**
  * Events a client can apply. `player-joined` is the existing Ably message; your own
  * type pick comes only from your POST response, because it's secret until the reveal.
  */
@@ -43,8 +54,8 @@ const isBattleSize = (v: unknown): v is BattleSize => BATTLE_SIZES.includes(v as
 
 /**
  * The event in an Ably message's data, or null if it isn't one this client knows.
- * Battle events (`battle-order-progress`, `battle-step`) are null for now: a
- * generic "something changed" until the battle client routes them.
+ * Battle events (`battle-order-progress`, `battle-step`) and `room-closed` are null
+ * here: `room-view.tsx` routes them to the battle screens (or Home) before this.
  */
 export function parseRoomEvent(data: unknown): RoomEvent | null {
   if (!data || typeof data !== "object") return null;

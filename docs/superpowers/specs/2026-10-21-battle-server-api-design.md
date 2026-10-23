@@ -301,6 +301,7 @@ export type TeamMember = {
   active: boolean;
   stats: { atk: number; def: number; spa: number; spd: number; spe: number };
   item: string; ability: string; moves: string[];
+  movePp: { pp: number; maxpp: number }[]; // PP left/max for each of `moves`, same order (added for Detail in battle)
 };
 
 export type MoveOption = {
@@ -341,6 +342,7 @@ export type BattleView = {
 - `wait` becomes `wait`;
 - `teamPreview` becomes `team`;
 - `side.pokemon` becomes `team`, with `condition` split into `hp`, `maxhp`, `status` and `fainted`;
+- `movePp` comes from each engine `Pokemon`'s `moveSlots` (`pp`, `maxpp`). The move request only carries the active Pokémon's PP, and Detail in battle (boards 4g/4h) shows PP left for every team member, the bench included;
 - `pokemonId` is `toID(pokemon.set.species)` from the engine's `Pokemon` object, not from `details`, so it stays the drafted id through forme changes and Transform;
 - `canSwitch` is true when `trapped` isn't set and the bench has a healthy Pokémon;
 - `maybeTrapped` counts as switchable. The engine rejects the switch if the Pokémon really is trapped, which gives a 422 whose message says so.
@@ -668,8 +670,12 @@ Any end the engine reaches by itself is `normal`. Its `winner` comes from `battl
   - the final `battle-step` with `result`;
   - `BattleView.result`;
   - `RoomState.battle.result`.
-- After the end, choices return 409 `ended`, and the GET keeps working until the room expires.
-- What happens next (a rematch, or back to Home) is a product question for the user (§16, question 2). The room keeps its TTL.
+- After the end, choices return 409 `ended`, and the GET keeps working until the room expires or the host closes it.
+- **QUIT (added with the battle screens).** Once the battle has ended, the host's message box has a QUIT button. It calls `POST /api/rooms/[code]/close`:
+  - `closeRoom(db, code, secret, now)` in `lib/rooms.ts`, one write transaction with `withBusyRetry`: the live room, membership (`findMember`), `slot === 1` and the battle row's `stage === 'ended'` are checked, then `rooms.expires_at` is set to `now` (conditional on it still being in the future).
+  - **Decision:** close the room by expiring it, not with a new column or by deleting rows, **because** every live-room check (`findLiveRoom`, `joinRoom`, `findActivePlayer` for the Ably token) already treats an expired room as gone, and `deleteExpired` removes its rows with the other expired rooms. No migration is needed.
+  - Responses: 200 `{ ok: true, event: { kind: 'room-closed' } }` (published on the room channel after the commit); 403 `{ error: 'Only the host can quit.' }`; 409 `{ error: 'The battle is not over.' }` (any phase or stage before `ended`); 404 `{ error: 'Room not found.' }` for a missing cookie, a non-member, an unknown room, or a room that's already closed.
+  - `RoomClosedEvent = { kind: 'room-closed' }` lives in `lib/room-events.ts` (with `isRoomClosed`). It isn't a `RoomEvent`, because there's no room state left to apply it to. Both clients go to Home on it; loading the room's URL afterwards gets the room GET's 404, which also goes to Home.
 
 ## 13. Errors and validation
 
@@ -705,6 +711,7 @@ The server never returns `state`, `version`, the stored orders or the seed. Ever
 | `app/api/rooms/[code]/battle/order/route.ts` (new) | `POST` |
 | `app/api/rooms/[code]/battle/choice/route.ts` (new) | `POST` |
 | `app/api/rooms/[code]/battle/timeout/route.ts` (new) | `POST` |
+| `app/api/rooms/[code]/close/route.ts` (added with the battle screens) | `POST` QUIT (§12) |
 | `docs/research/2026-10-19-gen6-battle-mechanics.md` | A one-line note under §18.1 pointing to this spec's §3 (the `@@@` finding) |
 
 ## 15. Test plan
@@ -812,7 +819,7 @@ These were settled in review and are recorded here so they aren't reopened:
 For the user. Neither blocks the server work. **Answered 2026-10-21:**
 
 - **(1) Animation time: deferred to the frontend spec.** The server keeps a deadline of 75 s + 1 s grace from step resolution (§10.1).
-- **(2) After the battle: decided later.** For now the room keeps its normal TTL and the result stays readable (§12).
+- **(2) After the battle: decided later.** For now the room keeps its normal TTL and the result stays readable (§12). The battle screens then added the host's QUIT, which closes the room (§12).
 
 The questions as asked:
 
