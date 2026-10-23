@@ -7,7 +7,7 @@ export default {
   ability: "Own Tempo",
   set: {
     moves: ["Explosion", "Return", "Earthquake", "Power Whip"],
-    item: "Berserk Gene",
+    item: "Leftovers",
     nature: "Adamant",
     evs: { hp: 252, atk: 252, spd: 4 },
   },

@@ -8,7 +8,7 @@ export default {
   baseStats: { hp: 55, atk: 95, def: 50, spa: 35, spd: 110, spe: 85 },
   set: {
     moves: ["Drain Punch", "Mach Punch", "Ice Punch", "Thunder Punch"],
-    item: "Berserk Gene",
+    item: "Life Orb",
     nature: "Jolly",
     evs: { hp: 4, atk: 252, spe: 252 },
   },

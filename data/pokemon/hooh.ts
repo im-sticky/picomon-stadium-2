@@ -7,7 +7,7 @@ export default {
   ability: "Regenerator",
   set: {
     moves: ["Sacred Fire", "Brave Bird", "Earthquake", "Roost"],
-    item: "Berserk Gene",
+    item: "Leftovers",
     nature: "Adamant",
     evs: { hp: 252, atk: 252, spd: 4 },
   },
