@@ -16,6 +16,8 @@ export const formatIdFor = (size: BattleSize) => toID(formatName(size));
 export const MOD_ID = "picomon";
 export const RULESET = ["Team Preview", "Cancel Mod", "Sleep Clause Mod", "Endless Battle Clause", "HP Percentage Mod"];
 const STOCK = Dex.forGen(6);
+/** Items from older generations that the gen6 data marks "Past", brought back for our mod. */
+const PAST_ITEMS = ["berserkgene"];
 
 /** Throws if a name in an entry isn't in the stock gen6 data, so typos fail at startup. */
 function check(entry: PokemonEntry) {
@@ -27,7 +29,7 @@ function check(entry: PokemonEntry) {
   const ability = STOCK.abilities.get(entry.ability);
   if (!ability.exists || ability.isNonstandard) throw new Error(`${where}: unknown ability "${entry.ability}"`);
   const item = STOCK.items.get(entry.set.item);
-  if (!item.exists || item.isNonstandard) throw new Error(`${where}: unknown item "${entry.set.item}"`);
+  if (!item.exists || (item.isNonstandard && !PAST_ITEMS.includes(item.id))) throw new Error(`${where}: unknown item "${entry.set.item}"`);
   for (const name of entry.set.moves) {
     if (name === undefined) continue;
     const move = STOCK.moves.get(name);
@@ -63,6 +65,7 @@ function buildDex(): ModdedDex {
     },
     Pokedex: pokedex,
     Moves: moves,
+    Items: Object.fromEntries(PAST_ITEMS.map((id) => [id, { inherit: true, isNonstandard: null }])),
     Conditions: {
       // Hail gives Ice types 1.5× Def, like Sandstorm's SpD boost for Rock types (§17.5 of the gen6 research doc).
       hail: {
