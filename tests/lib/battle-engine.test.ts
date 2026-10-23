@@ -112,6 +112,36 @@ describe('base PP', () => {
     expect(sludge(engine)).toMatchObject({ pp: 10, maxpp: 10 });
     expect(sludge(restoreBattle(serialize(engine)))).toMatchObject({ pp: 10, maxpp: 10 });
   });
+
+  it('a move with no PP of its own (Recharge, a locked Outrage) has null PP, not 0, and stays usable', () => {
+    const recharge = duel([set('Tauros', ['Hyper Beam', 'Outrage'])], [set('Blissey', ['Splash'])]);
+    turn(recharge, 'move 1', 'move 1');
+    const after = playerRequest(recharge.battle, 1);
+    expect(after).toMatchObject({ kind: 'move', moves: [{ move: 1, id: 'recharge', pp: null, maxpp: null, disabled: false }] });
+    expect(choose(recharge, 1, 'move 1')).toEqual({ ok: true });
+
+    const locked = duel([set('Tauros', ['Outrage', 'Hyper Beam'])], [set('Blissey', ['Splash'])]);
+    turn(locked, 'move 1', 'move 1');
+    const request = playerRequest(locked.battle, 1);
+    expect(request).toMatchObject({ kind: 'move', moves: [{ move: 1, id: 'outrage', pp: null, maxpp: null, disabled: false }] });
+    expect(choose(locked, 1, 'move 1')).toEqual({ ok: true });
+  });
+
+  it("each team member carries its own PP left, the bench included, in its moves' order", () => {
+    const engine = duel([set('Gengar', ['Shadow Ball', 'Splash']), set('Alakazam', ['Psychic'])], [set('Snorlax', ['Splash'])]);
+    turn(engine, 'move 1', 'move 1');
+    // Gengar used Shadow Ball once, then switches out: its PP stays with it on the bench.
+    turn(engine, 'switch 2', 'move 1');
+    const request = playerRequest(engine.battle, 1);
+    const gengar = request?.team.find((m) => m.pokemonId === 'gengar');
+    expect(gengar).toMatchObject({ active: false, moves: ['shadowball', 'splash'] });
+    expect(gengar?.movePp).toEqual([
+      { pp: 14, maxpp: 15 },
+      { pp: 40, maxpp: 40 },
+    ]);
+    expect(request?.team.find((m) => m.active)?.movePp).toEqual([{ pp: 10, maxpp: 10 }]);
+    expect(playerRequest(restoreBattle(serialize(engine)).battle, 1)?.team).toEqual(request?.team);
+  });
 });
 
 describe('cold restore', () => {

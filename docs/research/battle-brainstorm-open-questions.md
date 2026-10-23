@@ -27,14 +27,14 @@ Background research: [Gen 6 battle mechanics](2026-10-19-gen6-battle-mechanics.m
   - **No OHKO, Evasion or Self-KO clauses.** Those moves are allowed if a Pokémon's set has them, with no data check. *Changed 2026-10-21.*
   - **Species Clause** is already guaranteed by the draft (each Pokémon can be rented once).
 - **IP posture: real Pokémon names, data and sprites.** Free, never charged for, credited as an unofficial fan project (as on Home today).
-- **Turn timer: 75 seconds for every choice**: team order on the Battle order screen, moves and switches, and faint replacements, with a visible countdown.
+- **Turn timer: 80 seconds for every choice**: team order on the Battle order screen, moves and switches, and faint replacements, with a visible countdown. *Changed 2026-10-23 from 75 s.*
   - On timeout, the server submits the engine's own `default` choice: the first usable move, the first healthy bench Pokémon for a replacement, or the team in draft order on the Battle order screen. *Changed 2026-10-21 from a random choice.*
   - **Three timeouts in a row and that player forfeits.**
   - Disconnects need no separate handling: a disconnected player just doesn't choose, so the timer covers it. Refreshing puts them back in the battle.
 - **Faint replacements** follow the engine (Gen 5+ rules):
   - Only the player who lost a Pokémon chooses; the other sees a waiting message.
   - If both fainted, both choose at once, and neither sees the other's choice until both have picked.
-  - Same 75-second timer.
+  - Same 80-second timer.
 - **Saving battles: one row per battle with the engine's latest snapshot.**
   - A new `battles` table, keyed by room code. After each turn the server saves `battle.toJSON()` into that row, overwriting it.
   - The next request restores it with `Battle.fromJSON(...)`.

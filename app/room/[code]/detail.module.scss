@@ -2,6 +2,7 @@
 @use "../../styles/mixins" as *;
 
 .detail {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -258,6 +259,44 @@
     display: flex;
     justify-content: center;
     gap: 48px;
+  }
+
+  /* In battle: the countdown at the top right, level with the title. */
+  &__timer {
+    position: absolute;
+    top: 24px;
+    right: 48px;
+  }
+
+  /* In battle: ◀ / ▶, 108px framed buttons at the ends of the row (lined up with the
+     move box's edges), the pixel arrow as the label, grey on hover. */
+  &__arrow {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 108px;
+    height: 108px;
+    box-sizing: border-box;
+    padding: 0;
+    font: inherit;
+    fill: var(--ink);
+    @include crystal-frame;
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+      outline: none;
+      background-color: var(--hover);
+    }
+
+    &--prev {
+      margin-right: auto;
+    }
+
+    &--next {
+      margin-left: auto;
+    }
   }
 
   /* Why RENT is disabled: at the bottom of the stats column. */

@@ -3,7 +3,7 @@ import type { BattleSize, Slot } from "@/lib/types";
 // The battle as the API and clients see it. No `@pkmn/sim` import, so client code can use it.
 
 /** Every choice the battle asks for gets this long. */
-export const TIMER_MS = 75_000;
+export const TIMER_MS = 80_000;
 /** Timeouts apply this long after the deadline, so a click just before it isn't a strike. */
 export const GRACE_MS = 1000;
 /** Timeouts in a row that forfeit the battle. */
@@ -34,6 +34,8 @@ export type TeamMember = {
   item: string;
   ability: string;
   moves: string[];
+  /** PP left and max for each of `moves`, in the same order: the move request only has the active Pokémon's. */
+  movePp: { pp: number; maxpp: number }[];
 };
 
 export type MoveOption = {
@@ -41,8 +43,9 @@ export type MoveOption = {
   move: number;
   id: string;
   name: string;
-  pp: number;
-  maxpp: number;
+  /** Null when the move has no PP to show: a locked move (Outrage, a charge turn), Recharge, Struggle. */
+  pp: number | null;
+  maxpp: number | null;
   disabled: boolean;
   target: string;
 };
