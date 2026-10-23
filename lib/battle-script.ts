@@ -255,7 +255,7 @@ export function stepBeats(lines: readonly string[], ctx: ScriptContext): Beat[] 
       case "-status": {
         if (!who || !isStatus(args[2])) break;
         const status = { side: sideOf(who.slot), name: who.name, status: args[2] };
-        say(statusText(name, args[2]), HOLD.message, { status });
+        say(from.kind === "item" ? itemStatusText(name, args[2], up(from.name)) : statusText(name, args[2]), HOLD.message, { status });
         break;
       }
 
@@ -534,6 +534,20 @@ function statusText(name: string, status: Status): Message {
       return msg(name, "fell asleep!");
     case "frz":
       return msg(`${name} was`, "frozen solid!");
+  }
+}
+
+/** A status from the Pokémon's own held item (Flame Orb, Toxic Orb). */
+function itemStatusText(name: string, status: Status, item: string): Message {
+  switch (status) {
+    case "brn":
+      return msg(`${name} was burned`, `by its ${item}!`);
+    case "tox":
+      return msg(`${name} was badly poisoned`, `by its ${item}!`);
+    case "psn":
+      return msg(`${name} was poisoned`, `by its ${item}!`);
+    default:
+      return statusText(name, status);
   }
 }
 
