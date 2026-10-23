@@ -228,7 +228,7 @@ beside the names.
   `picomon.trainer`; only the lobby reads it, the later boards still show GOLD.
 
 ### Lobby (`Lobby.dc.html`)
-- Waiting: title "WAITING ROOM", the code as four framed 96×120 letter cells, and a
+- Waiting: title "WAITING ROOM", the code as four unframed 96×120 letter cells, and a
   COPY button that copies the code and shows "COPIED!" for 1.5s. The app shows
   "COPIED!" only once the copy succeeds. COPY is 300px wide so it fits "COPIED!"
   without resizing. It sits right after the letter cells, 24px from the last one
@@ -602,7 +602,7 @@ Base stat bar colour by value:
 
 ### Components
 
-**Crystal frame** (text boxes, panels, fields, code cells): a thick outer line, a gap,
+**Crystal frame** (text boxes, panels, fields): a thick outer line, a gap,
 then a thin inner line. Every corner is pixelated: the outer edge has a staircase of two
 3px steps cut away, a 3px ink square fills the gap's corner so the thick line's inner
 edge is rounded too, and the thin inner line has one 3px step cut from each corner.

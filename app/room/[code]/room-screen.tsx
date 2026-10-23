@@ -71,9 +71,9 @@ export function RoomScreen({
         <div className={styles.lobby__codeRow}>
           <VisuallyHidden>{code}</VisuallyHidden>
           {[...code].map((ch, i) => (
-            <Frame as="span" key={i} className={styles.lobby__codeCell} aria-hidden="true">
+            <span key={i} className={styles.lobby__codeCell} aria-hidden="true">
               {ch}
-            </Frame>
+            </span>
           ))}
           {!full && (
             <Button className={styles.lobby__copy} onClick={copy}>
