@@ -7,8 +7,8 @@ export default {
   ability: "Natural Cure",
   types: ["Grass", "Fairy"],
   set: {
-    moves: ["Nasty Plot", "Giga Drain", "Dazzling Gleam", "Recover"],
-    item: "Life Orb",
+    moves: ["Calm Mind", "Giga Drain", "Dazzling Gleam", "Recover"],
+    item: "Big Root",
     nature: "Timid",
     evs: { hp: 4, spa: 252, spe: 252 },
   },

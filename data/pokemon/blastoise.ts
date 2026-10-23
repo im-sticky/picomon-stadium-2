@@ -4,12 +4,12 @@ export default {
   id: "blastoise",
   sprite: "/sprites/pokemon-icons/blastoise.png",
   isGreat: true,
-  ability: "Torrent",
+  ability: "Mega Launcher",
   types: ["Water", "Steel"],
   set: {
-    moves: ["Surf", "Ice Beam", "Toxic", "Protect"],
-    item: "Leftovers",
-    nature: "Bold",
-    evs: { hp: 252, def: 252, spd: 4 },
+    moves: ["Flash Cannon", "Water Pulse", "Shell Smash", "Aura Sphere"],
+    item: "Weakness Policy",
+    nature: "Modest",
+    evs: { hp: 252, spa: 252, spd: 4 },
   },
 } satisfies PokemonEntry;

@@ -7,8 +7,8 @@ export default {
   ability: "Speed Boost",
   types: ["Bug", "Dragon"],
   set: {
-    moves: ["Protect", "Bug Buzz", "Air Slash", "Giga Drain"],
-    item: "Life Orb",
+    moves: ["Protect", "Bug Buzz", "Dragonbreath", "Baton Pass"],
+    item: "Lum Berry",
     nature: "Timid",
     evs: { hp: 4, spa: 252, spe: 252 },
   },

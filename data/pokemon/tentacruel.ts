@@ -4,7 +4,7 @@ export default {
   id: "tentacruel",
   sprite: "/sprites/pokemon-icons/tentacruel.png",
   isGreat: true,
-  ability: "Clear Body",
+  ability: "Rain Dish",
   set: {
     moves: ["Scald", "Sludge Bomb", "Rapid Spin", "Knock Off"],
     item: "Black Sludge",
