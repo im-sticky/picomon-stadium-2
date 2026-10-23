@@ -59,7 +59,8 @@ a{color:inherit;text-decoration:none}
 
   <!-- Intro: the opponent's trainer and both teams as rows of balls -->
   <sc-if value="{{trainer}}" hint-placeholder-val="{{ false }}">
-    <div class="abs ph" aria-label="{{oppName}}" style="right: 120px; top: 36px; width: 192px; height: 192px">TRAINER</div>
+    <!-- The trainer your opponent picked on Host or join, in the opponent's Pokémon box (3× the 112px PNG) -->
+    <div class="abs mon" style="right: 132px; top: 12px"><img class="pix" src="{{oppTrainer}}" alt="{{oppName}}" style="width: 336px; height: 336px"></div>
     <div class="abs balls" aria-label="{{oppName}}'s team" style="left: 72px; top: 96px; border-left: 3px solid #181818">
       <sc-for list="{{teamBalls}}" as="b" hint-placeholder-count="6">
         <img class="pix p2ball" src="/_blob/42adad1d7cf5061d3889e683f8adb86c" alt="" style="width: 32px; height: 32px">
@@ -331,6 +332,8 @@ class Component extends DCLogic {
     const hov = s.hover != null ? MOVES[s.hover] : null;
     return {
       oppName: NAMES[2],
+      // The opponent's trainer sprite (sample opponent: Silver)
+      oppTrainer: '/_blob/8dd7d340721b49346e7d79dd082fbf28',
       me, opp,
       trainer: s.trainer,
       teamBalls: Array.from({ length: count }, (_, k) => k),

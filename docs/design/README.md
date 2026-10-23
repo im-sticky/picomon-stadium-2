@@ -388,8 +388,10 @@ from their own side: their Pokémon bottom left, the opponent's top right. Every
 is absolutely placed on the 1200×900 board.
 
 - Intro (4a):
-  - The opponent's trainer sprite sits where their Pokémon will be (top right,
-    192px). The design uses a dashed placeholder box until trainer sprites exist.
+  - The opponent's trainer sprite (the trainer they chose on Host or join) sits
+    where their Pokémon will be: the same 336px box at right 132, top 12, the
+    112px PNG at 3×. Each player sees the other's trainer. The design shows the
+    sample opponent, Silver.
   - Both teams show as rows of 32px balls on a 3px ink line with an end stroke: the
     opponent's top left (blue-tinted, line open to the right), yours on the right
     above where your info will go. One ball per Pokémon in the battle (3, 4 or 6).
@@ -707,8 +709,7 @@ early on but are no longer used.
 - Player names (GOLD, SILVER) and the room code (K7QM) are samples.
 - Both FIRST and SECOND go to the same draft board. A board where P2 drafts first
   doesn't exist yet.
-- Battle: trainer sprites are dashed placeholder boxes and status sprites are
-  placeholder tags. The
+- Battle: status sprites are placeholder tags. The
   turn, damage and messages in the prototype are faked on timers. Every team row
   and SWITCH open the same Venusaur boards.
 - The designs are fixed 1200×900. Scaling to the window, and phone layouts, haven't
