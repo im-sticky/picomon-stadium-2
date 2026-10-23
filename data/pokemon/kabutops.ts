@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "kabutops",
   sprite: "/sprites/pokemon-icons/kabutops.png",
+  isGreat: true,
   ability: "Battle Armor",
   set: {
     moves: ["Swords Dance", "Waterfall", "Stone Edge", "Aqua Jet"],

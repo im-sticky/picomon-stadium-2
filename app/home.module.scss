@@ -41,19 +41,14 @@
   }
 }
 
+/* Fills the content width (1056px) with three equal columns 48px apart. */
 .homeForm {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  width: 768px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 48px;
+  align-self: stretch;
   box-sizing: border-box;
   padding: 30px 42px;
-
-  &__columns {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: 48px;
-  }
 
   &__column {
     display: flex;
@@ -73,6 +68,32 @@
     font-size: 32px;
     letter-spacing: 16px;
     text-align: center;
+  }
+
+  /* Pushed to the bottom of its column, level with CHANGE. */
+  @at-root a#{&}__rules {
+    margin-top: auto;
+  }
+
+  &__trainerName {
+    /* Keeps its line before the browser's choice is known. */
+    min-height: 32px;
+    margin-bottom: 12px;
+    font-size: 24px;
+    line-height: 32px;
+  }
+
+  @at-root div#{&}__trainerFrame {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 240px;
+    height: 204px;
+    box-sizing: border-box;
+  }
+
+  &__trainerSprite {
+    @include pixelated;
   }
 
   &__message {

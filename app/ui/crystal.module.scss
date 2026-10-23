@@ -68,8 +68,7 @@
   }
 
   &:focus {
-    background: var(--hover);
-    @include double-line($gap: var(--hover));
+    background-color: var(--hover);
   }
 }
 
@@ -88,19 +87,21 @@
   font: inherit;
   font-size: 24px;
   color: var(--ink);
+  /* `ButtonLink` renders an <a>. */
+  text-decoration: none;
   @include crystal-frame;
   cursor: pointer;
 
   &:focus-visible {
     outline: none;
-    background: var(--hover);
+    background-color: var(--hover);
   }
 
   &--primary,
   &--primary:focus-visible {
     color: var(--bg);
-    background: var(--ink);
-    @include double-line($line: var(--bg), $gap: var(--ink));
+    background-color: var(--ink);
+    @include double-line($line: var(--bg), $edge: var(--ink));
   }
 
   &:disabled {
@@ -123,8 +124,9 @@
     fill: var(--bg);
   }
 
-  &:enabled:hover &__cursor,
-  &:enabled:focus-visible &__cursor {
+  /* :not(:disabled) also matches links, which are never :enabled. */
+  &:not(:disabled):hover &__cursor,
+  &:not(:disabled):focus-visible &__cursor {
     visibility: visible;
   }
 }
@@ -146,6 +148,18 @@
     font-size: 16px;
     line-height: 24px;
     cursor: pointer;
+  }
+
+  /* Stacked: one 32px row per option, 8px apart (the draft type). */
+  &--vertical {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    height: auto;
+  }
+
+  &--vertical &__option {
+    height: 32px;
   }
 
   &__input {
@@ -219,10 +233,27 @@
       calc(100% - 3px) calc(100% - 3px), calc(100% - 3px) 100%, 0 100%);
   }
 
+  /* Green; yellow below 51%, red below 15%. */
   &__fill {
     height: 100%;
     background: #40c048;
+
+    &--low {
+      background: #f8b830;
+    }
+
+    &--critical {
+      background: #e04030;
+    }
   }
+}
+
+/* The 64×24 status slot (left of the level in battle, beside "HP" on Detail). Always
+   reserved so nothing moves; empty outside battle. */
+.statusSlot {
+  display: flex;
+  flex: none;
+  height: 24px;
 }
 
 /* Shows one frame of a two-frame sprite sheet at a time. */
@@ -239,6 +270,27 @@
     @media (prefers-reduced-motion: reduce) {
       animation: none;
     }
+  }
+}
+
+/* A battle sprite (80, 96 or 112px) at the bottom centre of a 112px box, as in the
+   game, so Pokémon of different sizes line up. */
+.pokemonSprite {
+  display: flex;
+  flex: none;
+  align-items: flex-end;
+  justify-content: center;
+  width: 112px;
+  height: 112px;
+
+  /* The front strip: square frames stacked vertically, one shown at a time. */
+  &__front {
+    @include pixelated;
+    background-repeat: no-repeat;
+  }
+
+  &__back {
+    @include pixelated;
   }
 }
 
@@ -324,4 +376,9 @@
   &__icon {
     @include pixelated;
   }
+}
+
+/* The ball tier beside a Pokémon's name. */
+.ballIcon {
+  @include pixelated;
 }

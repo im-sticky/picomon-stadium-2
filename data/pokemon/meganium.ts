@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "meganium",
   sprite: "/sprites/pokemon-icons/meganium.png",
+  isGreat: true,
   ability: "Natural Cure",
   types: ["Grass", "Fairy"],
   set: {

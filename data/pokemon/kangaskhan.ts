@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "kangaskhan",
   sprite: "/sprites/pokemon-icons/kangaskhan.png",
+  isGreat: true,
   ability: "Scrappy",
   set: {
     moves: ["Fake Out", "Double-Edge", "Sucker Punch", "Earthquake"],

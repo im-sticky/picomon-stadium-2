@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "gliscor",
   sprite: "/sprites/pokemon-icons/gliscor.png",
+  isGreat: true,
   ability: "Poison Heal",
   set: {
     moves: ["Swords Dance", "Earthquake", "Knock Off", "Roost"],

@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Choose a trainer</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.gb{font-family:'Press Start 2P',monospace;color:#181818;background:#F8F8F8;-webkit-font-smoothing:none}
+.gb p,.gb h1,.gb h2{margin:0;font-weight:400}
+.frame{border:6px solid #181818;background-color:#F8F8F8}
+.pix{image-rendering:pixelated;display:block}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+.cur{flex:none;visibility:hidden}
+/* Pixel corners: two 3px steps off the outer edge, a 3px square rounding the thick line's inner edge, one step off the thin line */
+.tcell.on{--l:#181818;--e:var(--l);background-image:linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e));background-position:left 6px top 3px,left 6px bottom 3px,left 3px top 6px,right 3px top 6px,left top,right top,left bottom,right bottom;background-size:calc(100% - 12px) 3px,calc(100% - 12px) 3px,3px calc(100% - 12px),3px calc(100% - 12px),3px 3px,3px 3px,3px 3px,3px 3px;background-repeat:no-repeat}
+.tcell.on{clip-path:polygon(6px 0,calc(100% - 6px) 0,calc(100% - 6px) 3px,calc(100% - 3px) 3px,calc(100% - 3px) 6px,100% 6px,100% calc(100% - 6px),calc(100% - 3px) calc(100% - 6px),calc(100% - 3px) calc(100% - 3px),calc(100% - 6px) calc(100% - 3px),calc(100% - 6px) 100%,6px 100%,6px calc(100% - 3px),3px calc(100% - 3px),3px calc(100% - 6px),0 calc(100% - 6px),0 6px,3px 6px,3px 3px,6px 3px)}
+/* Trainer cells: name over the sprite; grey on hover, framed when it's your current trainer */
+.tcell{display:flex;flex-direction:column;align-items:center;width:240px;box-sizing:border-box;padding:12px 0;border:6px solid transparent;text-align:center;font-size:24px;line-height:36px;color:inherit;clip-path:polygon(6px 0,calc(100% - 6px) 0,calc(100% - 6px) 3px,calc(100% - 3px) 3px,calc(100% - 3px) 6px,100% 6px,100% calc(100% - 6px),calc(100% - 3px) calc(100% - 6px),calc(100% - 3px) calc(100% - 3px),calc(100% - 6px) calc(100% - 3px),calc(100% - 6px) 100%,6px 100%,6px calc(100% - 3px),3px calc(100% - 3px),3px calc(100% - 6px),0 calc(100% - 6px),0 6px,3px 6px,3px 3px,6px 3px)}
+.tcell:hover,.tcell:focus-visible{background-color:#E8E8E8;outline:none}
+.tcell.on{border-color:#181818}
+/* Custom pixel scrollbar, as on the draft */
+.scroller{scrollbar-width:none}
+.scroller::-webkit-scrollbar{display:none}
+.scroller:focus-visible{outline:3px solid #181818;outline-offset:3px}
+.sbar{width:36px;height:744px;display:flex;flex-direction:column;flex:none}
+.sbtn,.sthumb{box-sizing:border-box;background:#181818;border:0;box-shadow:inset 3px 3px 0 #585858}
+.sbtn{width:36px;height:36px;padding:0;display:flex;align-items:center;justify-content:center;cursor:pointer;font:inherit}
+.strack{position:relative;flex:1;background-color:#585858;background-image:conic-gradient(#181818 25%,#585858 0 50%,#181818 0 75%,#585858 0);background-size:6px 6px}
+.sthumb{position:absolute;left:0;width:36px;cursor:grab}
+</style>
+</helmet>
+<div class="gb" style="width: 1200px; height: 900px; box-sizing: border-box; padding: 36px 72px; display: flex; flex-direction: column; gap: 24px">
+  <h1 style="font-size: 32px; line-height: 48px; text-align: center">CHOOSE A TRAINER</h1>
+  <div style="display: flex; gap: 12px; height: 744px">
+    <div class="scroller" tabindex="0" ref="{{setScroller}}" onScroll="{{onScroll}}" aria-label="Trainers, scrollable" style="height: 744px; flex: 1; min-width: 0; overflow-y: auto">
+      <div role="list" aria-label="Trainers" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); justify-items: center; row-gap: 12px">
+        <sc-for list="{{cells}}" as="c" hint-placeholder-count="28">
+          <div role="listitem">
+            <button type="button" class="tcell {{c.on}}" onClick="{{c.pick}}" aria-pressed="{{c.current}}">
+              <span>{{c.name}}</span>
+              <img class="pix" src="{{c.src}}" alt="" style="width: 168px; height: 168px">
+            </button>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div class="sbar" aria-hidden="true">
+      <button type="button" class="sbtn" tabindex="-1" onClick="{{scrollUp}}">
+        <svg width="21" height="12" viewBox="0 0 7 4" shape-rendering="crispEdges"><path d="M3 0h1v1h1v1h1v1h1v1H0V3h1V2h1V1h1z" fill="#F8F8F8"></path></svg>
+      </button>
+      <div class="strack" onPointerDown="{{trackDown}}">
+        <div class="sthumb" onPointerDown="{{thumbDown}}" style="top: {{thumbTop}}; height: {{thumbH}}"></div>
+      </div>
+      <button type="button" class="sbtn" tabindex="-1" onClick="{{scrollDown}}">
+        <svg width="21" height="12" viewBox="0 0 7 4" shape-rendering="crispEdges" style="transform: scaleY(-1)"><path d="M3 0h1v1h1v1h1v1H0V3h1V2h1V1h1z" fill="#F8F8F8"></path></svg>
+      </button>
+    </div>
+  </div>
+  <a href="Home.dc.html" ref="{{setGo}}" hidden aria-hidden="true" tabindex="-1"></a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    let current = null;
+    try { current = localStorage.getItem('picomon.trainer'); } catch (e) {}
+    this.state = { st: 0, sh: 1, ch: 1, current };
+  }
+  componentDidMount() {
+    this.t = setTimeout(() => this.measure(), 50);
+  }
+  componentWillUnmount() {
+    clearTimeout(this.t);
+    if (this.stopDrag) this.stopDrag();
+  }
+  measure() {
+    const el = this.scroller;
+    if (el) this.setState({ st: el.scrollTop, sh: el.scrollHeight, ch: el.clientHeight });
+  }
+  renderVals() {
+    // public/sprites/trainers: [file name, blob id]. The name is the file name in title case.
+    // Order: Gold, Kris, Silver; Johto gym leaders; Johto Elite Four and champion;
+    // Kanto gym leaders (as in Gold/Silver); Red; the rest of Kanto's Elite Four; Giovanni
+    const TRAINERS = [
+      ['gold', '7f637d61cab3e8387ee08d8d25e9aaff'],
+      ['kris', 'c76b836c1bfafdbd78deeff9250a2095'],
+      ['silver', '8dd7d340721b49346e7d79dd082fbf28'],
+      ['falkner', '3633e800b02d55550e59ce2c19661332'],
+      ['bugsy', '2c34c60ea3b7d0e560ecee5f8882649c'],
+      ['whitney', '3f1d1e51f188d576cdf6ff213244de92'],
+      ['morty', '31c7c66349950053d289e7009b0cef41'],
+      ['chuck', 'ef6a283f9174874dcefcfd29675ab0e8'],
+      ['jasmine', 'ab587a0fea49e1e45d255933a2a9b20f'],
+      ['pryce', '57019ed49172f8938e4e86b36b6d4563'],
+      ['clair', 'eec8625311a09aa930d1723b3599577a'],
+      ['will', 'bcb5249fab074b00df80918074911aab'],
+      ['koga', '3136d5c922788f1acc09f150aed31e3a'],
+      ['bruno', '6631192fbea7e4aa039ca91b9cf07022'],
+      ['karen', '849cce6ecd797a181b1a8e27a2d104f8'],
+      ['lance', 'b295f6a618643524a9cff8a444cd7bac'],
+      ['brock', '274e0824a621ddde57e070372450a1c9'],
+      ['misty', '652b71cb448e2cac7967510c0f3e536e'],
+      ['lt_surge', 'c4df8e31b8efae8697939eabb05b9f80'],
+      ['erika', '7732cb788bc91f428fae8f78c4bc6760'],
+      ['janine', '23d0dc64e78dd6952e8daff8be2f8c9a'],
+      ['sabrina', '34326cb277f15d19c7b72abbc55ab960'],
+      ['blaine', '71f4fc3456a69c5cffbe00e89a2f2f14'],
+      ['blue', 'e3b1a84563374ad85508630487a1b2cb'],
+      ['red', '54b041d4226b8eb651ebf309fb29c2ae'],
+      ['lorelei', '98d1406c9bd7119af50f4d63130141ae'],
+      ['agatha', 'fa3130ff22b78328859c618dbaeae44c'],
+      ['giovanni', '18da1034643f5b00a284aab3d6bf6e40']
+    ];
+    const title = (key) => key.split('_').map((w) => w[0].toUpperCase() + w.slice(1)).join(' ');
+    // Custom scrollbar: 744px bar = 36px up button + 672px track + 36px down button
+    const TRACK = 672;
+    const ROW = 252;
+    const { st, sh, ch } = this.state;
+    const max = Math.max(1, sh - ch);
+    const thumbPx = sh <= ch ? TRACK : Math.max(36, Math.round(TRACK * ch / sh));
+    const thumbTopPx = sh <= ch ? 0 : Math.round(st / max * (TRACK - thumbPx));
+    const scrollBy = (dy) => this.scroller && this.scroller.scrollBy({ top: dy, behavior: 'smooth' });
+    const trackDown = (e) => {
+      if (e.target !== e.currentTarget) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      const y = (e.clientY - rect.top) * TRACK / rect.height;
+      scrollBy(y < thumbTopPx ? -ch : ch);
+    };
+    const thumbDown = (e) => {
+      const el = this.scroller;
+      if (!el || sh <= ch) return;
+      e.preventDefault();
+      // The canvas may be zoomed: convert screen pixels back to design pixels
+      const scale = e.currentTarget.parentElement.getBoundingClientRect().height / TRACK;
+      const startY = e.clientY;
+      const start = el.scrollTop;
+      const ratio = max / (TRACK - thumbPx);
+      const move = (ev) => { el.scrollTop = start + (ev.clientY - startY) / scale * ratio; };
+      const up = () => this.stopDrag && this.stopDrag();
+      this.stopDrag = () => {
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', up);
+        this.stopDrag = null;
+      };
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', up);
+    };
+    // Picking a trainer makes it yours and goes back to Home (prototype: via localStorage)
+    const pick = (key) => {
+      try { localStorage.setItem('picomon.trainer', key); } catch (e) {}
+      this.setState({ current: key });
+      if (this.go) this.go.click();
+    };
+    return {
+      cells: TRAINERS.map(([key, id]) => ({
+        name: title(key),
+        src: '/_blob/' + id,
+        on: key === this.state.current ? 'on' : '',
+        current: key === this.state.current,
+        pick: () => pick(key)
+      })),
+      setScroller: (el) => { this.scroller = el; },
+      setGo: (el) => { this.go = el; },
+      onScroll: () => this.measure(),
+      scrollUp: () => scrollBy(-ROW),
+      scrollDown: () => scrollBy(ROW),
+      trackDown,
+      thumbDown,
+      thumbTop: thumbTopPx + 'px',
+      thumbH: thumbPx + 'px'
+    };
+  }
+}
+</script>
+</body>
+</html>

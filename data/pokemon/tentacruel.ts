@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "tentacruel",
   sprite: "/sprites/pokemon-icons/tentacruel.png",
+  isGreat: true,
   ability: "Clear Body",
   set: {
     moves: ["Scald", "Sludge Bomb", "Rapid Spin", "Knock Off"],

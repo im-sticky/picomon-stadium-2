@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "blissey",
   sprite: "/sprites/pokemon-icons/blissey.png",
+  isGreat: true,
   ability: "Natural Cure",
   set: {
     moves: ["Soft-Boiled", "Seismic Toss", "Toxic", "Heal Bell"],

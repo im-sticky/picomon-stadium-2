@@ -2,6 +2,54 @@
   "v": 3,
   "attachments": {},
   "boards": {
+    "Battle.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "4a · Battle intro (plays)",
+      "w": 1200,
+      "x": 0,
+      "y": 5100
+    },
+    "BattleAbility.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "4b · Opponent's ability indicator",
+      "w": 1200,
+      "x": 1280,
+      "y": 5100
+    },
+    "BattleAbilityYou.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "4i · Your ability indicator",
+      "w": 1200,
+      "x": 3840,
+      "y": 6200
+    },
+    "BattleFight.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "4d · Moves (hover)",
+      "w": 1200,
+      "x": 3840,
+      "y": 5100
+    },
+    "BattleMenu.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "4c · Fight or Pokémon",
+      "w": 1200,
+      "x": 2560,
+      "y": 5100
+    },
+    "BattleTurn.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "4e · Turn messages",
+      "w": 1200,
+      "x": 5120,
+      "y": 5100
+    },
     "Detail.dc.html": {
       "h": 900,
       "is_interactive": true,
@@ -9,6 +57,22 @@
       "w": 1200,
       "x": 0,
       "y": 2422
+    },
+    "DetailBattle.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "4g · Detail in battle",
+      "w": 1200,
+      "x": 1280,
+      "y": 6200
+    },
+    "DetailFainted.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "4h · Detail, fainted",
+      "w": 1200,
+      "x": 2560,
+      "y": 6200
     },
     "DetailRented.dc.html": {
       "h": 900,
@@ -48,14 +112,14 @@
       "title": "0a · Host or join",
       "w": 1200,
       "x": 0,
-      "y": -1320
+      "y": -2629
     },
     "HomeError.dc.html": {
       "h": 900,
       "title": "0b · Join error",
       "w": 1200,
       "x": 1280,
-      "y": -1320
+      "y": -2629
     },
     "Lobby.dc.html": {
       "h": 900,
@@ -63,7 +127,7 @@
       "title": "0c · Waiting room",
       "w": 1200,
       "x": 2560,
-      "y": -1320
+      "y": -2629
     },
     "LobbyFull.dc.html": {
       "h": 900,
@@ -71,7 +135,7 @@
       "title": "0d · Both players in",
       "w": 1200,
       "x": 3840,
-      "y": -1320
+      "y": -2629
     },
     "Main.dc.html": {
       "h": 900,
@@ -81,12 +145,28 @@
       "x": 0,
       "y": 0
     },
+    "Party.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "4f · Your Pokémon",
+      "w": 1200,
+      "x": 0,
+      "y": 6200
+    },
     "Result.dc.html": {
       "h": 900,
       "title": "1b · Type result",
       "w": 1200,
       "x": 1280,
       "y": 0
+    },
+    "Rules.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "0e · Draft rules",
+      "w": 1200,
+      "x": 0,
+      "y": -1464
     },
     "TeamOrder.dc.html": {
       "h": 900,
@@ -103,6 +183,22 @@
       "w": 1200,
       "x": 1280,
       "y": 3760
+    },
+    "Trainers.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "0f · Choose a trainer",
+      "w": 1200,
+      "x": 1280,
+      "y": -1464
+    },
+    "DraftPokeBall.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "2g · Poké Ball draft",
+      "w": 1200,
+      "x": 3840,
+      "y": 1320
     }
   },
   "createdOnFiles": {
@@ -116,11 +212,11 @@
   "notes": {
     "row0": {
       "kind": "title1",
-      "maxW": 5040,
+      "maxW": 7600,
       "text": "0 · Host or join",
       "w": 240,
       "x": 0,
-      "y": -1620
+      "y": -2929
     },
     "row1": {
       "kind": "title1",
@@ -145,6 +241,14 @@
       "w": 240,
       "x": 0,
       "y": 3460
+    },
+    "row4": {
+      "kind": "title1",
+      "maxW": 6320,
+      "text": "4 · Battle",
+      "w": 240,
+      "x": 0,
+      "y": 4800
     }
   },
   "order": [
@@ -152,6 +256,8 @@
     "HomeError.dc.html",
     "Lobby.dc.html",
     "LobbyFull.dc.html",
+    "Rules.dc.html",
+    "Trainers.dc.html",
     "Main.dc.html",
     "Result.dc.html",
     "Draft.dc.html",
@@ -159,8 +265,18 @@
     "DraftRented.dc.html",
     "DraftDone.dc.html",
     "DetailRented.dc.html",
+    "DraftPokeBall.dc.html",
     "TeamOrder.dc.html",
-    "TeamOrderLocked.dc.html"
+    "TeamOrderLocked.dc.html",
+    "Battle.dc.html",
+    "BattleAbility.dc.html",
+    "BattleMenu.dc.html",
+    "BattleFight.dc.html",
+    "BattleTurn.dc.html",
+    "Party.dc.html",
+    "DetailBattle.dc.html",
+    "DetailFainted.dc.html",
+    "BattleAbilityYou.dc.html"
   ],
   "pages": [],
   "title": "Picomon Stadium Layout"

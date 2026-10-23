@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "skarmory",
   sprite: "/sprites/pokemon-icons/skarmory.png",
+  isGreat: true,
   ability: "Sturdy",
   baseStats: { hp: 85, atk: 80, def: 140, spa: 40, spd: 70, spe: 70 },
   set: {

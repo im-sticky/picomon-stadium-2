@@ -14,7 +14,7 @@
 body{margin:0}
 .gb{font-family:'Press Start 2P',monospace;color:#181818;background:#F8F8F8;-webkit-font-smoothing:none}
 .gb p,.gb h1,.gb h2{margin:0;font-weight:400}
-.frame{border:6px solid #181818;border-radius:6px;box-shadow:inset 0 0 0 3px #F8F8F8,inset 0 0 0 6px #181818;background:#F8F8F8}
+.frame{border:6px solid #181818;background-color:#F8F8F8}
 .pix{image-rendering:pixelated;display:block}
 .spr{overflow:hidden;flex:none}
 button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
@@ -25,6 +25,9 @@ button:disabled{cursor:default}
 .pick:not(:disabled):hover,.pick:focus-visible{background:#E8E8E8;outline:none}
 .pick:disabled{opacity:.3}
 .opp{display:flex;align-items:center;justify-content:flex-end;gap:18px;height:66px;padding:0 12px;font-size:24px}
+/* Pixel corners: two 3px steps off the outer edge, a 3px square rounding the thick line's inner edge, one step off the thin line */
+.frame{--l:#181818;--e:var(--l);background-image:linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e));background-position:left 6px top 3px,left 6px bottom 3px,left 3px top 6px,right 3px top 6px,left top,right top,left bottom,right bottom;background-size:calc(100% - 12px) 3px,calc(100% - 12px) 3px,3px calc(100% - 12px),3px calc(100% - 12px),3px 3px,3px 3px,3px 3px,3px 3px;background-repeat:no-repeat}
+.frame{clip-path:polygon(6px 0,calc(100% - 6px) 0,calc(100% - 6px) 3px,calc(100% - 3px) 3px,calc(100% - 3px) 6px,100% 6px,100% calc(100% - 6px),calc(100% - 3px) calc(100% - 6px),calc(100% - 3px) calc(100% - 3px),calc(100% - 6px) calc(100% - 3px),calc(100% - 6px) 100%,6px 100%,6px calc(100% - 3px),3px calc(100% - 3px),3px calc(100% - 6px),0 calc(100% - 6px),0 6px,3px 6px,3px 3px,6px 3px)}
 </style>
 </helmet>
 <div class="gb" style="width: 1200px; height: 900px; box-sizing: border-box; padding: 36px 72px; display: flex; flex-direction: column; gap: 24px">
@@ -81,6 +84,7 @@ button:disabled{cursor:default}
     <p style="font-size: 24px; line-height: 48px">{{msg1}}</p>
     <p style="font-size: 24px; line-height: 48px">{{msg2}}</p>
   </div>
+  <a href="Battle.dc.html" ref="{{setGo}}" hidden aria-hidden="true" tabindex="-1"></a>
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"count":{"editor":"enum","options":["","3","4","6"],"default":""},"chosen":{"editor":"text","default":""},"oppFilled":{"editor":"int","min":0,"max":6,"default":2},"timeLeft":{"editor":"int","min":0,"max":75,"default":75},"$preview":{"width":1200,"height":900}}'>
@@ -101,6 +105,7 @@ class Component extends DCLogic {
   }
   componentWillUnmount() {
     clearInterval(this.tick);
+    clearTimeout(this.tg);
   }
   renderVals() {
     // Player 1 is always the host; names come from the room
@@ -140,6 +145,11 @@ class Component extends DCLogic {
     const pick = (i) => {
       if (locked || chosen.includes(i)) return;
       this.setState({ chosen: chosen.concat(i) });
+      // Prototype only: once you lock in, the battle starts 2 seconds later
+      if (chosen.length + 1 >= count) {
+        clearTimeout(this.tg);
+        this.tg = setTimeout(() => this.go && this.go.click(), 2000);
+      }
     };
 
     const mySlots = Array.from({ length: count }, (_, k) => {
@@ -178,7 +188,8 @@ class Component extends DCLogic {
       })),
       oppTeam: THEIRS.map(([name, id]) => ({ name, src: src(id) })),
       msg1,
-      msg2
+      msg2,
+      setGo: (el) => { this.go = el; }
     };
   }
 }

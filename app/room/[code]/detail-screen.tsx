@@ -3,10 +3,11 @@
 import { useState } from "react";
 import Image from "next/image";
 import type { PoolMove, PoolPokemon, StatKey } from "@/lib/draft-pool";
+import { BallIcon } from "@/app/ui/ball-icon";
 import { Button } from "@/app/ui/button";
 import { Frame } from "@/app/ui/frame";
 import { HeldItem } from "@/app/ui/held-item";
-import { HpBar } from "@/app/ui/hp-bar";
+import { HpBar, StatusSlot } from "@/app/ui/hp-bar";
 import { PokemonIcon } from "@/app/ui/pokemon-icon";
 import { Stage } from "@/app/ui/stage";
 import { TypeBadge } from "@/app/ui/type-badge";
@@ -75,7 +76,10 @@ export function DetailScreen({
         <div className={styles.detail__top}>
           <PokemonIcon src={pokemon.sprite} size={128} alt={pokemon.name} />
           <div className={styles.detail__nameBlock}>
-            <h2 className={styles.detail__name}>{pokemon.name.toUpperCase()}</h2>
+            <div className={styles.detail__nameRow}>
+              <BallIcon pokemon={pokemon} />
+              <h2 className={styles.detail__name}>{pokemon.name.toUpperCase()}</h2>
+            </div>
             <div className={styles.detail__badges}>
               {pokemon.types.map((t) => (
                 <TypeBadge key={t} type={t} />
@@ -135,15 +139,17 @@ export function DetailScreen({
             </div>
             {view === "calc" ? (
               <>
+                {/* "HP" and the status slot (empty outside battle), the bar, then the numbers. */}
                 <div className={styles.detail__statRow}>
                   <span>HP</span>
-                  <span>
-                    {hp}/{hp}
-                  </span>
+                  <StatusSlot className={styles.detail__status} />
                 </div>
                 <div className={styles.detail__hpRow}>
                   <HpBar value={hp} max={hp} className={styles.detail__hpBar} />
                 </div>
+                <p className={styles.detail__hpNumbers}>
+                  {hp}/{hp}
+                </p>
                 {STATS.slice(1).map((s) => (
                   <div key={s.key} className={styles.detail__statRow}>
                     <span>{s.calc}</span>

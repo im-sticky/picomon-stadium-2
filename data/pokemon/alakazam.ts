@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "alakazam",
   sprite: "/sprites/pokemon-icons/alakazam.png",
+  isGreat: true,
   ability: "Magic Guard",
   set: {
     moves: ["Calm Mind", "Psychic", "Focus Blast", "Shadow Ball"],

@@ -23,6 +23,11 @@ export interface PokemonEntry {
    * top of their one master). Defaults to false.
    */
   isUltra?: boolean;
+  /**
+   * Draft only. For Pokémon with a base stat total of 480 to 579. A great one shows
+   * a Great Ball on the draft screen. No draft limit. Defaults to false.
+   */
+  isGreat?: boolean;
   /** The one ability this Pokémon has. Replaces all of its gen6 abilities. */
   ability: string;
   /** New types (§17.1 of the gen6 research doc). Leave out to keep the gen6 types. */

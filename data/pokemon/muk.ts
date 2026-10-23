@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "muk",
   sprite: "/sprites/pokemon-icons/muk.png",
+  isGreat: true,
   ability: "Poison Touch",
   set: {
     moves: ["Gunk Shot", "Fire Punch", "Ice Punch", "Shadow Sneak"],

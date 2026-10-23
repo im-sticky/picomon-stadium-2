@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "houndoom",
   sprite: "/sprites/pokemon-icons/houndoom.png",
+  isGreat: true,
   ability: "Flash Fire",
   set: {
     moves: ["Nasty Plot", "Fire Blast", "Dark Pulse", "Sludge Bomb"],

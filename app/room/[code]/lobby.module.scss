@@ -38,7 +38,24 @@
      Tag-qualified so it outranks the shared button styles. */
   @at-root button#{&}__copy {
     min-width: 300px;
+    margin-left: 12px;
+  }
+
+  /* Battle size over draft type, right-aligned on the code row. */
+  &__settings {
     margin-left: auto;
+    text-align: right;
+  }
+
+  &__format {
+    font-size: 32px;
+    line-height: 48px;
+  }
+
+  &__draftType {
+    font-size: 16px;
+    line-height: 32px;
+    white-space: nowrap;
   }
 
   &__players {

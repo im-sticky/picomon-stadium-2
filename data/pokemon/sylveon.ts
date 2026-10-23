@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "sylveon",
   sprite: "/sprites/pokemon-icons/sylveon.png",
+  isGreat: true,
   ability: "Pixilate",
   set: {
     moves: ["Hyper Voice", "Psyshock", "Wish", "Protect"],

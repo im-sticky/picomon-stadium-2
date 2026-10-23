@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "omastar",
   sprite: "/sprites/pokemon-icons/omastar.png",
+  isGreat: true,
   ability: "Shell Armor",
   set: {
     moves: ["Shell Smash", "Hydro Pump", "Ice Beam", "Earth Power"],

@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "magnezone",
   sprite: "/sprites/pokemon-icons/magnezone.png",
+  isGreat: true,
   ability: "Levitate",
   set: {
     moves: ["Thunderbolt", "Flash Cannon", "Volt Switch", "Tri Attack"],

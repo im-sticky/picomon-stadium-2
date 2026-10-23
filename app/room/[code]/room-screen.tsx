@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { RoomState } from "@/lib/types";
+import { DRAFT_TYPE_LABELS, type RoomState } from "@/lib/types";
 import { Button } from "@/app/ui/button";
 import { SectionLabel } from "@/app/ui/field";
 import { Frame } from "@/app/ui/frame";
@@ -11,9 +11,9 @@ import { VisuallyHidden } from "@/app/ui/visually-hidden";
 import type { RoomAction } from "./room-view";
 import styles from "./lobby.module.scss";
 
-const WAITING: Message = ["Send this code to a friend.", "Waiting for PLAYER 2..."];
+const WAITING: Message = ["Send this code to a friend.", "Waiting for an opponent..."];
 const FULL_HOST: Message = ["Both players connected!", "Ready to battle?"];
-const FULL_GUEST: Message = ["Both players connected!", "Waiting for PLAYER 1..."];
+const fullGuest = (host: string): Message => ["Both players connected!", `Waiting for ${host}...`];
 const FAILED: Message = ["Something went wrong.", "Try again."];
 
 /** `notice` replaces the message box text (e.g. a realtime failure). */
@@ -26,12 +26,12 @@ export function RoomScreen({
   notice?: Message;
   onAction: RoomAction;
 }) {
-  const { code, players, you } = state;
+  const { code, players, you, battleSize, draftType } = state;
   const host = players.find((p) => p.slot === 1);
   const guest = players.find((p) => p.slot === 2);
   const full = players.length >= 2;
   const isHost = you.slot === 1;
-  const fullMessage = isHost ? FULL_HOST : FULL_GUEST;
+  const fullMessage = isHost ? FULL_HOST : fullGuest((host?.name ?? "").toUpperCase());
 
   const [copied, setCopied] = useState(false);
   const copiedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -80,6 +80,13 @@ export function RoomScreen({
               {copied ? "COPIED!" : "COPY"}
             </Button>
           )}
+          {/* The host's choices from Home. */}
+          <div className={styles.lobby__settings} aria-label="Battle size and draft type">
+            <p className={styles.lobby__format}>
+              {battleSize}V{battleSize}
+            </p>
+            <p className={styles.lobby__draftType}>{DRAFT_TYPE_LABELS[draftType]}</p>
+          </div>
         </div>
       </Frame>
 

@@ -68,8 +68,9 @@ Shared building blocks live in `app/styles/_mixins.scss`; pull them in with
 
 | Mixin | Use |
 |---|---|
-| `crystal-frame` | The full Crystal frame: 6px border plus the inner double line. |
-| `double-line($line, $gap)` | Just the inner double line (e.g. a selected option, a focused field). |
+| `crystal-frame` | The full Crystal frame: 6px border plus the inner double line, two-step 3px pixel corners. |
+| `pixel-steps($n)` | Cuts a two-step staircase of `$n` steps from each corner (Crystal frames). |
+| `double-line($line, $edge)` | Just the inner double line, and corner squares in the thick line's colour `$edge` (defaults to `$line`) (e.g. a selected option). The gap is the background colour, so change fills with `background-color`. |
 | `pixel-notch($n)` | Cuts an `$n` pixel block from each corner (type badges 4px, HP bar 3px). |
 | `pixelated` | `display: block` and pixelated scaling for sprites. |
 | `bare-list` / `bare-button` | Strip a list's or button's default spacing and styling. |
@@ -98,7 +99,9 @@ Home ──JOIN──▶ Lobby (full)
 
 | Board | File | What it shows |
 |---|---|---|
-| 0a Host or join | `Home.dc.html` | Name field, HOST, room code field, JOIN, message box |
+| 0a Host or join | `Home.dc.html` | HOST, battle size; room code field, JOIN, RULES; your trainer and CHANGE; message box |
+| 0e Draft rules | `Rules.dc.html` | The draft rules as a bulleted list, BACK |
+| 0f Choose a trainer | `Trainers.dc.html` | 4-column scrolling grid of trainers; picking one returns to Home |
 | 0b Join error | `HomeError.dc.html` | `Home` with `error="not-found"` |
 | 0c Waiting room | `Lobby.dc.html` | Room code cells, COPY, players list with empty P2 |
 | 0d Both players in | `LobbyFull.dc.html` | `Lobby` with `full`: both players, START BATTLE |
@@ -109,8 +112,18 @@ Home ──JOIN──▶ Lobby (full)
 | 2c Draft after rentals | `DraftRented.dc.html` | `Draft` with P1 and P2 rentals shown as pokéballs |
 | 2e Draft complete | `DraftDone.dc.html` | `Draft` with all 12 picks made: START BATTLE in the bottom box |
 | 2f Detail, view only | `DetailRented.dc.html` | `Detail` with `viewOnly` and `rentedBy="GOLD"`: opened from a team slot, BACK only |
+| 2g Poké Ball draft | `DraftPokeBall.dc.html` | `Draft` with `draft="pokeball"`: only Poké Ball tier Pokémon in the pool |
 | 3a Choose your order | `TeamOrder.dc.html` | Both teams in columns, pick your battle order into the pokéball slots |
 | 3b Locked in | `TeamOrderLocked.dc.html` | `TeamOrder` with your full order chosen and the opponent 4 of 6 in |
+| 4a Battle intro | `Battle.dc.html` | Plays the intro: "<NAME> wants to battle!", send-outs, an ability, then the menu |
+| 4b Opponent's ability indicator | `BattleAbility.dc.html` | `Battle` with the opponent's ability box showing |
+| 4c Fight or Pokémon | `BattleMenu.dc.html` | `Battle` waiting for your choice: FIGHT / POKéMON |
+| 4d Moves | `BattleFight.dc.html` | `Battle` with the move list open and the first move hovered (move info box) |
+| 4e Turn messages | `BattleTurn.dc.html` | `Battle` mid-turn: a move message, a poisoned opponent, yellow and red HP |
+| 4f Your Pokémon | `Party.dc.html` | Your battle team with HP and status, BACK, "Choose a POKéMON." |
+| 4g Detail in battle | `DetailBattle.dc.html` | `Detail` with `battle`: current HP, status, PP left, ◀ SWITCH/BACK ▶ |
+| 4h Detail, fainted | `DetailFainted.dc.html` | `Detail` with `battle` on fainted Gengar: SWITCH disabled |
+| 4i Your ability indicator | `BattleAbilityYou.dc.html` | `Battle` with your Pokémon's ability box showing |
 
 The `b`/`c`/`d` boards that import another file are the same screen in a different
 state, not separate screens.
@@ -125,12 +138,25 @@ exception is the lobby's players list, which keeps short red P1 / blue P2 labels
 beside the names.
 
 ### Home (`Home.dc.html`)
-- Name field: 1–10 characters, shown uppercase. The cap is 10 so the longest
-  name fits at 32px in every title and the type-select centre gap (the app's
-  `lib/names.ts` currently allows 12 and needs lowering to match).
+- No name field any more: your **trainer's name is your player name**. Keep the
+  name field's styles and component in the app (unused) in case it comes back.
+- The form box fills the content width (1056px, 72px from each side) and holds
+  three equal columns 48px apart, with 30px/42px padding. The controls inside keep
+  their sizes (buttons 240×108, code field 240px).
+  1. NEW ROOM: label and "Host a room and share its code." (16px, wraps to two
+     lines), HOST (dark primary), the battle size radios, then the draft type
+     radios.
+  2. ROOM CODE: the code field, JOIN, then RULES at the bottom of the column, level
+     with CHANGE.
+  3. TRAINER: label, the trainer's name (24px, title case, e.g. "Lt Surge"), a
+     240×204 Crystal frame with the trainer sprite at 168px centred in it, then
+     CHANGE.
+- Trainer: a random one the first time; after that whoever you last chose on
+  Choose a Trainer. CHANGE opens Choose a Trainer.
+- RULES opens Draft Rules.
 - Room code field: 4 characters from `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (matches
   `lib/codes.ts`).
-- HOST (dark primary button) validates the name, then creates a room.
+- HOST creates a room; there's no name to validate any more.
 - Battle size: three radio options under HOST: 3V3, 4V4 and 6V6 (6V6 selected
   by default). They sit on one 32px row, 24px apart, grouped as "Battle size" for
   screen readers.
@@ -139,23 +165,78 @@ beside the names.
   - The host's choice sets how many Pokémon each player sends into battle, which
     is the number of slots on the Battle order screen. It doesn't change the
     draft: each player always drafts 6.
-  - The form's padding and gaps are 30/24px (not 36px) so the extra row fits.
-- JOIN (submit, so Enter joins) validates the name and code, then joins.
+- Draft type: three radios stacked vertically under the battle size: "Standard
+  Draft" (selected by default), "Unlimited Draft" and "Poké Ball Draft". Same 24px
+  pixel radios and 16px labels as the battle size, each row 32px tall and 8px
+  apart, 24px below the battle size row, grouped as "Draft type" for screen
+  readers. The host's choice is stored on the room. What each type changes about
+  the draft isn't designed yet.
+- JOIN (submit, so Enter joins) validates the code, then joins.
 - The message box at the bottom shows the hint or the error:
-  - default: "Enter your name, then host a / room or join one with a code."
-  - no name: "Enter a name. / It can be 1-10 characters."
+  - default: "Host a room, or enter a / room code to join one."
   - wrong code length: "Enter a 4-character / room code."
   - unknown room: "Room not found. / Check the code and try again."
   - room full (from the server, no design copy): "Room is full." with a blank
     second line
   - any other failure: "Something went wrong. / Try again."
-- The name field is limited to 10 characters and the code field to 4.
+- The code field is limited to 4 characters.
+
+### Draft rules (`Rules.dc.html`)
+- Title "DRAFT RULES", a Crystal frame filling the space below it (30px/42px
+  padding), then BACK centred underneath, which returns to Home. The page padding
+  is 36px top and bottom, with 24px gaps.
+- The rules are bulleted lists, 24px text on 36px lines, 12px between rules. Each
+  bullet is a 12px ink square, 24px left of the text. Rules for every draft come
+  first, then a left-aligned 24px heading for each draft type with its own rules
+  below (24px above each heading, 12px below):
+  - Each POKéMON can only be picked once.
+  - The first player picks 1 POKéMON. Then each player picks 2 until both have 6.
+  - Only one of each held item per team.
+  - **Standard Draft**
+    - Only 1 [Ultra Ball icon] Ultra Ball POKéMON per team.
+    - Only 1 [Master Ball icon] Master Ball POKéMON per team.
+  - **Unlimited Draft**
+    - No limits to rank of POKéMON.
+  - **Poké Ball Draft**
+    - Only [Poké Ball icon] Poké Ball POKéMON allowed.
+- The ball icons are `icon-ultraball.png`, `icon-masterball.png` and
+  `icon-pokeballball.png` at 32px, inline before the ball's name.
+- The draft types match the Home radios (Standard, Unlimited, Poké Ball).
+- The second rule says "the first player", not "Player 1", following the player
+  names rule.
+
+### Choose a trainer (`Trainers.dc.html`)
+- Title "CHOOSE A TRAINER", then a 744px-tall scrolling grid with the same custom
+  pixel scrollbar as the draft (36px wide, 12px gap, up/down buttons, dithered
+  track, draggable thumb).
+- 4 columns. Each trainer is a 240px button: the name (24px, title case) above the
+  sprite (168px), 12px vertical padding, rows 12px apart. Light grey on hover; your
+  current trainer has the Crystal double-line frame.
+- Clicking a trainer makes it yours and returns to Home.
+- Order: Gold, Kris, Silver; the Johto gym leaders (Falkner, Bugsy, Whitney,
+  Morty, Chuck, Jasmine, Pryce, Clair); the Johto Elite Four and champion (Will,
+  Koga, Bruno, Karen, Lance); the Kanto gym leaders as in Gold/Silver (Brock,
+  Misty, Lt Surge, Erika, Janine, Sabrina, Blaine, Blue); Red; the rest of
+  Kanto's Elite Four (Lorelei, Agatha; Bruno and Lance are already listed); Giovanni.
+- Trainers are the files in `public/sprites/trainers/` (112px PNGs, drawn at 1.5×);
+  the name is the file name in title case with `_` as a space (`lt_surge.png` →
+  "Lt Surge"). All names are 10 characters or fewer.
+- The chosen trainer's name is the player's name everywhere a name appears
+  (uppercase in titles and lists, e.g. the lobby's "LT SURGE"), replacing the old
+  name field value through the same flow: it's sent when hosting or joining and
+  stored on the room. The prototype hands it between boards in `localStorage` key
+  `picomon.trainer`; only the lobby reads it, the later boards still show GOLD.
 
 ### Lobby (`Lobby.dc.html`)
 - Waiting: title "WAITING ROOM", the code as four framed 96×120 letter cells, and a
   COPY button that copies the code and shows "COPIED!" for 1.5s. The app shows
   "COPIED!" only once the copy succeeds. COPY is 300px wide so it fits "COPIED!"
-  without resizing.
+  without resizing. It sits right after the letter cells, 24px from the last one
+  (not pushed to the right edge).
+- On the right of the room code box, right-aligned and vertically centred on the
+  letter cells: the host's battle size ("6V6", 32px on a 48px line) over their
+  draft type ("Standard Draft", 16px on a 32px line, one line). Both lobby states
+  show it, so the guest sees the host's choices too.
 - Players list: a red `P1` label (`#C03028`, 48px wide) then the host's name with a
   HOST tag, and a blue `P2` label (`#2860B8`) then the guest's name, shown as
   `- - - - - -` until someone joins. The labels appear only in this list (0c and
@@ -184,7 +265,15 @@ beside the names.
   choosing the order...". A draw shows an AGAIN button that resets.
 
 ### Draft (`Draft.dc.html`)
-- Title: "<NAME>'S CHOICE" with the name of whoever's turn it is.
+- Draft type changes the pool. In a Poké Ball draft (2g) the grid shows only Poké
+  Ball tier Pokémon: those with none of `isGreat`, `isUltra` or `isMaster` in
+  `data/pokemon`. That's 38 right now (Arbok to Wobbuffet, alphabetical in the
+  design), so the grid is 5 rows and still scrolls. Every Pokémon's info box shows
+  the Poké Ball icon. Standard and Unlimited use the full pool.
+- Title: "YOUR CHOICE" on your turn, "<NAME>'S CHOICE" (the opponent's name) on
+  theirs, "DRAFT COMPLETE" at the end. Saying YOUR keeps it clear even when both
+  players picked the same trainer. Detail opened during your turn says "YOUR
+  CHOICE" too.
 - Team strip: six 64px slots per player (P1 left, P2 right). Picked slots show the
   Pokémon's icon, empty slots a faint pokéball.
   - Above the strip of whoever's turn it is, "N PICKS" (or "1 PICK") shows how
@@ -290,11 +379,106 @@ beside the names.
   - When the opponent chooses a Pokémon, fill their next slot with the solid
     (full-opacity) pokéball, never their Pokémon's sprite, so you can see their
     progress but not their order.
-  - Once both players have locked in, the battle starts 2 seconds later.
+  - Once both players have locked in, the battle starts 2 seconds later. The
+    prototype goes to `Battle.dc.html` 2 seconds after you lock in.
+
+### Battle (`Battle.dc.html`)
+Where both players land once the battle order is set. Each player sees the battle
+from their own side: their Pokémon bottom left, the opponent's top right. Everything
+is absolutely placed on the 1200×900 board.
+
+- Intro (4a):
+  - The opponent's trainer sprite (the trainer they chose on Host or join) sits
+    where their Pokémon will be: the same 336px box at right 132, top 12, the
+    112px PNG at 3×. Each player sees the other's trainer. The design shows the
+    sample opponent, Silver.
+  - Both teams show as rows of 32px balls on a 3px ink line with an end stroke: the
+    opponent's top left (blue-tinted, line open to the right), yours on the right
+    above where your info will go. One ball per Pokémon in the battle (3, 4 or 6).
+  - Messages, one at a time in the full-width box: "SILVER wants to battle!" (each
+    player sees the other's name), "SILVER sent out GYARADOS!", "Go! VENUSAUR!".
+    Then any on-entry abilities (below), then the menu.
+- Opponent (top left): name (24px), a row with the status slot then `L50` (24px),
+  the HP bar (384px), and below the bar (12px gap) their type badges (the standard
+  148×28 badges, 12px apart; GYARADOS shows WATER and FLYING). No HP numbers for
+  the opponent.
+- You: sprite bottom left (192px); info on the right with name, status slot +
+  `L50`, HP bar (384px) and your HP numbers below the bar, right-aligned
+  ("97/155", 24px).
+- No experience bar and no gender icon.
+- Sprites: the opponent uses `PokemonFront` (`app/ui/pokemon-front.tsx`) and you use
+  `PokemonBack` (`app/ui/pokemon-back.tsx`), with the sprites from
+  `data/pokemon-sprites.ts`. Both sit bottom-centred in a square box.
+  - The board draws them at 3× the PNGs (6px per Game Boy pixel): a 336px box,
+    the front frame at 336px and the 96px back pic at 288px. That's 3× the
+    components' native 112px box; scale the box to match in the app.
+  - Opponent's box: right 132, top 12. Yours: left 132, with the back pic's bottom
+    on the top edge of the bottom boxes (612px).
+  - Your info block sits at right 72, top 420, clear of the opponent's sprite.
+  - The front sprite plays its `anim` once when the Pokémon is sent out, then rests
+    on frame 0 (no idle loop), as `PokemonFront` does by default.
+- HP bar: the same component as Detail (black notched bar, yellow "HP" label, light
+  track). The fill is current / max HP: green `#40C048`, yellow `#F8B830` below
+  51%, red `#E04030` below 15%. It animates to the new value when HP changes.
+- Status slot: a 64×24 space left of the level, always reserved so the level never
+  moves. It shows the Pokémon's status sprite (sleep, frozen, burn, poison,
+  paralyzed) when it
+  has one. The design fills it with placeholder tags (SLP, FRZ, BRN, PSN, PAR) until the
+  sprites are added.
+- Bottom area (72px from each side, 252px tall, 36px from the bottom) holds one of:
+  - Message box: full width, two 24px lines. Everything the battle says goes here:
+    moves used, effects, faints, abilities.
+  - Menu (4c): "What will / VENUSAUR do?" on the left, and the options box on the
+    right with FIGHT and POKéMON.
+  - Moves (4d): the four moves on the left, and the same options box on the right
+    with BACK. Hovering or focusing a move shows the ▶ cursor and the move info box;
+    clicking uses it. A move with no PP left is disabled.
+  - The options box is one 264px box (24px padding) that stays in place; only its
+    items change. Items are menu items, not framed buttons: 24px text with the ▶
+    cursor on hover/focus, centred vertically, 12px apart. 264px is the narrowest
+    that fits POKéMON plus the cursor.
+- Move info (only while a move is hovered): inside the moves box, to the right of
+  the list (228px column, right-aligned to the box's padding, 48px from the list).
+  Category icon and type badge, then `90P/100%` (`---` for status moves), then
+  `PP x/y` (PP left this battle / max). The moves box has 24px padding.
+- After choosing a move the message box shows "Waiting for SILVER..." until the
+  opponent has chosen, then the turn plays out as messages ("VENUSAUR used SLUDGE
+  BOMB!", effects, HP bars moving) before the menu comes back. The prototype fakes
+  the turn on timers; in the app the server's battle log drives it.
+- Ability indicator (4b opponent, 4i yours): when an ability triggers, a black box
+  slides out from that Pokémon's side of the content area and covers the middle of its
+  sprite for about 2 seconds, then disappears and the message box explains what
+  happened ("GYARADOS's Intimidate / cuts VENUSAUR's Attack!").
+  - 480×96, `#181818` fill, light 24px text on two 36px lines, staggered: the
+    name ("GYARADOS's") on the first line, left-aligned, and the ability
+    ("Intimidate") on the second, right-aligned.
+  - Opponent: its back end lines up with the content's right edge (72px from the
+    board edge, like the message box) at top 120; the left end is a stepped pixel
+    arrow pointing left (seven 6px steps to a 12px tip). Slides in from the right.
+  - You: back end on the content's left edge (72px in) at top 444 over your
+    sprite, the arrow on the right pointing right. Slides in from the left.
+  - The slide-in is 0.25s in 5 steps.
+- POKéMON opens the Your Pokémon screen.
+
+### Your Pokémon (`Party.dc.html`)
+- Title "GOLD'S POKéMON" (the player's name, 32px) at the top, like other screens.
+- Your battle team in battle order (3, 4 or 6), rows 4px apart, sitting just above
+  the bottom row (12px gap), so any spare space falls under the title. Each row is 92px: 64px icon; name over
+  the status slot + `L50`; on the right the HP numbers over a 384px HP bar.
+- Rows are links with a light grey hover. Clicking one opens Detail for that
+  Pokémon in battle mode.
+- Fainted Pokémon (0 HP) show `0/max` with an empty bar and can still be opened.
+- Bottom row, laid out like the battle's move list: the message box ("Choose a
+  POKéMON.") on the left and the 264px options box on the right with BACK (▶ on
+  hover), which returns to the battle menu.
 
 ### Detail (`Detail.dc.html`)
-- Top row: 128px sprite, then the name with the type badges below it (no ball icon
-  here; that's on the draft info box).
+- Top row: 128px sprite, then the name (24px) with the type badges below it. A 32px ball
+  icon (16px art at 2×) sits 12px left of the name, vertically centred: the
+  Pokémon's ball tier from its data (`icon-pokeballball.png`, `icon-greatball.png`,
+  `icon-ultraball.png` or `icon-masterball.png`), the same icons the draft info box
+  uses. The design shows Venusaur's Great Ball; the board's `ball` prop previews the
+  others.
 - Ability (top right): 480px wide, so its left edge lines up with the STATS column
   below. It has an "ABILITY" heading styled like MOVES/STATS, then the ability name
   (24px, 32px line height) and its description (16px, 24px line height).
@@ -305,8 +489,11 @@ beside the names.
 - Moves (left): each row shows the name with `PP x/x` right-aligned underneath.
   Hover, focus or click selects it (grey background).
 - Stats (right): a LV.50 / BASE toggle. LV.50 is the default and sits on the left.
-  - LV.50: `HP 155/155` with the HP bar (216px wide, right-aligned), then the other
-    stats as label/value rows. Stat formula (same in Gen 3–6) at level 50, 31 IVs, 0 EVs, neutral
+  - LV.50: the HP block, then the other stats as label/value rows. The HP block is
+    "HP" with the status slot on the same row (above the bar's left end, as on the
+    battle screen), then the HP bar (216px wide, right-aligned), then the HP numbers
+    below the bar, right-aligned (`155/155`, 16px). Outside a battle the bar is full
+    and the status slot is empty. Stat formula (same in Gen 3–6) at level 50, 31 IVs, 0 EVs, neutral
     nature: HP = ⌊(2B+31)·50/100⌋+60, others = ⌊(2B+31)·50/100⌋+5.
   - BASE: label, value and a coloured bar (bar length = value / 160), plus a total.
 - Held item (top row, under the type badges): `icon-item.png` at 2× (32px) with
@@ -321,6 +508,22 @@ beside the names.
 - Move box (bottom): category icon, type badge and `90P/100%` (power `---` for status
   moves) on one line, with the effect text below.
 - Buttons: RENT (dark) and BACK, centred.
+- In battle (4g, 4h), opened from the Your Pokémon screen:
+  - Title "GOLD'S POKéMON".
+  - The HP bar and numbers show this battle's current HP, with the battle colours
+    (yellow below 51%, red below 15%), and the status slot shows any status.
+  - Moves show PP left this battle (`PP 7/10`).
+  - Buttons: SWITCH (dark), which sends this Pokémon out, and BACK to the Your Pokémon
+    screen. A fainted Pokémon (0 HP) can't switch in: SWITCH is disabled (50%
+    opacity, no cursor).
+  - Arrow buttons: a 108×108 framed button at each end of the row, their outer
+    edges lined up with the move box above (◀ at the left edge, ▶ at the right;
+    SWITCH and BACK stay centred). The pixel arrow is the label, with a grey hover.
+    They step to the previous / next Pokémon in your battle team (wrapping round)
+    and show that Pokémon's details, HP, status and SWITCH state in place.
+  - The prototype cycles name, sprite, types, ball, HP and status; moves, ability
+    and stats stay Venusaur's because only Venusaur has that data. The `slot` prop
+    picks who it opens on (4g Venusaur, 4h fainted Gengar).
 
 ## Style tokens
 
@@ -375,11 +578,14 @@ Base stat bar colour by value:
 ### Components
 
 **Crystal frame** (text boxes, panels, fields, code cells): a thick outer line, a gap,
-then a thin inner line.
+then a thin inner line. Every corner is pixelated: the outer edge has a staircase of two
+3px steps cut away, a 3px ink square fills the gap's corner so the thick line's inner
+edge is rounded too, and the thin inner line has one 3px step cut from each corner.
 ```css
 border: 6px solid #181818;
-border-radius: 6px;
-box-shadow: inset 0 0 0 3px #F8F8F8, inset 0 0 0 6px #181818;
+background-color: #F8F8F8;
+background-image: /* double-line: thin line strips + gap corner squares */;
+clip-path: /* pixel-steps, n = 3px */;
 ```
 The inner line takes up the first 6px inside the border, so leave padding beyond that.
 
@@ -395,8 +601,9 @@ wrap. Padding is 36px top and bottom and 60px each side.
 - The cursor must never overlap the label, and showing it must never resize the
   button. The 60px side padding clears the cursor (30px in, 24px wide, 6px gap),
   and the cursor is only hidden with `visibility`, never removed from the page.
-- Primary (RENT, HOST, FIRST, START BATTLE): `background:#181818; color:#F8F8F8;
-  box-shadow: inset 0 0 0 3px #181818, inset 0 0 0 6px #F8F8F8`.
+- Primary (RENT, HOST, FIRST, START BATTLE): `background-color:#181818; color:#F8F8F8`, with
+  the inner line drawn in `#F8F8F8` and the corner squares in `#181818`
+  (`double-line($line: var(--bg), $edge: var(--ink))`).
 - Longer labels widen the button and keep the 108px height. A 4-letter label fits
   240px, START BATTLE is 420px (the canvas shows 384px, but the label can't be
   centred at that width without running under the cursor), and COPY is fixed at
@@ -462,6 +669,8 @@ The design files reference sprites by canvas id. These are the matching repo fil
 | icon-special.png | `3ee4588b90c265212c90acc7ed0ffd95` |
 | icon-status.png | `87ab199033fd3769fffdeae0ead39fa6` |
 | icon-masterball.png | `1232bfea6d5fbe714ce6f5a04bb1772c` |
+| icon-greatball.png | `d6bf1b8384a3ccb2f30658b5dced077a` |
+| icon-ultraball.png | `5741f1a3f9e2471912bd5560c0aea1a8` |
 | icon-item.png | `304d19156319bb03d1ef9b08ad02f23e` |
 
 `public/sprites/pokemon-icons/` (the draft pool, in grid order):
@@ -500,6 +709,9 @@ early on but are no longer used.
 - Player names (GOLD, SILVER) and the room code (K7QM) are samples.
 - Both FIRST and SECOND go to the same draft board. A board where P2 drafts first
   doesn't exist yet.
+- Battle: status sprites are placeholder tags. The
+  turn, damage and messages in the prototype are faked on timers. Every team row
+  and SWITCH open the same Venusaur boards.
 - The designs are fixed 1200×900. Scaling to the window, and phone layouts, haven't
   been designed.
 - The designs are still in progress, so check `git log design/` for the latest.

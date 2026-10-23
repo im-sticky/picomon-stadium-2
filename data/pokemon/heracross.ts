@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "heracross",
   sprite: "/sprites/pokemon-icons/heracross.png",
+  isGreat: true,
   ability: "Guts",
   set: {
     moves: ["Close Combat", "Megahorn", "Facade", "Knock Off"],

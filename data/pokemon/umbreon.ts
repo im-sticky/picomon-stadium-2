@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "umbreon",
   sprite: "/sprites/pokemon-icons/umbreon.png",
+  isGreat: true,
   ability: "Synchronize",
   set: {
     moves: ["Foul Play", "Wish", "Protect", "Toxic"],

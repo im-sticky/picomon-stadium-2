@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "blastoise",
   sprite: "/sprites/pokemon-icons/blastoise.png",
+  isGreat: true,
   ability: "Torrent",
   types: ["Water", "Steel"],
   set: {

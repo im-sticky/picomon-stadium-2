@@ -1,18 +1,23 @@
 // Shared Crystal-style building blocks. `@use` this from any stylesheet:
 //   @use "../styles/mixins" as *;   (path relative to the stylesheet)
 
-// The double frame: a thick outer line, a gap, then a thin inner line.
-// `$gap` is the colour between the lines (the fill colour, or the hover colour on focus).
-@mixin double-line($line: var(--ink), $gap: var(--bg)) {
-  box-shadow: inset 0 0 0 3px $gap, inset 0 0 0 6px $line;
-}
-
-// A full Crystal frame: 6px border plus the inner double line.
-@mixin crystal-frame($line: var(--ink), $fill: var(--bg)) {
-  border: 6px solid $line;
-  border-radius: 6px;
-  background: $fill;
-  @include double-line($line, $fill);
+// The double frame: a thick outer line (the border), a 3px gap, then a 3px thin inner
+// line. Drawn as background layers inside the padding box: the inner line with one 3px
+// step cut from each corner, plus a 3px square in each corner of the gap, in the thick
+// line's colour `$edge`, that rounds off its inner edge. The gap shows the element's
+// background colour, so set `background-color` (never the `background` shorthand) on
+// anything that uses it.
+@mixin double-line($line: var(--ink), $edge: $line) {
+  $px: linear-gradient($line, $line);
+  $corner: linear-gradient($edge, $edge);
+  background-image: $px, $px, $px, $px, $corner, $corner, $corner, $corner;
+  background-position:
+    left 6px top 3px, left 6px bottom 3px, left 3px top 6px, right 3px top 6px,
+    left top, right top, left bottom, right bottom;
+  background-size:
+    calc(100% - 12px) 3px, calc(100% - 12px) 3px, 3px calc(100% - 12px), 3px calc(100% - 12px),
+    3px 3px, 3px 3px, 3px 3px, 3px 3px;
+  background-repeat: no-repeat;
 }
 
 // Pixel-notched corners: one square block of `$n` cut from each corner.
@@ -22,6 +27,29 @@
     calc(100% - #{$n}) calc(100% - #{$n}), calc(100% - #{$n}) 100%, $n 100%, $n calc(100% - #{$n}),
     0 calc(100% - #{$n}), 0 $n, $n $n
   );
+}
+
+// Two-step pixel corners: a staircase of two `$n` steps cut from each corner
+// (an L of three `$n` blocks).
+@mixin pixel-steps($n) {
+  $m: 2 * $n;
+  $r: calc(100% - #{$n});
+  $s: calc(100% - #{$m});
+  clip-path: polygon(
+    $m 0, $s 0, $s $n, $r $n, $r $m,
+    100% $m, 100% $s, $r $s, $r $r, $s $r,
+    $s 100%, $m 100%, $m $r, $n $r, $n $s,
+    0 $s, 0 $m, $n $m, $n $n, $m $n
+  );
+}
+
+// A full Crystal frame: 6px border plus the inner double line, with two-step
+// pixel corners of 3px (one Game Boy pixel) each.
+@mixin crystal-frame($line: var(--ink), $fill: var(--bg)) {
+  border: 6px solid $line;
+  background-color: $fill;
+  @include double-line($line);
+  @include pixel-steps(3px);
 }
 
 // Sprites: whole-number scales, never smoothed.

@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "porygonz",
   sprite: "/sprites/pokemon-icons/porygon_z.png",
+  isGreat: true,
   ability: "Adaptability",
   set: {
     moves: ["Nasty Plot", "Tri Attack", "Shadow Ball", "Ice Beam"],

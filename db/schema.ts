@@ -6,6 +6,8 @@ export const rooms = sqliteTable('rooms', {
   expiresAt: integer('expires_at').notNull(),
   // Pokémon each player sends into battle (3, 4 or 6), chosen by the host.
   battleSize: integer('battle_size').notNull().default(6),
+  // The draft's rules, chosen by the host: 'standard' | 'unlimited' | 'pokeball'.
+  draftType: text('draft_type').notNull().default('standard'),
   // 'lobby' until the host starts the battle, then 'type-battle', then 'draft' once
   // the type battle winner has chosen the draft order.
   phase: text('phase').notNull().default('lobby'),
@@ -25,7 +27,10 @@ export const players = sqliteTable(
     roomCode: text('room_code')
       .notNull()
       .references(() => rooms.code),
+    // The trainer's name (e.g. 'Lt Surge'): the player's name everywhere.
     name: text('name').notNull(),
+    // The trainer key (e.g. 'lt_surge'), for the sprite. Null for rows from before trainers.
+    trainer: text('trainer'),
     slot: integer('slot').notNull(),
     joinedAt: integer('joined_at').notNull(),
   },

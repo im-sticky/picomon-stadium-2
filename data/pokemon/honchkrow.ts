@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "honchkrow",
   sprite: "/sprites/pokemon-icons/honchkrow.png",
+  isGreat: true,
   ability: "Moxie",
   baseStats: { hp: 105, atk: 125, def: 52, spa: 105, spd: 52, spe: 71 },
   set: {

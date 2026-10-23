@@ -33,9 +33,10 @@ import { RoomView } from "@/app/room/[code]/room-view";
 const roomState = {
   code: "K7PQ",
   you: { id: "a", slot: 1 },
-  players: [{ id: "a", name: "Ash", slot: 1 }],
+  players: [{ id: "a", name: "Ash", trainer: null, slot: 1 }],
   phase: "lobby",
   battleSize: 6,
+  draftType: "standard",
   typeBattle: null,
   draft: null,
   battle: null,

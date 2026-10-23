@@ -1,0 +1,53 @@
+/* Choose a trainer (board 0f). BEM block `trainers`. */
+@use "../styles/mixins" as *;
+
+.trainers {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 36px 72px;
+
+  &__title {
+    @include screen-title;
+  }
+
+  &__grid {
+    @include bare-list;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    justify-items: center;
+    row-gap: 12px;
+  }
+
+  /* Name over the sprite. Grey on hover; your current trainer has the double line. */
+  &__cell {
+    @include bare-button;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 240px;
+    box-sizing: border-box;
+    padding: 12px 0;
+    border: 6px solid transparent;
+    font-size: 24px;
+    line-height: 36px;
+    text-align: center;
+    cursor: pointer;
+    @include pixel-steps(3px);
+
+    &:hover,
+    &:focus-visible {
+      outline: none;
+      background-color: var(--hover);
+    }
+
+    &--current {
+      border-color: var(--ink);
+      @include double-line;
+    }
+  }
+
+  &__sprite {
+    @include pixelated;
+  }
+}

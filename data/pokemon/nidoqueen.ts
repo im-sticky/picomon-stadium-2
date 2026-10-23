@@ -3,6 +3,7 @@ import type { PokemonEntry } from "./types";
 export default {
   id: "nidoqueen",
   sprite: "/sprites/pokemon-icons/nidoqueen.png",
+  isGreat: true,
   ability: "Sheer Force",
   set: {
     moves: ["Earth Power", "Sludge Wave", "Ice Beam", "Flamethrower"],

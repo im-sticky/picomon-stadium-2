@@ -1,4 +1,4 @@
-import type { DraftPick, Slot } from "@/lib/types";
+import type { DraftPick, DraftType, Slot } from "@/lib/types";
 
 /** Each player always drafts this many, whatever the battle size. */
 export const PICKS_PER_PLAYER = 6;
@@ -27,19 +27,48 @@ export type DraftPickError =
   | "draft-complete"
   | "not-your-turn"
   | "unknown-pokemon"
+  | "not-in-pool"
   | "taken"
-  | "master-limit"
-  | "ultra-limit"
-  | "item-limit";
+  | TeamLimitError;
 
-/** The one-each limits a Pokémon counts towards. No two on a team may hold the same item. */
-export type DraftLimits = { isMaster: boolean; isUltra: boolean; item: string };
+/** The team limits: one Master Ball and one Ultra Ball Pokémon (Standard only), each item once. */
+export type TeamLimitError = "master-limit" | "ultra-limit" | "item-limit";
+
+/** A Pokémon's ball tier, and the held item no two on a team may share. */
+export type DraftLimits = { isMaster: boolean; isUltra: boolean; isGreat: boolean; item: string };
 
 /**
- * Why `slot` can't rent `pokemonId` now, or null if it can. `limits` looks a
- * Pokémon up in the pool and returns undefined for an id that isn't in it.
+ * Whether a Pokémon can be drafted at all in this draft type. A Poké Ball draft only
+ * has Poké Ball tier Pokémon: none of Great, Ultra or Master. The others use the whole pool.
+ */
+export function inDraftPool(draftType: DraftType, pokemon: Omit<DraftLimits, "item">): boolean {
+  if (draftType !== "pokeball") return true;
+  return !pokemon.isGreat && !pokemon.isUltra && !pokemon.isMaster;
+}
+
+/**
+ * Which team limit stops a player whose team is `team` from adding `pokemon`, or null.
+ * Only Standard limits Ultra and Master Ball Pokémon; every type allows each item once.
+ */
+export function teamLimitError(
+  draftType: DraftType,
+  team: readonly (DraftLimits | undefined)[],
+  pokemon: DraftLimits,
+): TeamLimitError | null {
+  if (draftType === "standard") {
+    if (pokemon.isMaster && team.some((p) => p?.isMaster)) return "master-limit";
+    if (pokemon.isUltra && team.some((p) => p?.isUltra)) return "ultra-limit";
+  }
+  if (team.some((p) => p?.item === pokemon.item)) return "item-limit";
+  return null;
+}
+
+/**
+ * Why `slot` can't rent `pokemonId` now under `draftType`'s rules, or null if it can.
+ * `limits` looks a Pokémon up in the pool and returns undefined for an id that isn't in it.
  */
 export function draftPickError(
+  draftType: DraftType,
   firstDrafter: Slot,
   picks: readonly DraftPick[],
   slot: Slot,
@@ -51,10 +80,8 @@ export function draftPickError(
   if (turn !== slot) return "not-your-turn";
   const pokemon = limits(pokemonId);
   if (pokemon === undefined) return "unknown-pokemon";
+  if (!inDraftPool(draftType, pokemon)) return "not-in-pool";
   if (picks.some((p) => p.pokemonId === pokemonId)) return "taken";
   const mine = picks.filter((p) => p.slot === slot).map((p) => limits(p.pokemonId));
-  if (pokemon.isMaster && mine.some((p) => p?.isMaster)) return "master-limit";
-  if (pokemon.isUltra && mine.some((p) => p?.isUltra)) return "ultra-limit";
-  if (mine.some((p) => p?.item === pokemon.item)) return "item-limit";
-  return null;
+  return teamLimitError(draftType, mine, pokemon);
 }

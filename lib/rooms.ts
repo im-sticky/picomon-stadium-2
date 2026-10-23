@@ -5,11 +5,12 @@ import { generateCode } from '@/lib/codes';
 import { draftPickError, TOTAL_PICKS, type DraftPickError } from '@/lib/draft';
 import { getPokemon } from '@/lib/pokemon-dex';
 import { typeBattleWinner } from '@/lib/type-battle';
-import { DEFAULT_BATTLE_SIZE } from '@/lib/types';
+import { DEFAULT_BATTLE_SIZE, DEFAULT_DRAFT_TYPE } from '@/lib/types';
 import type { BattleResult, BattleStage, EndReason } from '@/lib/battle-types';
 import type {
   BattleSize,
   DraftPick,
+  DraftType,
   DraftView,
   Phase,
   PublicPlayer,
@@ -62,6 +63,7 @@ export async function createRoom(
   name: string,
   now: number,
   battleSize: BattleSize = DEFAULT_BATTLE_SIZE,
+  { draftType = DEFAULT_DRAFT_TYPE, trainer = null }: { draftType?: DraftType; trainer?: string | null } = {},
 ): Promise<{ code: string; secret: string; playerId: string }> {
   await deleteExpired(db, now);
   const secret = crypto.randomUUID();
@@ -72,12 +74,13 @@ export async function createRoom(
       await db.transaction(async (tx) => {
         await tx
           .insert(rooms)
-          .values({ code, createdAt: now, expiresAt: now + WAITING_TTL_MS, battleSize });
+          .values({ code, createdAt: now, expiresAt: now + WAITING_TTL_MS, battleSize, draftType });
         await tx.insert(players).values({
           id: playerId,
           secret,
           roomCode: code,
           name,
+          trainer,
           slot: 1,
           joinedAt: now,
         });
@@ -93,11 +96,11 @@ export async function createRoom(
 
 export async function listPlayers(db: Pick<Db, 'select'>, code: string): Promise<PublicPlayer[]> {
   const rows = await db
-    .select({ id: players.id, name: players.name, slot: players.slot })
+    .select({ id: players.id, name: players.name, trainer: players.trainer, slot: players.slot })
     .from(players)
     .where(eq(players.roomCode, code))
     .orderBy(asc(players.slot));
-  return rows.map((r) => ({ id: r.id, name: r.name, slot: r.slot as Slot }));
+  return rows.map((r) => ({ id: r.id, name: r.name, trainer: r.trainer, slot: r.slot as Slot }));
 }
 
 async function joinOnce(
@@ -106,6 +109,7 @@ async function joinOnce(
   name: string,
   now: number,
   existingSecret: string | null,
+  trainer: string | null,
 ): Promise<JoinResult> {
   try {
     // libsql's default write transaction is BEGIN IMMEDIATE, so no behavior option is needed.
@@ -128,6 +132,7 @@ async function joinOnce(
           secret,
           roomCode: code,
           name,
+          trainer,
           slot: 2,
           joinedAt: now,
         });
@@ -164,8 +169,9 @@ export async function joinRoom(
   name: string,
   now: number,
   existingSecret: string | null,
+  trainer: string | null = null,
 ): Promise<JoinResult> {
-  return withBusyRetry(() => joinOnce(db, code, name, now, existingSecret));
+  return withBusyRetry(() => joinOnce(db, code, name, now, existingSecret, trainer));
 }
 
 export async function getRoomState(
@@ -187,6 +193,7 @@ export async function getRoomState(
     players: list,
     phase,
     battleSize: room.battleSize as BattleSize,
+    draftType: room.draftType as DraftType,
     typeBattle: phase === 'type-battle' ? await typeBattleView(db, room, me.slot) : null,
     draft: phase === 'draft' || phase === 'battle' ? await draftView(db, room) : null,
     battle: phase === 'battle' ? await battleSummary(db, code) : null,
@@ -210,6 +217,7 @@ export type LiveRoom = {
   code: string;
   phase: string;
   battleSize: number;
+  draftType: string;
   typeRound: number;
   typeWinner: number | null;
   firstDrafter: number | null;
@@ -221,6 +229,7 @@ export async function findLiveRoom(db: Pick<Db, 'select'>, code: string, now: nu
       code: rooms.code,
       phase: rooms.phase,
       battleSize: rooms.battleSize,
+      draftType: rooms.draftType,
       typeRound: rooms.typeRound,
       typeWinner: rooms.typeWinner,
       firstDrafter: rooms.firstDrafter,
@@ -456,11 +465,19 @@ export type DraftPickResult =
 
 const draftLimits = (id: string) => {
   const entry = getPokemon(id);
-  return entry && { isMaster: entry.isMaster ?? false, isUltra: entry.isUltra ?? false, item: entry.set.item };
+  return (
+    entry && {
+      isMaster: entry.isMaster ?? false,
+      isUltra: entry.isUltra ?? false,
+      isGreat: entry.isGreat ?? false,
+      item: entry.set.item,
+    }
+  );
 };
 
 /**
- * Rents `pokemonId` for the player whose turn it is. The rules are in `lib/draft.ts`;
+ * Rents `pokemonId` for the player whose turn it is. The rules, driven by the room's
+ * draft type, are in `lib/draft.ts`;
  * the keys on `draft_picks` also reject a second pick for the same turn or Pokémon,
  * if two requests race. `complete` is true when this was the last pick.
  */
@@ -481,7 +498,14 @@ export async function pickPokemon(
         if (room.phase !== 'draft' || room.firstDrafter === null) return { kind: 'not-drafting' };
 
         const picks = await listDraftPicks(tx, code);
-        const error = draftPickError(room.firstDrafter as Slot, picks, me.slot, pokemonId, draftLimits);
+        const error = draftPickError(
+          room.draftType as DraftType,
+          room.firstDrafter as Slot,
+          picks,
+          me.slot,
+          pokemonId,
+          draftLimits,
+        );
         if (error) return { kind: error };
 
         await tx
