@@ -459,6 +459,24 @@ is absolutely placed on the 1200×900 board.
     sprite, the arrow on the right pointing right. Slides in from the left.
   - The slide-in is 0.25s in 5 steps.
 - POKéMON opens the Your Pokémon screen.
+- Countdown: each step has a 75-second deadline, shown as `m:ss` in 32px ink on
+  a 48px line, turning red `#C03028` at 0:15 and below, the same as the Battle
+  order timer. Drive it from the server's `deadline`, not a local clock. It
+  appears in three places:
+  - the menu (4c): on the right of the "What will / VENUSAUR do?" box, vertically
+    centred, 24px from the text
+  - Your Pokémon (4f): on the right of the "Choose a POKéMON." box
+  - Detail in battle (4g, 4h): top right, level with the title (right 48, top 24)
+  The boards preview it with a `timeLeft` prop (4c at 0:42, 4f at 0:12, 4g at
+  0:38).
+- End of the battle: the final lines play, then the message box shows "<NAME> won
+  the battle!", "It's a draw!" (tie or abandon) or "<NAME> forfeited." The
+  battle screen stays up. There's no separate end screen.
+  - The host's message box also has a QUIT button on its right (standard 240×108
+    button, placed like FIRST/SECOND in the Type select message box). The guest's
+    has no button.
+  - QUIT closes the room, and both players go back to Home (Host or join). The
+    room code then no longer works.
 
 ### Your Pokémon (`Party.dc.html`)
 - Title "GOLD'S POKéMON" (the player's name, 32px) at the top, like other screens.
@@ -471,6 +489,10 @@ is absolutely placed on the 1200×900 board.
 - Bottom row, laid out like the battle's move list: the message box ("Choose a
   POKéMON.") on the left and the 264px options box on the right with BACK (▶ on
   hover), which returns to the battle menu.
+- Forced switch: when you must send someone out (after a faint, or a U-turn), this
+  same screen opens on its own without BACK, so you can't leave until you pick.
+  The message stays "Choose a POKéMON." Opening a Pokémon's Detail works as
+  usual, and SWITCH there sends it out.
 
 ### Detail (`Detail.dc.html`)
 - Top row: 128px sprite, then the name (24px) with the type badges below it. A 32px ball
