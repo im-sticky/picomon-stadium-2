@@ -22,14 +22,11 @@
     margin-top: 12px;
   }
 
-  &__codeCell {
+  /* The code as one 64px string, on the row's 120px height. */
+  &__code {
     display: flex;
     align-items: center;
-    justify-content: center;
-    width: 96px;
     height: 120px;
-    box-sizing: border-box;
-    padding-left: 6px;
     font-size: 64px;
     line-height: 64px;
   }

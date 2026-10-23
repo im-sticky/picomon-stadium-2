@@ -1,6 +1,6 @@
 import * as Ably from 'ably';
 import type { BattleEvent } from '@/lib/battle-types';
-import type { RoomEvent } from '@/lib/room-events';
+import type { RoomClosedEvent, RoomEvent } from '@/lib/room-events';
 import type { PublicPlayer } from '@/lib/types';
 
 let client: Ably.Rest | null = null;
@@ -27,7 +27,7 @@ export async function publishPlayerJoined(code: string, players: PublicPlayer[])
  * results are sent: a type pick stays secret until the round is resolved.
  * A failure is only logged: clients also check the server in the background.
  */
-export async function notifyRoomEvent(code: string, event: RoomEvent | BattleEvent): Promise<void> {
+export async function notifyRoomEvent(code: string, event: RoomEvent | BattleEvent | RoomClosedEvent): Promise<void> {
   try {
     await getClient().channels.get(channelName(code)).publish(event.kind, event);
   } catch (err) {

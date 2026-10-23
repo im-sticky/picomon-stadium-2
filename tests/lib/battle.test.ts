@@ -45,7 +45,7 @@ async function started(db: Db, size: 3 | 4 | 6 = 3): Promise<TestRoom> {
   return room;
 }
 
-/** Both players locked in at T0 (draft order unless given): step 1, deadline T0 + 75 s. */
+/** Both players locked in at T0 (draft order unless given): step 1, deadline T0 + 80 s. */
 async function inProgress(db: Db, orders: { 1: number[]; 2: number[] } = { 1: [1, 2, 3], 2: [1, 2, 3] }) {
   const room = await started(db);
   await submitOrder(db, room.code, room[1], orders[1], T0);

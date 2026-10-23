@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import type { Clock } from "@/lib/battle-feed";
+import { toId } from "@/lib/battle-script";
+import type { TeamMember } from "@/lib/battle-types";
 import type { PoolMove, PoolPokemon, StatKey } from "@/lib/draft-pool";
 import { BallIcon } from "@/app/ui/ball-icon";
 import { Button } from "@/app/ui/button";
@@ -10,7 +13,9 @@ import { HeldItem } from "@/app/ui/held-item";
 import { HpBar, StatusSlot } from "@/app/ui/hp-bar";
 import { PokemonIcon } from "@/app/ui/pokemon-icon";
 import { Stage } from "@/app/ui/stage";
+import { StatusTag } from "@/app/ui/status-tag";
 import { TypeBadge } from "@/app/ui/type-badge";
+import { Countdown } from "./countdown";
 import styles from "./detail.module.scss";
 
 const LEVEL = 50;
@@ -37,6 +42,31 @@ function barColour(value: number): string {
   return "#48b8e8";
 }
 
+/**
+ * Detail in battle (boards 4g/4h): this battle's HP, status, stats and PP left,
+ * the countdown, and SWITCH with ◀ / ▶ to step through your battle team.
+ */
+export type BattleDetail = {
+  member: TeamMember;
+  /** The item it holds now (after Knock Off or an eaten Berry), by name. */
+  item: string;
+  clock: Clock | null;
+  /** False for a fainted or active Pokémon, or when you can't switch. */
+  canSwitch: boolean;
+  onSwitch: () => void;
+  onPrev: () => void;
+  onNext: () => void;
+};
+
+/** The ▶ pixel arrow; `left` flips it to ◀. */
+function Arrow({ left }: { left?: boolean }) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 8 8" shapeRendering="crispEdges" aria-hidden="true" style={left ? { transform: "scaleX(-1)" } : undefined}>
+      <path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" />
+    </svg>
+  );
+}
+
 const powerAccuracy = (m: PoolMove) =>
   `${m.power === null ? "---" : `${m.power}P`}/${m.accuracy === null ? "---" : `${m.accuracy}%`}`;
 
@@ -52,6 +82,7 @@ export function DetailScreen({
   notRentable,
   onRent,
   onBack,
+  battle,
 }: {
   pokemon: PoolPokemon;
   title: string;
@@ -61,17 +92,29 @@ export function DetailScreen({
   notRentable?: string | null;
   onRent: () => void;
   onBack: () => void;
+  /** Set when opened from Your Pokémon in a battle. */
+  battle?: BattleDetail;
 }) {
   const [selected, setSelected] = useState(0);
   const [view, setView] = useState<"calc" | "base">("calc");
   const move = pokemon.moves[selected];
   const { baseStats } = pokemon;
-  const hp = levelStat(baseStats.hp, true);
+  const member = battle?.member;
+  const maxHp = member?.maxhp ?? levelStat(baseStats.hp, true);
+  const hpNow = member ? (member.fainted ? 0 : member.hp) : maxHp;
+  // In battle the stats are the engine's own, for this Pokémon's set.
+  const statValue = (key: Exclude<StatKey, "hp">) => member?.stats[key] ?? levelStat(baseStats[key], false);
+  /** PP left / max this battle, by move id; the draft shows full PP. */
+  const ppOf = (m: PoolMove) => {
+    const i = member ? member.moves.indexOf(toId(m.name)) : -1;
+    return i >= 0 && member!.movePp[i] ? member!.movePp[i] : { pp: m.pp, maxpp: m.pp };
+  };
   const total = STATS.reduce((sum, s) => sum + baseStats[s.key], 0);
 
   return (
     <Stage className={styles.detail}>
       <h1 className={styles.detail__title}>{title}</h1>
+      {battle?.clock && <Countdown clock={battle.clock} className={styles.detail__timer} />}
       <Frame className={styles.detail__main}>
         <div className={styles.detail__top}>
           <PokemonIcon src={pokemon.sprite} size={128} alt={pokemon.name} />
@@ -85,7 +128,7 @@ export function DetailScreen({
                 <TypeBadge key={t} type={t} />
               ))}
             </div>
-            <HeldItem item={pokemon.item} />
+            <HeldItem item={battle?.item ?? pokemon.item} />
           </div>
           <section aria-label="Ability" className={styles.detail__ability}>
             <p className={styles.detail__label}>ABILITY</p>
@@ -109,7 +152,7 @@ export function DetailScreen({
               >
                 <span className={styles.detail__moveName}>{m.name.toUpperCase()}</span>
                 <span className={styles.detail__pp}>
-                  PP {m.pp}/{m.pp}
+                  PP {ppOf(m).pp}/{ppOf(m).maxpp}
                 </span>
               </button>
             ))}
@@ -142,18 +185,20 @@ export function DetailScreen({
                 {/* "HP" and the status slot (empty outside battle), the bar, then the numbers. */}
                 <div className={styles.detail__statRow}>
                   <span>HP</span>
-                  <StatusSlot className={styles.detail__status} />
+                  <StatusSlot className={styles.detail__status}>
+                    <StatusTag status={member && !member.fainted ? member.status : null} />
+                  </StatusSlot>
                 </div>
                 <div className={styles.detail__hpRow}>
-                  <HpBar value={hp} max={hp} className={styles.detail__hpBar} />
+                  <HpBar value={hpNow} max={maxHp} className={styles.detail__hpBar} />
                 </div>
                 <p className={styles.detail__hpNumbers}>
-                  {hp}/{hp}
+                  {hpNow}/{maxHp}
                 </p>
                 {STATS.slice(1).map((s) => (
                   <div key={s.key} className={styles.detail__statRow}>
                     <span>{s.calc}</span>
-                    <span>{levelStat(baseStats[s.key], false)}</span>
+                    <span>{statValue(s.key as Exclude<StatKey, "hp">)}</span>
                   </div>
                 ))}
               </>
@@ -210,12 +255,27 @@ export function DetailScreen({
       </Frame>
 
       <div className={styles.detail__buttons}>
-        {!viewOnly && (
+        {battle && (
+          <button type="button" className={`${styles.detail__arrow} ${styles["detail__arrow--prev"]}`} aria-label="Previous Pokémon" onClick={battle.onPrev}>
+            <Arrow left />
+          </button>
+        )}
+        {!viewOnly && !battle && (
           <Button primary disabled={!canRent} onClick={onRent}>
             RENT
           </Button>
         )}
+        {battle && (
+          <Button primary disabled={!battle.canSwitch} onClick={battle.onSwitch}>
+            SWITCH
+          </Button>
+        )}
         <Button onClick={onBack}>BACK</Button>
+        {battle && (
+          <button type="button" className={`${styles.detail__arrow} ${styles["detail__arrow--next"]}`} aria-label="Next Pokémon" onClick={battle.onNext}>
+            <Arrow />
+          </button>
+        )}
       </div>
     </Stage>
   );

@@ -521,3 +521,33 @@ export async function pickPokemon(
     throw err;
   }
 }
+
+export type CloseResult = { kind: 'closed' } | { kind: 'not-found' } | { kind: 'not-host' } | { kind: 'not-ended' };
+
+/**
+ * QUIT: the host closes the room once its battle has ended. The room is expired on
+ * the spot (`expiresAt = now`), so every live-room check (loading, joining, the
+ * Ably token, the battle routes) treats the code as gone, and `deleteExpired`
+ * removes its rows with the other expired rooms. No schema change is needed.
+ * A second QUIT finds no live room: `not-found`.
+ */
+export async function closeRoom(db: Db, code: string, secret: string | null, now: number): Promise<CloseResult> {
+  if (!secret) return { kind: 'not-found' };
+  return withBusyRetry(() =>
+    db.transaction(async (tx): Promise<CloseResult> => {
+      const room = await findLiveRoom(tx, code, now);
+      const me = room && (await findMember(tx, code, secret));
+      if (!room || !me) return { kind: 'not-found' };
+      if (me.slot !== 1) return { kind: 'not-host' };
+      if (room.phase !== 'battle') return { kind: 'not-ended' };
+      const [battle] = await tx.select({ stage: battles.stage }).from(battles).where(eq(battles.roomCode, code));
+      if (battle?.stage !== 'ended') return { kind: 'not-ended' };
+      // Only a still-live room is closed, so a racing second QUIT changes nothing.
+      const result = await tx
+        .update(rooms)
+        .set({ expiresAt: now })
+        .where(and(eq(rooms.code, code), gt(rooms.expiresAt, now)));
+      return result.rowsAffected === 1 ? { kind: 'closed' } : { kind: 'not-found' };
+    }),
+  );
+}

@@ -6,8 +6,8 @@ export default {
   isUltra: true,
   ability: "Drought",
   set: {
-    moves: ["Fire Blast", "Hurricane", "Solar Beam", "Roost"],
-    item: "Leftovers",
+    moves: ["Flamethrower", "Hurricane", "Solar Beam", "U-turn"],
+    item: "Heat Rock",
     nature: "Timid",
     evs: { hp: 4, spa: 252, spe: 252 },
   },

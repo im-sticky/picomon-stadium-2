@@ -6,9 +6,9 @@ export default {
   ability: "Frisk",
   baseStats: { hp: 85, atk: 86, def: 64, spa: 45, spd: 55, spe: 108 },
   set: {
-    moves: ["Double-Edge", "U-turn", "Knock Off", "Trick"],
-    item: "Choice Scarf",
+    moves: ["Super Fang", "Baton Pass", "Curse", "Trick"],
+    item: "Flame Orb",
     nature: "Jolly",
-    evs: { hp: 4, atk: 252, spe: 252 },
+    evs: { hp: 252, def: 4, spe: 252 },
   },
 } satisfies PokemonEntry;

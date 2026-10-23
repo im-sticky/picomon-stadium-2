@@ -6,8 +6,8 @@ export default {
   isGreat: true,
   ability: "Technician",
   set: {
-    moves: ["Fake Out", "Double Hit", "Knock Off", "U-turn"],
-    item: "Life Orb",
+    moves: ["Fake Out", "Double Hit", "Fling", "Acrobatics"],
+    item: "Sharp Beak",
     nature: "Jolly",
     evs: { hp: 4, atk: 252, spe: 252 },
   },

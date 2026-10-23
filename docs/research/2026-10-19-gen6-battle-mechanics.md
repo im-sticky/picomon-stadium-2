@@ -71,7 +71,7 @@
   - fixed rental sets from the hand-picked pool in `data/pokemon/`, at most one master and one ultra Pokémon (base stat total 580–600) per player, and no two on a team holding the same item;
   - the project's own format `[Gen 6] Picomon` (`lib/pokemon-dex.ts`) with **Sleep Clause Mod** and **Endless Battle Clause** as the only clauses; `Picked Team Size` is set per battle (§18.1);
   - **base PP, no PP Ups** (the engine hard-codes 3 PP Ups; §18.2 shows the tested fix);
-  - **75 seconds per choice**, the engine's own `default` choice on timeout, and a forfeit after three timeouts in a row (§18.4);
+  - **80 seconds per choice**, the engine's own `default` choice on timeout, and a forfeit after three timeouts in a row (§18.4);
   - the engine's `toJSON()` snapshot saved in **one `battles` row per room**, overwritten every turn, with no choice log (§18.6);
   - real Pokémon names, data and sprites in a free, non-commercial fan project (§14.5);
   - no Mega Stones, Primal orbs or terrain moves in any set;
@@ -133,7 +133,7 @@ Answered on 2026-10-21 (details and implementation in §18):
 | Learnsets / XY vs ORAS | **Not checked.** The data files are the only control over which moves a Pokémon gets. |
 | Clauses | **Sleep Clause Mod** and **Endless Battle Clause** in the engine. **No Item Clause** in the engine, but the draft lets each player take each held item only once, so a team never has duplicate items (`item-limit` in `lib/draft.ts`). **No OHKO, Evasion or Self-KO clauses:** those moves are allowed whenever a set has them. Species Clause is guaranteed by the draft (each Pokémon can be rented once). |
 | Base PP | **No PP Ups** (decided 2026-10-20). See §18.2. |
-| Turn timer | **75 seconds for every choice**, the engine's `default` choice on timeout, forfeit after 3 timeouts in a row (§18.4). |
+| Turn timer | **80 seconds for every choice**, the engine's `default` choice on timeout, forfeit after 3 timeouts in a row (§18.4). *Changed 2026-10-23 from 75 s.* |
 | Faint replacements | As the engine does them (§18.5), on the same timer. |
 | Saving battles | **One `battles` row per room** holding the latest `toJSON()` snapshot; **no choice log** for now (§18.6). |
 | IP posture | Real names, data and sprites; free and non-commercial, credited as an unofficial fan project (§14.5). |
@@ -1265,7 +1265,7 @@ Updated 2026-10-21 to match the answered questions. §18 is the spec for each it
 - authenticate the player (the existing room cookie);
 - reject any choice with a `mega` suffix;
 - call `battle.choose(side, choice)` and reject a `false` result;
-- the 75-second timer, the `default` choice on timeout and the three-timeout forfeit (§18.4);
+- the 80-second timer, the `default` choice on timeout and the three-timeout forfeit (§18.4);
 - turning the protocol into Crystal-style UI events;
 - giving each player only their own view (`sideupdate` / `|split|`), never the saved snapshot.
 
@@ -1630,7 +1630,7 @@ battle.setPlayer('p2', { name, team });
 
 **Rules (decided):**
 
-- **75 seconds** for every choice the battle asks for: team order on the Battle order screen (confirmed 2026-10-21), each turn's move or switch, and faint replacements. The countdown is visible to both players.
+- **80 seconds** for every choice the battle asks for: team order on the Battle order screen (confirmed 2026-10-21), each turn's move or switch, and faint replacements. The countdown is visible to both players.
 - **On timeout,** the server submits the engine's own **`default`** choice for that player (decided 2026-10-21; not a random choice).
 - **Three timeouts in a row** and that player **forfeits**. Choosing in time resets their count to 0.
 - **Disconnects** are not handled separately. A disconnected player simply doesn't choose, so the timer covers them; refreshing restores the battle from the server.
@@ -1650,7 +1650,7 @@ No server-side choice logic is needed. The same input always produces the same c
 
 **Enforcing the deadline (design).** Vercel functions only run while handling a request; there's no always-on process to fire a timer. So:
 
-- When the engine issues a new request (battle start, each new turn, a forced switch), the server stores a `deadline` (now + 75 s) on the battle row.
+- When the engine issues a new request (battle start, each new turn, a forced switch), the server stores a `deadline` (now + 80 s) on the battle row.
 - Every battle request (both players' GETs and choices) first checks the deadline. If it has passed, the server applies the timeout choices for whoever hasn't chosen, bumps their consecutive-timeout counts, and resolves the turn before handling the request.
 - Each client's countdown reaches zero at about the same time. The client then calls the battle state route (or a small `POST …/battle/timeout`) so a request arrives promptly even if only one player is still connected.
 - If neither player is connected, nothing happens until one returns. The room's normal expiry cleans the battle up.
@@ -1661,7 +1661,7 @@ The engine already follows the Gen 5+ rule:
 
 - At the end of a turn, only a side that lost its active Pokémon gets a `forceSwitch` request. The other side gets `wait`, and its screen shows "Waiting for <NAME> to choose a POKéMON...".
 - If both active Pokémon fainted, both sides get `forceSwitch` and choose at the same time. Neither player sees the other's choice until both are in.
-- Same 75-second timer. On timeout, `default` sends in the first healthy bench Pokémon (§18.4), and it counts toward the three-timeout forfeit.
+- Same 80-second timer. On timeout, `default` sends in the first healthy bench Pokémon (§18.4), and it counts toward the three-timeout forfeit.
 
 ### 18.6 Saving battles
 

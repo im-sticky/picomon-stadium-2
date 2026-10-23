@@ -6,9 +6,9 @@ export default {
   isUltra: true,
   ability: "Magic Guard",
   set: {
-    moves: ["Nasty Plot", "Psychic", "Aura Sphere", "Fire Blast"],
-    item: "Life Orb",
-    nature: "Timid",
-    evs: { hp: 4, spa: 252, spe: 252 },
+    moves: ["Zen Headbutt", "Bulk Up", "Toxic", "Recover"],
+    item: "Leftovers",
+    nature: "Jolly",
+    evs: { hp: 252, def: 252, spe: 4 },
   },
 } satisfies PokemonEntry;

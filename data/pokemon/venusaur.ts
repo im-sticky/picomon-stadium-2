@@ -4,7 +4,7 @@ export default {
   id: "venusaur",
   sprite: "/sprites/pokemon-icons/venusaur.png",
   isGreat: true,
-  ability: "Overgrow",
+  ability: "Chlorophyll",
   set: {
     moves: ["Sludge Bomb", "Energy Ball", "Sleep Powder", "Leech Seed"],
     item: "Black Sludge",

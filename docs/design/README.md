@@ -42,7 +42,7 @@ restyling from scratch.
 | `Button` | Crystal button with the ▶ cursor. `primary` gives the dark version. Defaults to `type="button"`. |
 | `MessageBox` | The two-line message box. Takes a `Message` (`[line1, line2]`) and a `role` (`status` by default, `alert` for errors). |
 | `Field`, `SectionLabel` | Framed text input, and the 16px grey section label. `SectionLabel` with `htmlFor` renders a real `<label>`. |
-| `VisuallyHidden` | Text for screen readers only (e.g. the room code, whose letter cells are `aria-hidden`). |
+| `VisuallyHidden` | Text for screen readers only (e.g. "Waiting" for the empty P2 slot's dashes). |
 
 The colours are CSS variables in `app/globals.scss` (`--bg`, `--ink`, `--text-2`,
 `--placeholder`, `--hover`, `--p1`, `--p2`). Press Start 2P is loaded with
@@ -228,13 +228,13 @@ beside the names.
   `picomon.trainer`; only the lobby reads it, the later boards still show GOLD.
 
 ### Lobby (`Lobby.dc.html`)
-- Waiting: title "WAITING ROOM", the code as four framed 96×120 letter cells, and a
+- Waiting: title "WAITING ROOM", the code as one unframed 64px string (on a 120px row), and a
   COPY button that copies the code and shows "COPIED!" for 1.5s. The app shows
   "COPIED!" only once the copy succeeds. COPY is 300px wide so it fits "COPIED!"
-  without resizing. It sits right after the letter cells, 24px from the last one
+  without resizing. It sits right after the code, 24px from it
   (not pushed to the right edge).
 - On the right of the room code box, right-aligned and vertically centred on the
-  letter cells: the host's battle size ("6V6", 32px on a 48px line) over their
+  code: the host's battle size ("6V6", 32px on a 48px line) over their
   draft type ("Standard Draft", 16px on a 32px line, one line). Both lobby states
   show it, so the guest sees the host's choices too.
 - Players list: a red `P1` label (`#C03028`, 48px wide) then the host's name with a
@@ -346,7 +346,7 @@ beside the names.
   the name is a row of faded pokéball slots, like the draft's team strip (64px
   slots, 32px `icon-pokeballball.png` at 20% opacity, 8px gaps). P2's balls are
   tinted blue.
-- Timer: a 75-second countdown ("1:15" → "0:00", 32px ink, turning red
+- Timer: an 80-second countdown ("1:20" → "0:00", 32px ink, turning red
   `#C03028` at 0:15 and below) sits at the top of
   the centre gap, level with the player names, below the title and above the
   format. It's the deadline for choosing an order. The app should drive it from the
@@ -417,6 +417,9 @@ is absolutely placed on the 1200×900 board.
   - Your info block sits at right 72, top 420, clear of the opponent's sprite.
   - The front sprite plays its `anim` once when the Pokémon is sent out, then rests
     on frame 0 (no idle loop), as `PokemonFront` does by default.
+  - Transform or Imposter: the Pokémon's sprite becomes the one it copied, washed a
+    little towards white (`brightness(1.15) saturate(0.75)`), until it leaves the field.
+    Its name stays its own.
 - HP bar: the same component as Detail (black notched bar, yellow "HP" label, light
   track). The fill is current / max HP: green `#40C048`, yellow `#F8B830` below
   51%, red `#E04030` below 15%. It animates to the new value when HP changes.
@@ -459,11 +462,29 @@ is absolutely placed on the 1200×900 board.
     sprite, the arrow on the right pointing right. Slides in from the left.
   - The slide-in is 0.25s in 5 steps.
 - POKéMON opens the Your Pokémon screen.
+- Countdown: each step has an 80-second deadline, shown as `m:ss` in 32px ink on
+  a 48px line, turning red `#C03028` at 0:15 and below, the same as the Battle
+  order timer. Drive it from the server's `deadline`, not a local clock. It
+  appears in three places:
+  - the menu (4c): on the right of the "What will / VENUSAUR do?" box, vertically
+    centred, 24px from the text
+  - Your Pokémon (4f): on the right of the "Choose a POKéMON." box
+  - Detail in battle (4g, 4h): top right, level with the title (right 48, top 24)
+  The boards preview it with a `timeLeft` prop (4c at 0:42, 4f at 0:12, 4g at
+  0:38).
+- End of the battle: the final lines play, then the message box shows "<NAME> won
+  the battle!", "It's a draw!" (tie or abandon) or "<NAME> forfeited." The
+  battle screen stays up. There's no separate end screen.
+  - The host's message box also has a QUIT button on its right (standard 240×108
+    button, placed like FIRST/SECOND in the Type select message box). The guest's
+    has no button.
+  - QUIT closes the room, and both players go back to Home (Host or join). The
+    room code then no longer works.
 
 ### Your Pokémon (`Party.dc.html`)
 - Title "GOLD'S POKéMON" (the player's name, 32px) at the top, like other screens.
-- Your battle team in battle order (3, 4 or 6), rows 4px apart, sitting just above
-  the bottom row (12px gap), so any spare space falls under the title. Each row is 92px: 64px icon; name over
+- Your battle team in battle order (3, 4 or 6), rows 4px apart, starting under
+  the title (12px gap), so with fewer than 6 any spare space falls above the bottom row. Each row is 92px: 64px icon; name over
   the status slot + `L50`; on the right the HP numbers over a 384px HP bar.
 - Rows are links with a light grey hover. Clicking one opens Detail for that
   Pokémon in battle mode.
@@ -471,6 +492,10 @@ is absolutely placed on the 1200×900 board.
 - Bottom row, laid out like the battle's move list: the message box ("Choose a
   POKéMON.") on the left and the 264px options box on the right with BACK (▶ on
   hover), which returns to the battle menu.
+- Forced switch: when you must send someone out (after a faint, or a U-turn), this
+  same screen opens on its own without BACK, so you can't leave until you pick.
+  The message stays "Choose a POKéMON." Opening a Pokémon's Detail works as
+  usual, and SWITCH there sends it out.
 
 ### Detail (`Detail.dc.html`)
 - Top row: 128px sprite, then the name (24px) with the type badges below it. A 32px ball
@@ -577,7 +602,7 @@ Base stat bar colour by value:
 
 ### Components
 
-**Crystal frame** (text boxes, panels, fields, code cells): a thick outer line, a gap,
+**Crystal frame** (text boxes, panels, fields): a thick outer line, a gap,
 then a thin inner line. Every corner is pixelated: the outer edge has a staircase of two
 3px steps cut away, a 3px ink square fills the gap's corner so the thick line's inner
 edge is rounded too, and the thin inner line has one 3px step cut from each corner.

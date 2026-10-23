@@ -234,6 +234,14 @@
   }
 
   /* Green; yellow below 51%, red below 15%. */
+  &--animate &__fill {
+    transition: width 0.8s linear;
+
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
+  }
+
   &__fill {
     height: 100%;
     background: #40c048;
@@ -254,6 +262,18 @@
   display: flex;
   flex: none;
   height: 24px;
+}
+
+/* Placeholder status tags (SLP, FRZ, BRN, PSN, PAR) until the status sprites exist. */
+.statusTag {
+  display: block;
+  width: 64px;
+  height: 24px;
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--bg);
+  text-align: center;
+  @include pixel-notch(4px);
 }
 
 /* Shows one frame of a two-frame sprite sheet at a time. */

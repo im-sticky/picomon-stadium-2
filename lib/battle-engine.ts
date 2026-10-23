@@ -174,6 +174,7 @@ function teamOf(battle: Battle, slot: Slot, request: Request): TeamMember[] {
       item: p.item,
       ability: p.baseAbility,
       moves: [...p.moves],
+      movePp: pokemon[i].moveSlots.map((m) => ({ pp: m.pp, maxpp: m.maxpp })),
     };
   });
 }
@@ -191,8 +192,9 @@ export function playerRequest(battle: Battle, slot: Slot): PlayerRequest | null 
     move: i + 1,
     id: m.id,
     name: m.move,
-    pp: m.pp ?? 0,
-    maxpp: m.maxpp ?? 0,
+    // A locked move (Outrage, a charge turn), Recharge and Struggle come with no PP: null, not 0.
+    pp: m.pp ?? null,
+    maxpp: m.maxpp ?? null,
     disabled: !!m.disabled,
     target: m.target ?? "",
   }));

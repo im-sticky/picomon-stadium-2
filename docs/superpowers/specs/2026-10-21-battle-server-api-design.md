@@ -11,7 +11,7 @@ The draft ends with a host-only START BATTLE button that does nothing yet. This 
 - the engine wrapper around `@pkmn/sim`;
 - each player's view, and what in it is private;
 - the realtime events, in the style of `RoomEvent`;
-- the 75-second timer, with no background jobs;
+- the 80-second timer, with no background jobs;
 - the concurrency rule, the battle's end, errors, and the tests.
 
 The rules come from §1 and §18 of the [Gen 6 research doc](../../research/2026-10-19-gen6-battle-mechanics.md) ("research §n" below) and from the [battle brainstorm answers](../../research/battle-brainstorm-open-questions.md). The realtime pattern comes from [Picks in the Realtime Messages](2026-10-21-realtime-pick-payloads-design.md) ("realtime spec §n").
@@ -22,7 +22,7 @@ The decided rules aren't reopened here:
 - Lv 50, draft 6 and bring the room's `battleSize` (3, 4 or 6);
 - Sleep Clause Mod and Endless Battle Clause;
 - base PP;
-- 75 s for every choice, the engine's `default` choice on a timeout, a forfeit after three timeouts in a row;
+- 80 s for every choice, the engine's `default` choice on a timeout, a forfeit after three timeouts in a row;
 - the engine's faint replacements;
 - one snapshot row per room, with no choice log.
 
@@ -103,7 +103,7 @@ A **step** is one round of requests from the engine. Step 0 is the battle's intr
 
 ### 4.4 Flow
 
-1. **START BATTLE** (host, draft complete). This creates the battle in one transaction: the engine battle, the `battles` row at stage `team-order` and step 0 with a deadline of now + 75 s, and the room phase `battle`. It then publishes `battle-started`.
+1. **START BATTLE** (host, draft complete). This creates the battle in one transaction: the engine battle, the `battles` row at stage `team-order` and step 0 with a deadline of now + 80 s, and the room phase `battle`. It then publishes `battle-started`.
 2. **Battle order.** Each click sends the player's order so far. Every extension publishes `battle-order-progress { slot, count }`, with no Pokémon in it. When a player's order reaches N, the server submits `team …` to the engine. When both have, the engine starts the battle and step 1 begins.
 3. **Battle.** Each player submits a choice for the current step. The first choice is saved and published to nobody. The choice that completes the step resolves it and publishes `battle-step`.
 4. **Timeouts** run at the deadline (§10).
@@ -301,12 +301,14 @@ export type TeamMember = {
   active: boolean;
   stats: { atk: number; def: number; spa: number; spd: number; spe: number };
   item: string; ability: string; moves: string[];
+  movePp: { pp: number; maxpp: number }[]; // PP left/max for each of `moves`, same order (added for Detail in battle)
 };
 
 export type MoveOption = {
   move: number;                // 1-based; the body's `move`
   id: string; name: string;
-  pp: number; maxpp: number;   // base PP (§6.1)
+  pp: number | null; maxpp: number | null; // base PP (§6.1); null when the engine gives none:
+                               // a locked move (Outrage, a charge turn), Recharge, Struggle
   disabled: boolean; target: string;
 };
 
@@ -336,11 +338,12 @@ export type BattleView = {
 
 `playerRequest` maps the engine's `side.activeRequest` (research §14.4) into this shape:
 
-- `active[0].moves` becomes `moves`;
+- `active[0].moves` becomes `moves`. The engine leaves `pp`/`maxpp` out for a locked move, Recharge and Struggle; those are sent as null (not 0, which would read as "out of PP"), and the client treats them as usable;
 - `forceSwitch` becomes `switch`;
 - `wait` becomes `wait`;
 - `teamPreview` becomes `team`;
 - `side.pokemon` becomes `team`, with `condition` split into `hp`, `maxhp`, `status` and `fainted`;
+- `movePp` comes from each engine `Pokemon`'s `moveSlots` (`pp`, `maxpp`). The move request only carries the active Pokémon's PP, and Detail in battle (boards 4g/4h) shows PP left for every team member, the bench included;
 - `pokemonId` is `toID(pokemon.set.species)` from the engine's `Pokemon` object, not from `details`, so it stays the drafted id through forme changes and Transform;
 - `canSwitch` is true when `trapped` isn't set and the bench has a healthy Pokémon;
 - `maybeTrapped` counts as switchable. The engine rejects the switch if the Pokémon really is trapped, which gives a 422 whose message says so.
@@ -376,7 +379,7 @@ Every route returns 404 `{ error: 'Room not found.' }` for an unknown or expired
 - **`startBattle(db, code, secret, now, opts?: { seed })`:** one write transaction with `withBusyRetry`, like `startTypeBattle`:
   - checks the live room, membership, `slot === 1`, `phase === 'draft'` and 12 picks;
   - builds the battle (§6.3);
-  - inserts the `battles` row: `stage 'team-order'`, `step 0`, `stepStarts [0]`, `deadline now + 75_000`, `version 1`;
+  - inserts the `battles` row: `stage 'team-order'`, `step 0`, `stepStarts [0]`, `deadline now + 80_000`, `version 1`;
   - sets `rooms.phase = 'battle'`.
 
   Building the battle inside the transaction is CPU work only (a few ms).
@@ -535,6 +538,8 @@ The POST bodies above already carry `events` (exactly what was published) and th
 
 The **opponent** of the resolving player gets the public `battle-step` and starts animating its public lines straight away. It then fetches `GET …/battle?from=<step>` at once for its new request and its own exact-HP lines. The animation takes seconds and the fetch takes well under one, so the player never waits on it.
 
+**As built (battle screens):** the client fetches its own view first and plays its own lines (exact HP), and only plays the event's public lines if that view hasn't arrived 1.5 s after the event. The fetch is needed anyway for the request, and swapping the public lines for the private ones mid-playback isn't worth it; "Waiting for <OPP>..." stays up for the fraction of a second the fetch takes. While waiting on the opponent (or behind the server), the battle screen also re-fetches its view every 15 s, like room sync's idle check, in case a publish was lost.
+
 **Decision:** one shared channel plus a fetch for the private half. **Rejected for now:** a per-player private channel (`room:<code>:p<slot>`, with the token granting only your own). That would save the fetch, but it means a second capability, a second subscription and two more publishes per step for no visible gain (settled, §16).
 
 ### 9.4 Positions, for ordering and gap detection
@@ -555,11 +560,11 @@ A step's public lines are normally under 5 KB. A whole 6v6 was about 9 KB (§3).
 
 ### 10.1 The deadline
 
-- Every save that starts a step sets `deadline = now + 75_000`. That includes START BATTLE, the team preview resolving, each turn, a mid-turn switch and faint replacements.
+- Every save that starts a step sets `deadline = now + 80_000`. That includes START BATTLE, the team preview resolving, each turn, a mid-turn switch and faint replacements.
 - A first choice doesn't change it. Ending sets it to null.
 - **Decision:** one deadline per step, shared by every player being asked, **because** the engine asks them at the same moment (research §18.5).
-- The deadline is measured from the commit. Animation time on the client counts toward the 75 s (§16, question 1 for the user).
-- **Latency grace.** **Decision:** the server applies timeouts only when `now >= deadline + GRACE_MS`, with `GRACE_MS = 1000` (in `lib/battle-types.ts`), **because** a click a moment before the deadline can reach the server a few hundred ms late, and it mustn't earn a strike. The client counts down to `deadline`, so the visible clock still shows 75 s. It only fires the trigger after the grace (§10.3).
+- The deadline is measured from the commit. Animation time on the client counts toward the 80 s (§16, question 1 for the user).
+- **Latency grace.** **Decision:** the server applies timeouts only when `now >= deadline + GRACE_MS`, with `GRACE_MS = 1000` (in `lib/battle-types.ts`), **because** a click a moment before the deadline can reach the server a few hundred ms late, and it mustn't earn a strike. The client counts down to `deadline`, so the visible clock still shows 80 s. It only fires the trigger after the grace (§10.3).
 
 ### 10.2 Applying due timeouts (`applyDueTimeouts` in `lib/battle.ts`)
 
@@ -576,7 +581,7 @@ This runs at the start of every CAS attempt on the GET, choice, order and timeou
 
    Any partial Battle order is ignored (settled, §16).
 
-After this, the engine has every choice it asked for, so it resolves the step. Exactly one new step is recorded, with `timedOut` listing the slots, and its deadline is now + 75 s. **Decision:** at most one timeout round per request, with the new deadline counted from processing time, not from the old deadline, **because** a player returning after a long absence then gets a fresh 75 s, rather than a cascade of missed deadlines all at once.
+After this, the engine has every choice it asked for, so it resolves the step. Exactly one new step is recorded, with `timedOut` listing the slots, and its deadline is now + 80 s. **Decision:** at most one timeout round per request, with the new deadline counted from processing time, not from the old deadline, **because** a player returning after a long absence then gets a fresh 80 s, rather than a cascade of missed deadlines all at once.
 
 **Settling the counts. Decision:** the counts change **only when a step resolves**, never when a choice arrives. **Because** a count that dropped to 0 on a first choice would show the opponent, mid-step, that you'd chosen (review finding 1). When step k resolves, whether by the last choice or by timeouts:
 
@@ -668,8 +673,12 @@ Any end the engine reaches by itself is `normal`. Its `winner` comes from `battl
   - the final `battle-step` with `result`;
   - `BattleView.result`;
   - `RoomState.battle.result`.
-- After the end, choices return 409 `ended`, and the GET keeps working until the room expires.
-- What happens next (a rematch, or back to Home) is a product question for the user (§16, question 2). The room keeps its TTL.
+- After the end, choices return 409 `ended`, and the GET keeps working until the room expires or the host closes it.
+- **QUIT (added with the battle screens).** Once the battle has ended, the host's message box has a QUIT button. It calls `POST /api/rooms/[code]/close`:
+  - `closeRoom(db, code, secret, now)` in `lib/rooms.ts`, one write transaction with `withBusyRetry`: the live room, membership (`findMember`), `slot === 1` and the battle row's `stage === 'ended'` are checked, then `rooms.expires_at` is set to `now` (conditional on it still being in the future).
+  - **Decision:** close the room by expiring it, not with a new column or by deleting rows, **because** every live-room check (`findLiveRoom`, `joinRoom`, `findActivePlayer` for the Ably token) already treats an expired room as gone, and `deleteExpired` removes its rows with the other expired rooms. No migration is needed.
+  - Responses: 200 `{ ok: true, event: { kind: 'room-closed' } }` (published on the room channel after the commit); 403 `{ error: 'Only the host can quit.' }`; 409 `{ error: 'The battle is not over.' }` (any phase or stage before `ended`); 404 `{ error: 'Room not found.' }` for a missing cookie, a non-member, an unknown room, or a room that's already closed.
+  - `RoomClosedEvent = { kind: 'room-closed' }` lives in `lib/room-events.ts` (with `isRoomClosed`). It isn't a `RoomEvent`, because there's no room state left to apply it to. Both clients go to Home on it; loading the room's URL afterwards gets the room GET's 404, which also goes to Home.
 
 ## 13. Errors and validation
 
@@ -695,7 +704,7 @@ The server never returns `state`, `version`, the stored orders or the seed. Ever
 | `lib/pokemon-dex.ts` | Drop `Picked Team Size = 3` from `RULESET`. Register the 3v3/4v4/6v6 formats, plus `formatName` and `formatIdFor`. Add `calculatePP` to `Scripts`. |
 | `lib/battle-engine.ts` (new) | §6.2–6.4, §7.2 mapping, §7.3 splitting |
 | `lib/battle.ts` (new) | `startBattle`, `getBattleView`, `submitOrder`, `submitChoice`, `triggerTimeout`, `withBattle` (§11), `applyDueTimeouts` (§10), and building views and events |
-| `lib/battle-types.ts` (new) | `BattleStage`, `Asked`, `BattleResult`, `TeamMember`, `MoveOption`, `PlayerRequest`, `BattleView`, `BattleChoice`, `BattleEvent`, `TIMER_MS = 75_000`, `GRACE_MS = 1000`, `MAX_TIMEOUTS = 3` |
+| `lib/battle-types.ts` (new) | `BattleStage`, `Asked`, `BattleResult`, `TeamMember`, `MoveOption`, `PlayerRequest`, `BattleView`, `BattleChoice`, `BattleEvent`, `TIMER_MS = 80_000`, `GRACE_MS = 1000`, `MAX_TIMEOUTS = 3` |
 | `lib/types.ts` | `Phase` adds `'battle'`. `RoomState` adds `battle`. |
 | `lib/room-events.ts` | `RoomEvent` adds `battle-started`. `parseRoomEvent`, `applyEvent`, `progress` and `stateKey` change as in §9.1. |
 | `lib/rooms.ts` | `deleteExpired` deletes `battles` first. `getRoomState` keeps `draft` in `battle` and reads `battle` (§5.4). |
@@ -705,6 +714,7 @@ The server never returns `state`, `version`, the stored orders or the seed. Ever
 | `app/api/rooms/[code]/battle/order/route.ts` (new) | `POST` |
 | `app/api/rooms/[code]/battle/choice/route.ts` (new) | `POST` |
 | `app/api/rooms/[code]/battle/timeout/route.ts` (new) | `POST` |
+| `app/api/rooms/[code]/close/route.ts` (added with the battle screens) | `POST` QUIT (§12) |
 | `docs/research/2026-10-19-gen6-battle-mechanics.md` | A one-line note under §18.1 pointing to this spec's §3 (the `@@@` finding) |
 
 ## 15. Test plan
@@ -746,7 +756,7 @@ These follow the existing style: Vitest with `// @vitest-environment node`, an i
 
 - **START:**
   - only the host can start, only in `draft` with 12 picks, and a second call is `already-started`;
-  - the row has stage `team-order`, step 0 and deadline `T0 + 75_000`;
+  - the row has stage `team-order`, step 0 and deadline `T0 + 80_000`;
   - the room phase is `battle`;
   - `getRoomState` still has `draft` and gains `battle.stage`.
 - **Order:**
@@ -760,9 +770,9 @@ These follow the existing style: Vitest with `// @vitest-environment node`, an i
   - the second resolves the turn;
   - a `step` mismatch is `stale-step`;
   - a disabled move is 422 and the row's `version` is unchanged.
-- **Timeouts** (with `now = T0 + 75_000 + GRACE_MS`):
-  - **grace window:** at `T0 + 75_000 + GRACE_MS − 1`, nothing is applied, and a choice made then is accepted with no strike;
-  - the GET applies the default to the player who didn't choose, bumps their count when the step resolves, publishes one `battle-step` with `timedOut`, and sets the new deadline to `now + 75_000`;
+- **Timeouts** (with `now = T0 + 80_000 + GRACE_MS`):
+  - **grace window:** at `T0 + 80_000 + GRACE_MS − 1`, nothing is applied, and a choice made then is accepted with no strike;
+  - the GET applies the default to the player who didn't choose, bumps their count when the step resolves, publishes one `battle-step` with `timedOut`, and sets the new deadline to `now + 80_000`;
   - **counts settle at resolution:** a player who chose in time goes to 0 at that resolution, not when they chose;
   - **a timeout during a U-turn step:** only the switching side is asked, so only it gets the default and the strike. The other side's count is unchanged;
   - calling the trigger again at the same `now` changes nothing;
@@ -811,10 +821,10 @@ These were settled in review and are recorded here so they aren't reopened:
 
 For the user. Neither blocks the server work. **Answered 2026-10-21:**
 
-- **(1) Animation time: deferred to the frontend spec.** The server keeps a deadline of 75 s + 1 s grace from step resolution (§10.1).
-- **(2) After the battle: decided later.** For now the room keeps its normal TTL and the result stays readable (§12).
+- **(1) Animation time: deferred to the frontend spec.** The server keeps a deadline of 80 s + 1 s grace from step resolution (§10.1).
+- **(2) After the battle: decided later.** For now the room keeps its normal TTL and the result stays readable (§12). The battle screens then added the host's QUIT, which closes the room (§12).
 
 The questions as asked:
 
-1. **Animation time and the 75 s.** The server ships with a deadline of commit + 75 s and a 1 s latency grace (§10.1), so the time a client spends animating the turn counts toward the 75 s. Should the countdown pause during animations? That would need a longer server deadline, for example commit + 75 s + the animation's length. The question belongs in the frontend spec, which knows how long animations take.
+1. **Animation time and the 80 s.** The server ships with a deadline of commit + 80 s and a 1 s latency grace (§10.1), so the time a client spends animating the turn counts toward the 80 s. Should the countdown pause during animations? That would need a longer server deadline, for example commit + 80 s + the animation's length. The question belongs in the frontend spec, which knows how long animations take.
 2. **After the battle, in the product.** Is a rematch (same teams, or a new draft) or a "back to Home" flow wanted? It would be its own spec.

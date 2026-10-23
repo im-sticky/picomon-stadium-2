@@ -6,7 +6,7 @@ export default {
   isGreat: true,
   ability: "Own Tempo",
   set: {
-    moves: ["Swords Dance", "Return", "Earthquake", "Power Whip"],
+    moves: ["Explosion", "Return", "Earthquake", "Power Whip"],
     item: "Leftovers",
     nature: "Adamant",
     evs: { hp: 252, atk: 252, spd: 4 },

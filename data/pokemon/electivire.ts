@@ -8,8 +8,8 @@ export default {
   types: ["Electric", "Fighting"],
   baseStats: { hp: 75, atk: 123, def: 67, spa: 95, spd: 85, spe: 105 },
   set: {
-    moves: ["Wild Charge", "Cross Chop", "Ice Punch", "Earthquake"],
-    item: "Life Orb",
+    moves: ["Wild Charge", "Brick Break", "Ice Punch", "Earthquake"],
+    item: "Expert Belt",
     nature: "Jolly",
     evs: { hp: 4, atk: 252, spe: 252 },
   },
