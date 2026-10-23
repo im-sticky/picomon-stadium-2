@@ -6,9 +6,9 @@ export default {
   isUltra: true,
   ability: "Snow Warning",
   set: {
-    moves: ["Blizzard", "Hurricane", "Freeze-Dry", "Roost"],
-    item: "Leftovers",
+    moves: ["Blizzard", "Aeroblast", "Freeze-Dry", "Roost"],
+    item: "Icy Rock",
     nature: "Timid",
-    evs: { hp: 4, spa: 252, spe: 252 },
+    evs: { hp: 252, spa: 4, spe: 252 },
   },
 } satisfies PokemonEntry;

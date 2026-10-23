@@ -6,8 +6,8 @@ export default {
   isUltra: true,
   ability: "Drizzle",
   set: {
-    moves: ["Thunder", "Heat Wave", "Volt Switch", "Roost"],
-    item: "Leftovers",
+    moves: ["Thunder", "Extrasensory", "Volt Switch", "Hurricane"],
+    item: "Damp Rock",
     nature: "Timid",
     evs: { hp: 4, spa: 252, spe: 252 },
   },

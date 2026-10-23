@@ -6,8 +6,8 @@ export default {
   isGreat: true,
   ability: "Water Absorb",
   set: {
-    moves: ["Freeze-Dry", "Surf", "Thunderbolt", "Ice Shard"],
-    item: "Leftovers",
+    moves: ["Ice Beam", "Surf", "Thunderbolt", "Shell Smash"],
+    item: "Weakness Policy",
     nature: "Modest",
     evs: { hp: 252, spa: 252, spd: 4 },
   },

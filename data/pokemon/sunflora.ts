@@ -4,13 +4,13 @@ export default {
   id: "sunflora",
   sprite: "/sprites/pokemon-icons/sunflora.png",
   isGreat: true,
-  ability: "Early Bird",
+  ability: "Solar Power",
   types: ["Grass", "Fire"],
   baseStats: { hp: 75, atk: 55, def: 75, spa: 105, spd: 85, spe: 85 },
   set: {
-    moves: ["Giga Drain", "Earth Power", "Sludge Bomb", "Synthesis"],
+    moves: ["Flamethrower", "Earth Power", "Sludge Bomb", "Solar Beam"],
     item: "Life Orb",
-    nature: "Modest",
-    evs: { hp: 252, spa: 252, spd: 4 },
+    nature: "Timid",
+    evs: { hp: 4, spa: 252, spd: 252 },
   },
 } satisfies PokemonEntry;

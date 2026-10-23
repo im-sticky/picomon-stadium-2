@@ -7,7 +7,7 @@ export default {
   ability: "Sand Stream",
   set: {
     moves: ["Dragon Dance", "Stone Edge", "Crunch", "Earthquake"],
-    item: "Lum Berry",
+    item: "Smooth Rock",
     nature: "Adamant",
     evs: { hp: 4, atk: 252, spe: 252 },
   },
