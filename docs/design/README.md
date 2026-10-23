@@ -417,6 +417,9 @@ is absolutely placed on the 1200×900 board.
   - Your info block sits at right 72, top 420, clear of the opponent's sprite.
   - The front sprite plays its `anim` once when the Pokémon is sent out, then rests
     on frame 0 (no idle loop), as `PokemonFront` does by default.
+  - Transform or Imposter: the Pokémon's sprite becomes the one it copied, washed a
+    little towards white (`brightness(1.15) saturate(0.75)`), until it leaves the field.
+    Its name stays its own.
 - HP bar: the same component as Detail (black notched bar, yellow "HP" label, light
   track). The fill is current / max HP: green `#40C048`, yellow `#F8B830` below
   51%, red `#E04030` below 15%. It animates to the new value when HP changes.

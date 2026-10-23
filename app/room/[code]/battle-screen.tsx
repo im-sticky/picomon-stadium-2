@@ -542,8 +542,13 @@ export function BattleScreen({
     );
   };
 
-  const oppSprite = opp && !opp.fainted ? pokemonSprites[opp.pokemonId] : undefined;
-  const mySprite = me && !me.fainted ? pokemonSprites[me.pokemonId] : undefined;
+  // A transformed Pokémon shows the sprite it copied, a little lighter.
+  const spriteOf = (mon: Battler | null) =>
+    mon && !mon.fainted ? (pokemonSprites[mon.transformedInto ?? ""] ?? pokemonSprites[mon.pokemonId]) : undefined;
+  const spriteClass = (mon: Battler | null) =>
+    mon?.transformedInto ? `${styles.battle__sprite} ${styles["battle__sprite--transformed"]}` : styles.battle__sprite;
+  const oppSprite = spriteOf(opp);
+  const mySprite = spriteOf(me);
   const oppTypes = opp ? (byId.get(opp.pokemonId)?.types ?? []) : [];
 
   return (
@@ -583,13 +588,13 @@ export function BattleScreen({
       )}
       {oppSprite && (
         <div className={`${styles.battle__spriteBox} ${styles["battle__spriteBox--opp"]}`}>
-          <PokemonFront key={`opp-${scene.entrances.opp}`} sprite={oppSprite} alt={opp!.name.toUpperCase()} className={styles.battle__sprite} />
+          <PokemonFront key={`opp-${scene.entrances.opp}`} sprite={oppSprite} alt={opp!.name.toUpperCase()} className={spriteClass(opp)} />
         </div>
       )}
 
       {mySprite && (
         <div className={`${styles.battle__spriteBox} ${styles["battle__spriteBox--me"]}`}>
-          <PokemonBack key={`me-${scene.entrances.me}`} sprite={mySprite} alt={me!.name.toUpperCase()} className={styles.battle__sprite} />
+          <PokemonBack key={`me-${scene.entrances.me}`} sprite={mySprite} alt={me!.name.toUpperCase()} className={spriteClass(me)} />
         </div>
       )}
       {me && !me.fainted && (

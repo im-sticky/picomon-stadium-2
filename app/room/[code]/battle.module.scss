@@ -128,6 +128,11 @@
 
   &__sprite {
     zoom: 3;
+
+    /* Transform or Imposter: the copied sprite, washed a little towards white. */
+    &--transformed {
+      filter: brightness(1.15) saturate(0.75);
+    }
   }
 
   /* The ability box: 480×96, sliding out from that Pokémon's side over its sprite,

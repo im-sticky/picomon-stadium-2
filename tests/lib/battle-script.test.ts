@@ -165,6 +165,15 @@ describe("stepBeats: status, faints and switches", () => {
     });
   });
 
+  it("copies the target's species on Transform or Imposter, until it switches out", () => {
+    const ditto = play(["|switch|p2a: Ditto|Ditto, L50|100/100"], host, field);
+    const transformed = play(["|-transform|p2a: Ditto|p1a: Gyarados|[from] ability: Imposter"], host, ditto);
+    expect(transformed.active.opp).toMatchObject({ name: "Ditto", pokemonId: "ditto", transformedInto: "gyarados" });
+    expect(messages(["|-transform|p2a: Ditto|p1a: Gyarados"], host)).toEqual([["DITTO transformed", "into GYARADOS!"]]);
+    const back = play(["|switch|p2a: Ditto|Ditto, L50|100/100"], host, transformed);
+    expect(back.active.opp?.transformedInto).toBeUndefined();
+  });
+
   it("shows an ability from a [from] tag on its owner's side", () => {
     const beats = stepBeats(["|-weather|RainDance|[from] ability: Drizzle|[of] p2a: Politoed"], host);
     expect(beats).toEqual([

@@ -22,6 +22,8 @@ export type Battler = {
   maxhp: number;
   status: Status | null;
   fainted: boolean;
+  /** The species it turned into with Transform or Imposter, until it leaves the field. */
+  transformedInto?: string;
 };
 
 export type AbilityBox = { side: Side; name: string; ability: string };
@@ -46,6 +48,8 @@ export type Beat = {
   hp?: { side: Side; name: string; hp: number; maxhp?: number; status?: Status | null };
   status?: { side: Side; name: string; status: Status | null };
   faint?: { side: Side; name: string };
+  /** `side`'s Pokémon becomes a copy of the Pokémon on side `into`. */
+  transform?: { side: Side; name: string; into: Side };
 };
 
 export type ScriptContext = {
@@ -447,7 +451,10 @@ export function stepBeats(lines: readonly string[], ctx: ScriptContext): Beat[] 
 
       case "-transform": {
         const into = parseIdent(args[2]);
-        if (who && into) say(msg(`${name} transformed`, `into ${up(into.name)}!`));
+        if (who && into) {
+          const transform = { side: sideOf(who.slot), name: who.name, into: sideOf(into.slot) };
+          say(msg(`${name} transformed`, `into ${up(into.name)}!`), HOLD.message, { transform });
+        }
         break;
       }
 
@@ -778,6 +785,13 @@ export function applyBeat(scene: Scene, beat: Beat): Scene {
   if (beat.faint) {
     const mon = active[beat.faint.side];
     if (mon && mon.name === beat.faint.name) active[beat.faint.side] = { ...mon, hp: 0, fainted: true, status: null };
+  }
+  if (beat.transform) {
+    const mon = active[beat.transform.side];
+    const target = active[beat.transform.into];
+    if (mon && target && mon.name === beat.transform.name) {
+      active[beat.transform.side] = { ...mon, transformedInto: target.transformedInto ?? target.pokemonId };
+    }
   }
   return {
     intro,
