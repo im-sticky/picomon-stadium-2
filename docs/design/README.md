@@ -42,7 +42,7 @@ restyling from scratch.
 | `Button` | Crystal button with the ▶ cursor. `primary` gives the dark version. Defaults to `type="button"`. |
 | `MessageBox` | The two-line message box. Takes a `Message` (`[line1, line2]`) and a `role` (`status` by default, `alert` for errors). |
 | `Field`, `SectionLabel` | Framed text input, and the 16px grey section label. `SectionLabel` with `htmlFor` renders a real `<label>`. |
-| `VisuallyHidden` | Text for screen readers only (e.g. the room code, whose letter cells are `aria-hidden`). |
+| `VisuallyHidden` | Text for screen readers only (e.g. "Waiting" for the empty P2 slot's dashes). |
 
 The colours are CSS variables in `app/globals.scss` (`--bg`, `--ink`, `--text-2`,
 `--placeholder`, `--hover`, `--p1`, `--p2`). Press Start 2P is loaded with
@@ -228,13 +228,13 @@ beside the names.
   `picomon.trainer`; only the lobby reads it, the later boards still show GOLD.
 
 ### Lobby (`Lobby.dc.html`)
-- Waiting: title "WAITING ROOM", the code as four unframed 96×120 letter cells, and a
+- Waiting: title "WAITING ROOM", the code as one unframed 64px string (on a 120px row), and a
   COPY button that copies the code and shows "COPIED!" for 1.5s. The app shows
   "COPIED!" only once the copy succeeds. COPY is 300px wide so it fits "COPIED!"
-  without resizing. It sits right after the letter cells, 24px from the last one
+  without resizing. It sits right after the code, 24px from it
   (not pushed to the right edge).
 - On the right of the room code box, right-aligned and vertically centred on the
-  letter cells: the host's battle size ("6V6", 32px on a 48px line) over their
+  code: the host's battle size ("6V6", 32px on a 48px line) over their
   draft type ("Standard Draft", 16px on a 32px line, one line). Both lobby states
   show it, so the guest sees the host's choices too.
 - Players list: a red `P1` label (`#C03028`, 48px wide) then the host's name with a
