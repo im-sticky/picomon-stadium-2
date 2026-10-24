@@ -43,7 +43,7 @@ import { MenuItem } from "./battle-menu";
 import { Countdown } from "./countdown";
 import { DetailScreen } from "./detail-screen";
 import { PartyScreen } from "./party-screen";
-import type { SubscribeBattle } from "./room-view";
+import type { RoomAction, SubscribeBattle } from "./room-view";
 import styles from "./battle.module.scss";
 
 const BALL_ICON = "/sprites/misc/icon-pokeballball.png";
@@ -66,11 +66,11 @@ const post = (url: string, body: object) =>
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** The end of the battle, in the message box. */
+/** The end of the battle, in the message box: two short lines, to fit beside REMATCH and QUIT. */
 function endMessage(result: BattleResult, name: (slot: Slot) => string): Message {
   if (result.winner === null) return ["It's a draw!", ""];
-  if (result.reason === "forfeit") return [`${name(result.winner === 1 ? 2 : 1)} forfeited.`, ""];
-  return [`${name(result.winner)} won the battle!`, ""];
+  if (result.reason === "forfeit") return [name(result.winner === 1 ? 2 : 1), "forfeited."];
+  return [`${name(result.winner)} won`, "the battle!"];
 }
 
 /**
@@ -84,13 +84,19 @@ export function BattleScreen({
   pool,
   notice,
   subscribeBattle,
+  onAction,
+  onRoomChanged,
   onClosed,
 }: {
   state: RoomState;
   pool: readonly PoolPokemon[];
   notice?: Message;
   subscribeBattle: SubscribeBattle;
-  /** The room is closed (QUIT): go to Home. */
+  /** For REMATCH: its result (a new game) updates the room state. */
+  onAction: RoomAction;
+  /** The battle is gone but the room isn't (a rematch started): fetch the room state. */
+  onRoomChanged: () => void;
+  /** The room is closed (QUIT, or the end screen's time ran out): go to Home. */
   onClosed: () => void;
 }) {
   const { code, players, you, battleSize } = state;
@@ -102,13 +108,15 @@ export function BattleScreen({
   const namesKey = `${you.slot}|${names[1]}|${names[2]}`;
   const script = useRef({ you: you.slot, names });
   const closedRef = useRef(onClosed);
+  const roomChangedRef = useRef(onRoomChanged);
   useEffect(() => {
     const [slot, n1, n2] = namesKey.split("|");
     script.current = { you: Number(slot) as Slot, names: { 1: n1, 2: n2 } };
   }, [namesKey]);
   useEffect(() => {
     closedRef.current = onClosed;
-  }, [onClosed]);
+    roomChangedRef.current = onRoomChanged;
+  }, [onClosed, onRoomChanged]);
   const byId = useMemo(() => new Map(pool.map((p) => [p.id, p])), [pool]);
   const itemNames = useMemo(() => new Map(pool.map((p) => [toId(p.item), p.item])), [pool]);
   const movesById = useMemo(() => {
@@ -131,6 +139,9 @@ export function BattleScreen({
   /** The step a choice failed on: the notice shows only while that step is current. */
   const [failedStep, setFailedStep] = useState<number | null>(null);
   const [quitting, setQuitting] = useState(false);
+  /** After the battle: the slot that asked for a rematch. */
+  const [rematchBy, setRematchBy] = useState<Slot | null>(null);
+  const [rematching, setRematching] = useState(false);
 
   const viewRef = useRef<BattleView | null>(null);
   const playedRef = useRef(0);
@@ -200,6 +211,7 @@ export function BattleScreen({
       setView(next);
       setClock((c) => newerClock(c, clockFromView(next, Date.now())));
       if (next.result) setResult({ step: next.step, result: next.result });
+      if (next.rematch !== null) setRematchBy(next.rematch);
       // A view that starts after a step you haven't played (e.g. a timeout's, from
       // its step + 1) leaves a gap: keep its request and clock, and fetch the rest.
       if (loaded.current && next.log.from > playedRef.current + 1) {
@@ -227,6 +239,8 @@ export function BattleScreen({
           try {
             const res = await fetch(`/api/rooms/${code}/battle?from=${from}`);
             if (res.status === 404) return closedRef.current();
+            // No battle any more (a rematch started): the room state says what's next.
+            if (res.status === 409) return roomChangedRef.current();
             if (res.ok) {
               if (live.current) applyView((await res.json()) as BattleView);
               return;
@@ -260,6 +274,7 @@ export function BattleScreen({
     kick();
     const unsubscribe = subscribeBattle((event) => {
       if (!event) return void resync();
+      if (event.kind === "rematch-requested") return setRematchBy(event.slot);
       if (event.kind !== "battle-step") return;
       setClock((c) => newerClock(c, clockFromEvent(event, Date.now())));
       if (event.result) setResult({ step: event.step, result: event.result });
@@ -304,7 +319,11 @@ export function BattleScreen({
     const fire = () => {
       lastTrigger.current = Date.now();
       post(`/api/rooms/${code}/battle/timeout`, { step: clock.step })
-        .then((res) => (res.ok ? (res.json() as Promise<{ view: BattleView }>) : null))
+        .then((res) => {
+          // The end screen's time ran out and the room is closed.
+          if (res.status === 404) closedRef.current();
+          return res.ok ? (res.json() as Promise<{ view: BattleView }>) : null;
+        })
         .then((body) => body && live.current && applyView(body.view))
         .catch(() => {});
       timer = setTimeout(fire, TIMEOUT_EVERY_MS);
@@ -368,6 +387,14 @@ export function BattleScreen({
     setQuitting(false);
   }
 
+  async function rematch() {
+    if (rematching || rematchBy === you.slot) return;
+    setRematching(true);
+    // A new game comes back as a room event, which replaces this screen.
+    if (await onAction("rematch")) setRematchBy((by) => by ?? you.slot);
+    setRematching(false);
+  }
+
   // What the screen can show now: the playback, or the server's latest request.
   const caughtUp = !playing && view !== null && view.step === played;
   const ended = result !== null && played >= result.step && !playing;
@@ -379,7 +406,8 @@ export function BattleScreen({
   const forced = canAct && request?.kind === "switch";
   const failed = failedStep !== null && view?.step === failedStep;
   // Waiting on the opponent, or behind the server with nothing playing: check in now and then.
-  const idle = !playing && (waiting || !caughtUp) && !ended;
+  // On the end screen, check in too, in case a rematch request's publish was lost.
+  const idle = !playing && (ended || waiting || !caughtUp);
   useEffect(() => {
     if (!idle) return;
     const id = setInterval(() => {
@@ -498,22 +526,33 @@ export function BattleScreen({
   } else {
     let message: Message = scene.message;
     if (!playing) {
-      if (ended) message = endMessage(result.result, name);
+      if (ended && rematchBy === you.slot) message = ["Waiting for", `${name(opponent)}...`];
+      else if (ended && rematchBy !== null) message = ["Rematch", "requested!"];
+      else if (ended) message = endMessage(result.result, name);
       else if (waiting) message = [`Waiting for ${name(opponent)}...`, ""];
       else if (failed) message = FAILED;
     }
     if (notice && !playing) message = notice;
-    const host = you.slot === 1;
+    // Once you've asked for a rematch, both choices wait on the opponent.
+    const choosing = quitting || rematching || rematchBy === you.slot;
     bottom = (
       <MessageBox
-        className={styles.battle__message}
+        className={`${styles.battle__message} ${ended ? styles["battle__message--end"] : ""}`}
         message={message}
         role={notice && !playing ? "alert" : "status"}
         actions={
-          ended && host ? (
-            <Button disabled={quitting} onClick={() => void quit()}>
-              QUIT
-            </Button>
+          ended ? (
+            <>
+              {clock && <Countdown clock={clock} />}
+              <div role="group" aria-label="After the battle" className={styles.battle__endButtons}>
+                <Button primary className={styles.battle__endButton} disabled={choosing} onClick={() => void rematch()}>
+                  REMATCH
+                </Button>
+                <Button className={styles.battle__endButton} disabled={choosing} onClick={() => void quit()}>
+                  QUIT
+                </Button>
+              </div>
+            </>
           ) : undefined
         }
       />

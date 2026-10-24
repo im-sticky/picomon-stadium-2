@@ -475,11 +475,20 @@ is absolutely placed on the 1200×900 board.
 - End of the battle: the final lines play, then the message box shows "<NAME> won
   the battle!", "It's a draw!" (tie or abandon) or "<NAME> forfeited." The
   battle screen stays up. There's no separate end screen.
-  - The host's message box also has a QUIT button on its right (standard 240×108
-    button, placed like FIRST/SECOND in the Type select message box). The guest's
-    has no button.
-  - QUIT closes the room, and both players go back to Home (Host or join). The
-    room code then no longer works.
+  - The end message is split over the two lines ("GOLD won / the battle!", "GOLD /
+    forfeited.") so it fits beside the countdown, REMATCH and QUIT on its right.
+    Both players get both buttons (standard Crystal buttons, placed like FIRST/SECOND
+    in the Type select message box: 12px apart, the cursor 12px in, 42px label
+    padding, so REMATCH is a little wider than 240). The box's right padding is 12px.
+  - Countdown: the same 80-second clock as a turn, shown left of REMATCH.
+  - QUIT (either player) closes the room, and both players go back to Home (Host or
+    join). The room code then no longer works.
+  - REMATCH: once one player presses it, both of their buttons grey out and their
+    message reads "Waiting for / <OPP>...". The other player's message reads
+    "Rematch / requested!". When they press REMATCH too, both go back to the type
+    battle for a new game, with the same battle size and draft type, and the type
+    battle, draft and battle start over. They can still QUIT instead.
+  - If the countdown runs out first, the room closes and both go back to Home.
 
 ### Your Pokémon (`Party.dc.html`)
 - Title "GOLD'S POKéMON" (the player's name, 32px) at the top, like other screens.

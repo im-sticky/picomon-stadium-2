@@ -128,7 +128,8 @@ export const battles = sqliteTable('battles', {
   step: integer('step').notNull().default(0),
   // JSON number[]: the battle.log index where each step's lines begin; [0] is 0.
   stepStarts: text('step_starts').notNull(),
-  // Unix ms when the current step's choices time out; null once ended.
+  // Unix ms when the current step's choices time out. Once ended, when the end
+  // screen closes the room (§12).
   deadline: integer('deadline'),
   p1Timeouts: integer('p1_timeouts').notNull().default(0),
   p2Timeouts: integer('p2_timeouts').notNull().default(0),
@@ -333,6 +334,7 @@ export type BattleView = {
   timeouts: { 1: number; 2: number };      // consecutive timeouts, as settled when this step began (§10.2)
   log: { from: number; steps: string[][] }; // this player's lines for steps from..step
   result: BattleResult | null;
+  rematch: Slot | null;                    // after the battle: who asked for a rematch (§12)
 };
 ```
 
@@ -668,17 +670,24 @@ START BATTLE is the exception. It writes two tables once, so it uses the existin
 
 Any end the engine reaches by itself is `normal`. Its `winner` comes from `battle.winner` (`'P1'`, `'P2'` or `''` for a tie). Only the server's own forfeit paths set `forfeit` or `abandoned`.
 
-- **Stored:** `stage = 'ended'`, `winner`, `endReason`, `deadline = null` and the final snapshot. These are all saved by the same CAS update as the step that ended the battle.
+- **Stored:** `stage = 'ended'`, `winner`, `endReason`, `deadline = now + TIMER_MS` (the end screen's countdown, below) and the final snapshot. These are all saved by the same CAS update as the step that ended the battle.
 - **Clients receive:**
   - the final `battle-step` with `result`;
   - `BattleView.result`;
   - `RoomState.battle.result`.
-- After the end, choices return 409 `ended`, and the GET keeps working until the room expires or the host closes it.
-- **QUIT (added with the battle screens).** Once the battle has ended, the host's message box has a QUIT button. It calls `POST /api/rooms/[code]/close`:
-  - `closeRoom(db, code, secret, now)` in `lib/rooms.ts`, one write transaction with `withBusyRetry`: the live room, membership (`findMember`), `slot === 1` and the battle row's `stage === 'ended'` are checked, then `rooms.expires_at` is set to `now` (conditional on it still being in the future).
+- After the end, choices return 409 `ended`, and the GET keeps working until a player quits, both rematch, or the end screen's time runs out.
+- **QUIT (added with the battle screens; either player since 2026-10-24).** Once the battle has ended, both players' message boxes have QUIT. It calls `POST /api/rooms/[code]/close`:
+  - `closeRoom(db, code, secret, now)` in `lib/rooms.ts`, one write transaction with `withBusyRetry`: the live room, membership (`findMember`) and the battle row's `stage === 'ended'` are checked, then `expireRoom` sets `rooms.expires_at` to `now` (conditional on it still being in the future).
   - **Decision:** close the room by expiring it, not with a new column or by deleting rows, **because** every live-room check (`findLiveRoom`, `joinRoom`, `findActivePlayer` for the Ably token) already treats an expired room as gone, and `deleteExpired` removes its rows with the other expired rooms. No migration is needed.
-  - Responses: 200 `{ ok: true, event: { kind: 'room-closed' } }` (published on the room channel after the commit); 403 `{ error: 'Only the host can quit.' }`; 409 `{ error: 'The battle is not over.' }` (any phase or stage before `ended`); 404 `{ error: 'Room not found.' }` for a missing cookie, a non-member, an unknown room, or a room that's already closed.
+  - Responses: 200 `{ ok: true, event: { kind: 'room-closed' } }` (published on the room channel after the commit); 409 `{ error: 'The battle is not over.' }` (any phase or stage before `ended`); 404 `{ error: 'Room not found.' }` for a missing cookie, a non-member, an unknown room, or a room that's already closed.
   - `RoomClosedEvent = { kind: 'room-closed' }` lives in `lib/room-events.ts` (with `isRoomClosed`). It isn't a `RoomEvent`, because there's no room state left to apply it to. Both clients go to Home on it; loading the room's URL afterwards gets the room GET's 404, which also goes to Home.
+- **The end screen's countdown (2026-10-24).** The step that ends the battle sets `deadline = now + TIMER_MS`, carried by its `battle-step` and the view, so both clients count down on the end screen. The clients fire `POST …/battle/timeout` at the deadline (§10.3) as usual. When `endScreenOver` (stage `ended` and `now >= deadline + GRACE_MS`), the timeout POST and the GET expire the room (`expireRoom`), publish `room-closed` and answer 404 `{ error: 'Room closed.' }`, so both players go Home. A REMATCH after that time closes the room the same way.
+- **REMATCH (2026-10-24).** `POST /api/rooms/[code]/rematch`, no body. `requestRematch(db, code, secret, now)` in `lib/rooms.ts`, one write transaction with `withBusyRetry`, checks the live room, membership and `stage === 'ended'`, then:
+  - **First ask:** sets `battles.rematch_by` to the player's slot and publishes `{ kind: 'rematch-requested', slot }` (a `BattleEvent`; also `BattleView.rematch`). 200 `{ ok: true, event }`. Asking again: 200 `{ ok: true }`, nothing published.
+  - **The other player asks too:** deletes the room's `battles`, `draft_picks` and `type_picks` rows, sets the room back to `phase 'type-battle'`, `type_round 1`, `type_winner`/`first_drafter` null, and `game + 1`, keeping `battle_size`, `draft_type` and the players. Publishes the `RoomEvent` `{ kind: 'rematch-started', game }`. 200 `{ ok: true, event }`.
+  - 409 `{ error: 'The battle is not over.' }` before the end (or after a rematch started); 404 for a missing cookie, a non-member or a closed room.
+  - **Decision:** a `rooms.game` counter (migration 0006, with `battles.rematch_by`), **because** room-sync only accepts state that moves forward (`progress`), and a rematch moves the phase back to the type battle. `progress` counts the game first, so game 2's type battle is ahead of game 1's ended battle. `RoomState.game` carries it, and the screens are keyed by it so the next game's screens start fresh.
+  - A client still on the end screen whose battle is gone (the GET answers 409 `no-battle`) refetches the room state.
 
 ## 13. Errors and validation
 
@@ -715,6 +724,8 @@ The server never returns `state`, `version`, the stored orders or the seed. Ever
 | `app/api/rooms/[code]/battle/choice/route.ts` (new) | `POST` |
 | `app/api/rooms/[code]/battle/timeout/route.ts` (new) | `POST` |
 | `app/api/rooms/[code]/close/route.ts` (added with the battle screens) | `POST` QUIT (§12) |
+| `app/api/rooms/[code]/rematch/route.ts` (added 2026-10-24) | `POST` REMATCH (§12) |
+| `drizzle/0006_*.sql` (added 2026-10-24) | `rooms.game`, `battles.rematch_by` (§12) |
 | `docs/research/2026-10-19-gen6-battle-mechanics.md` | A one-line note under §18.1 pointing to this spec's §3 (the `@@@` finding) |
 
 ## 15. Test plan

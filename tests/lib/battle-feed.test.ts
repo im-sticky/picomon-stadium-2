@@ -6,6 +6,7 @@ import {
   isMoveUsable,
   newerClock,
   parseBattleStep,
+  parseRematchRequested,
   planEvent,
   secondsLeft,
   stepsFromView,
@@ -42,6 +43,7 @@ const view = (step: number, from: number, more: Partial<BattleView> = {}): Battl
   timeouts: { 1: 0, 2: 0 },
   log: { from, steps: Array.from({ length: step - from + 1 }, (_, i) => [`|turn|${from + i}`]) },
   result: null,
+  rematch: null,
   ...more,
 });
 
@@ -62,6 +64,15 @@ describe("parseBattleStep", () => {
     expect(parseBattleStep({ ...event(3), asked: { 1: "dance", 2: null } })).toBeNull();
     expect(parseBattleStep({ ...event(3), result: { winner: 3, reason: "normal" } })).toBeNull();
     expect(parseBattleStep({ ...event(3), timedOut: [3] })).toBeNull();
+  });
+});
+
+describe("parseRematchRequested", () => {
+  it("accepts a rematch request from either slot and nothing else", () => {
+    expect(parseRematchRequested({ kind: "rematch-requested", slot: 2 })).toEqual({ kind: "rematch-requested", slot: 2 });
+    expect(parseRematchRequested({ kind: "rematch-requested", slot: 3 })).toBeNull();
+    expect(parseRematchRequested({ kind: "room-closed" })).toBeNull();
+    expect(parseRematchRequested(null)).toBeNull();
   });
 });
 
@@ -102,9 +113,14 @@ describe("the clock", () => {
     expect(formatClock(0)).toBe("0:00");
   });
 
-  it("has no deadline once ended", () => {
+  it("keeps counting down once ended, to the end screen's deadline", () => {
+    const clock = clockFromView(view(5, 5, { stage: "ended", deadline: 100_000 }), 0);
+    expect(clock.deadline).toBe(100_000);
+    expect(secondsLeft(clock, 0)).toBe(75);
+  });
+
+  it("has nothing to count without a deadline", () => {
     const clock = clockFromView(view(5, 5, { stage: "ended", deadline: null }), 0);
-    expect(clock.deadline).toBeNull();
     expect(secondsLeft(clock, 0)).toBe(0);
     expect(timeoutDelay(clock, 0, 0)).toBeNull();
   });

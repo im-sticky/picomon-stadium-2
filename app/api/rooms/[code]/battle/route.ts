@@ -3,6 +3,7 @@ import { getDb } from '@/db/client';
 import { notifyRoomEvent } from '@/lib/ably-server';
 import { getBattleView, startBattle } from '@/lib/battle';
 import { normalizeCode } from '@/lib/codes';
+import type { RoomClosedEvent } from '@/lib/room-events';
 import { readSessionSecret } from '@/lib/session';
 
 /** START BATTLE: the host moves a finished draft to the Battle order screen. */
@@ -44,6 +45,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ code
       return NextResponse.json({ error: 'No battle yet.' }, { status: 409 });
     case 'busy':
       return NextResponse.json({ error: 'Busy, try again.' }, { status: 503 });
+    case 'closed': {
+      // The end screen's time ran out: the room is closed, and both players go Home.
+      const event: RoomClosedEvent = { kind: 'room-closed' };
+      await notifyRoomEvent(code, event);
+      return NextResponse.json({ error: 'Room closed.' }, { status: 404 });
+    }
     case 'view':
       for (const event of result.events) await notifyRoomEvent(code, event);
       return NextResponse.json(result.view);

@@ -22,7 +22,7 @@ afterEach(() => vi.useRealTimers());
 
 describe("RoomScreen", () => {
   it("host alone sees waiting view with code K7PQ and COPY button", () => {
-    const state: RoomState = { code: "K7PQ", you: { id: "a", slot: 1 }, players: [host], phase: "lobby", battleSize: 6, draftType: "standard", typeBattle: null, draft: null, battle: null };
+    const state: RoomState = { code: "K7PQ", you: { id: "a", slot: 1 }, players: [host], phase: "lobby", game: 1, battleSize: 6, draftType: "standard", typeBattle: null, draft: null, battle: null };
     render(<RoomScreen state={state} onAction={onAction} />);
     expect(screen.getByRole("heading", { name: "WAITING ROOM" })).toBeInTheDocument();
     const codeBox = screen.getByRole("region", { name: "Room code" });
@@ -35,7 +35,7 @@ describe("RoomScreen", () => {
   });
 
   it("guest alone also sees the waiting view", () => {
-    const state: RoomState = { code: "K7PQ", you: { id: "b", slot: 2 }, players: [guest], phase: "lobby", battleSize: 6, draftType: "standard", typeBattle: null, draft: null, battle: null };
+    const state: RoomState = { code: "K7PQ", you: { id: "b", slot: 2 }, players: [guest], phase: "lobby", game: 1, battleSize: 6, draftType: "standard", typeBattle: null, draft: null, battle: null };
     render(<RoomScreen state={state} onAction={onAction} />);
     expect(screen.getByRole("heading", { name: "WAITING ROOM" })).toBeInTheDocument();
     expect(screen.queryByText("Both players connected!")).toBeNull();
@@ -44,7 +44,7 @@ describe("RoomScreen", () => {
   it("COPY copies the code and shows COPIED! for 1.5s", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    const state: RoomState = { code: "K7PQ", you: { id: "a", slot: 1 }, players: [host], phase: "lobby", battleSize: 6, draftType: "standard", typeBattle: null, draft: null, battle: null };
+    const state: RoomState = { code: "K7PQ", you: { id: "a", slot: 1 }, players: [host], phase: "lobby", game: 1, battleSize: 6, draftType: "standard", typeBattle: null, draft: null, battle: null };
     render(<RoomScreen state={state} onAction={onAction} />);
     await user.click(screen.getByRole("button", { name: "COPY" }));
     expect(await navigator.clipboard.readText()).toBe("K7PQ");
@@ -54,7 +54,7 @@ describe("RoomScreen", () => {
   });
 
   it("two players, host: title, both names, host marked HOST, START BATTLE enabled", () => {
-    const state: RoomState = { code: "K7PQ", you: { id: "a", slot: 1 }, players: [host, guest], phase: "lobby", battleSize: 6, draftType: "standard", typeBattle: null, draft: null, battle: null };
+    const state: RoomState = { code: "K7PQ", you: { id: "a", slot: 1 }, players: [host, guest], phase: "lobby", game: 1, battleSize: 6, draftType: "standard", typeBattle: null, draft: null, battle: null };
     render(<RoomScreen state={state} onAction={onAction} />);
     expect(screen.getByRole("heading", { name: "ROOM K7PQ" })).toBeInTheDocument();
     expect(playerRows()).toEqual(["P1AshHOST", "P2Misty"]);
@@ -64,14 +64,14 @@ describe("RoomScreen", () => {
   });
 
   it("START BATTLE starts the type battle", async () => {
-    const state: RoomState = { code: "K7PQ", you: { id: "a", slot: 1 }, players: [host, guest], phase: "lobby", battleSize: 6, draftType: "standard", typeBattle: null, draft: null, battle: null };
+    const state: RoomState = { code: "K7PQ", you: { id: "a", slot: 1 }, players: [host, guest], phase: "lobby", game: 1, battleSize: 6, draftType: "standard", typeBattle: null, draft: null, battle: null };
     render(<RoomScreen state={state} onAction={onAction} />);
     await userEvent.click(screen.getByRole("button", { name: "START BATTLE" }));
     expect(onAction).toHaveBeenCalledWith("start");
   });
 
   it("two players, guest: no START BATTLE, waits for the host", () => {
-    const state: RoomState = { code: "K7PQ", you: { id: "b", slot: 2 }, players: [host, guest], phase: "lobby", battleSize: 6, draftType: "standard", typeBattle: null, draft: null, battle: null };
+    const state: RoomState = { code: "K7PQ", you: { id: "b", slot: 2 }, players: [host, guest], phase: "lobby", game: 1, battleSize: 6, draftType: "standard", typeBattle: null, draft: null, battle: null };
     render(<RoomScreen state={state} onAction={onAction} />);
     expect(playerRows()).toEqual(["P1AshHOST", "P2Misty"]);
     expect(messageLines()).toEqual(["Both players connected!", "Waiting for ASH..."]);
@@ -79,7 +79,7 @@ describe("RoomScreen", () => {
   });
 
   it("a notice replaces the message", () => {
-    const state: RoomState = { code: "K7PQ", you: { id: "a", slot: 1 }, players: [host], phase: "lobby", battleSize: 6, draftType: "standard", typeBattle: null, draft: null, battle: null };
+    const state: RoomState = { code: "K7PQ", you: { id: "a", slot: 1 }, players: [host], phase: "lobby", game: 1, battleSize: 6, draftType: "standard", typeBattle: null, draft: null, battle: null };
     render(<RoomScreen state={state} onAction={onAction} notice={["Oops.", "Try again."]} />);
     expect(screen.getByRole("alert")).toHaveTextContent("Oops.Try again.");
     expect(screen.queryByText("Send this code to a friend.")).toBeNull();
@@ -87,7 +87,7 @@ describe("RoomScreen", () => {
 
   it("names render as text", () => {
     const evil = { id: "a", name: "<b>x</b>", trainer: null, slot: 1 as const };
-    const state: RoomState = { code: "K7PQ", you: { id: "b", slot: 2 }, players: [evil, guest], phase: "lobby", battleSize: 6, draftType: "standard", typeBattle: null, draft: null, battle: null };
+    const state: RoomState = { code: "K7PQ", you: { id: "b", slot: 2 }, players: [evil, guest], phase: "lobby", game: 1, battleSize: 6, draftType: "standard", typeBattle: null, draft: null, battle: null };
     const { container } = render(<RoomScreen state={state} onAction={onAction} />);
     expect(screen.getByText("<b>x</b>")).toBeInTheDocument();
     expect(container.querySelector("b")).toBeNull();

@@ -6,7 +6,7 @@ import { draftPickError, TOTAL_PICKS, type DraftPickError } from '@/lib/draft';
 import { getPokemon } from '@/lib/pokemon-dex';
 import { typeBattleWinner } from '@/lib/type-battle';
 import { DEFAULT_BATTLE_SIZE, DEFAULT_DRAFT_TYPE } from '@/lib/types';
-import type { BattleResult, BattleStage, EndReason } from '@/lib/battle-types';
+import { GRACE_MS, type BattleResult, type BattleStage, type EndReason } from '@/lib/battle-types';
 import type {
   BattleSize,
   DraftPick,
@@ -192,6 +192,7 @@ export async function getRoomState(
     you: me,
     players: list,
     phase,
+    game: room.game,
     battleSize: room.battleSize as BattleSize,
     draftType: room.draftType as DraftType,
     typeBattle: phase === 'type-battle' ? await typeBattleView(db, room, me.slot) : null,
@@ -221,6 +222,7 @@ export type LiveRoom = {
   typeRound: number;
   typeWinner: number | null;
   firstDrafter: number | null;
+  game: number;
 };
 
 export async function findLiveRoom(db: Pick<Db, 'select'>, code: string, now: number): Promise<LiveRoom | null> {
@@ -233,6 +235,7 @@ export async function findLiveRoom(db: Pick<Db, 'select'>, code: string, now: nu
       typeRound: rooms.typeRound,
       typeWinner: rooms.typeWinner,
       firstDrafter: rooms.firstDrafter,
+      game: rooms.game,
     })
     .from(rooms)
     .where(and(eq(rooms.code, code), gt(rooms.expiresAt, now)));
@@ -522,14 +525,24 @@ export async function pickPokemon(
   }
 }
 
-export type CloseResult = { kind: 'closed' } | { kind: 'not-found' } | { kind: 'not-host' } | { kind: 'not-ended' };
+export type CloseResult = { kind: 'closed' } | { kind: 'not-found' } | { kind: 'not-ended' };
 
 /**
- * QUIT: the host closes the room once its battle has ended. The room is expired on
- * the spot (`expiresAt = now`), so every live-room check (loading, joining, the
- * Ably token, the battle routes) treats the code as gone, and `deleteExpired`
- * removes its rows with the other expired rooms. No schema change is needed.
- * A second QUIT finds no live room: `not-found`.
+ * Expires a live room on the spot (`expiresAt = now`), so every live-room check
+ * (loading, joining, the Ably token, the battle routes) treats the code as gone, and
+ * `deleteExpired` removes its rows with the other expired rooms. Whether it was live.
+ */
+export async function expireRoom(db: Pick<Db, 'update'>, code: string, now: number): Promise<boolean> {
+  const result = await db
+    .update(rooms)
+    .set({ expiresAt: now })
+    .where(and(eq(rooms.code, code), gt(rooms.expiresAt, now)));
+  return result.rowsAffected === 1;
+}
+
+/**
+ * QUIT: either player closes the room once its battle has ended, and both go back
+ * to Home. A second QUIT finds no live room: `not-found`.
  */
 export async function closeRoom(db: Db, code: string, secret: string | null, now: number): Promise<CloseResult> {
   if (!secret) return { kind: 'not-found' };
@@ -538,16 +551,60 @@ export async function closeRoom(db: Db, code: string, secret: string | null, now
       const room = await findLiveRoom(tx, code, now);
       const me = room && (await findMember(tx, code, secret));
       if (!room || !me) return { kind: 'not-found' };
-      if (me.slot !== 1) return { kind: 'not-host' };
       if (room.phase !== 'battle') return { kind: 'not-ended' };
       const [battle] = await tx.select({ stage: battles.stage }).from(battles).where(eq(battles.roomCode, code));
       if (battle?.stage !== 'ended') return { kind: 'not-ended' };
       // Only a still-live room is closed, so a racing second QUIT changes nothing.
-      const result = await tx
+      return (await expireRoom(tx, code, now)) ? { kind: 'closed' } : { kind: 'not-found' };
+    }),
+  );
+}
+
+export type RematchResult =
+  | { kind: 'requested'; slot: Slot }
+  | { kind: 'already-requested' }
+  | { kind: 'restarted'; game: number }
+  | { kind: 'closed' }
+  | { kind: 'not-ended' }
+  | { kind: 'not-found' };
+
+/**
+ * REMATCH after the battle. The first player to ask is recorded; when the other asks
+ * too, the room goes back to the type battle as a new game: the type picks, draft
+ * picks and battle are deleted, and the battle size and draft type are kept. Asking
+ * after the end screen's time is up closes the room instead, as the timeout would.
+ */
+export async function requestRematch(db: Db, code: string, secret: string | null, now: number): Promise<RematchResult> {
+  if (!secret) return { kind: 'not-found' };
+  return withBusyRetry(() =>
+    db.transaction(async (tx): Promise<RematchResult> => {
+      const room = await findLiveRoom(tx, code, now);
+      const me = room && (await findMember(tx, code, secret));
+      if (!room || !me) return { kind: 'not-found' };
+      if (room.phase !== 'battle') return { kind: 'not-ended' };
+      const [battle] = await tx
+        .select({ stage: battles.stage, deadline: battles.deadline, rematchBy: battles.rematchBy })
+        .from(battles)
+        .where(eq(battles.roomCode, code));
+      if (battle?.stage !== 'ended') return { kind: 'not-ended' };
+      if (battle.deadline !== null && now >= battle.deadline + GRACE_MS) {
+        return (await expireRoom(tx, code, now)) ? { kind: 'closed' } : { kind: 'not-found' };
+      }
+      if (battle.rematchBy === me.slot) return { kind: 'already-requested' };
+      if (battle.rematchBy === null) {
+        await tx.update(battles).set({ rematchBy: me.slot }).where(eq(battles.roomCode, code));
+        return { kind: 'requested', slot: me.slot };
+      }
+      // The other player asked first: start the next game.
+      await tx.delete(battles).where(eq(battles.roomCode, code));
+      await tx.delete(draftPicks).where(eq(draftPicks.roomCode, code));
+      await tx.delete(typePicks).where(eq(typePicks.roomCode, code));
+      const game = room.game + 1;
+      await tx
         .update(rooms)
-        .set({ expiresAt: now })
-        .where(and(eq(rooms.code, code), gt(rooms.expiresAt, now)));
-      return result.rowsAffected === 1 ? { kind: 'closed' } : { kind: 'not-found' };
+        .set({ phase: 'type-battle', typeRound: 1, typeWinner: null, firstDrafter: null, game })
+        .where(eq(rooms.code, code));
+      return { kind: 'restarted', game };
     }),
   );
 }
