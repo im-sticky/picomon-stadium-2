@@ -62,6 +62,7 @@ describe('rooms', () => {
       you: { id: playerId, slot: 1 },
       players: [{ id: playerId, name: 'Ash', trainer: null, slot: 1 }],
       phase: 'lobby',
+      game: 1,
       battleSize: 6,
       draftType: 'standard',
       typeBattle: null,

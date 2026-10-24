@@ -338,9 +338,9 @@ describe('timeouts', () => {
       if (result.kind !== 'checked') throw new Error(result.kind);
       last = result.events;
     }
-    expect(last).toEqual([expect.objectContaining({ result: { winner: 1, reason: 'forfeit' }, deadline: null, timedOut: [2] })]);
+    expect(last).toEqual([expect.objectContaining({ result: { winner: 1, reason: 'forfeit' }, deadline: now + TIMER_MS, timedOut: [2] })]);
     expect((last[0] as { lines: string[] }).lines).toContain('|win|P1');
-    expect(await row(db, room.code)).toMatchObject({ stage: 'ended', winner: 1, endReason: 'forfeit', deadline: null, p2Timeouts: 3 });
+    expect(await row(db, room.code)).toMatchObject({ stage: 'ended', winner: 1, endReason: 'forfeit', deadline: now + TIMER_MS, p2Timeouts: 3 });
     const end = await view(db, room, 2, now);
     expect(end).toMatchObject({ stage: 'ended', request: null, result: { winner: 1, reason: 'forfeit' } });
     expect(await choice(db, room, 1, end.step, { kind: 'move', move: 1 }, now)).toMatchObject({ kind: 'ended' });

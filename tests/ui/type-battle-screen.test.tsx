@@ -6,6 +6,7 @@ import type { RoomState, TypeBattleView } from "@/lib/types";
 const draw: TypeBattleView = { round: 1, yourPick: "fire", opponentPick: "fire", winner: null, firstDrafter: null };
 const state: RoomState = {
   code: "K7PQ",
+  game: 1,
   you: { id: "a", slot: 1 },
   players: [
     { id: "a", name: "Ash", trainer: null, slot: 1 },

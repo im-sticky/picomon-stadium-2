@@ -30,7 +30,7 @@ import {
   type EndReason,
 } from '@/lib/battle-types';
 import { TOTAL_PICKS } from '@/lib/draft';
-import { findLiveRoom, findMember, isBusyError, isConstraintError, listDraftPicks, withBusyRetry } from '@/lib/rooms';
+import { expireRoom, findLiveRoom, findMember, isBusyError, isConstraintError, listDraftPicks, withBusyRetry } from '@/lib/rooms';
 import type { BattleSize, Slot } from '@/lib/types';
 
 /** A `battle-step` bigger than this goes out with `lines: null` (Ably's limit is 64 KB). */
@@ -49,6 +49,8 @@ type Saved = {
   timeouts: { 1: number; 2: number };
   orders: { 1: number[]; 2: number[] };
   result: BattleResult | null;
+  /** Read only: rematch requests are written by `requestRematch` in lib/rooms.ts. */
+  rematch: Slot | null;
 };
 
 type BattleRow = typeof battles.$inferSelect;
@@ -62,6 +64,7 @@ function parseRow(row: BattleRow): Saved {
     timeouts: { 1: row.p1Timeouts, 2: row.p2Timeouts },
     orders: { 1: JSON.parse(row.p1Order), 2: JSON.parse(row.p2Order) },
     result: row.endReason ? { winner: row.winner as Slot | null, reason: row.endReason as EndReason } : null,
+    rematch: row.rematchBy as Slot | null,
   };
 }
 
@@ -112,7 +115,8 @@ function recordStep(
   }
   if (battle.ended) {
     saved.stage = 'ended';
-    saved.deadline = null;
+    // The end screen's QUIT / REMATCH choice gets the same time; then the room closes.
+    saved.deadline = now + TIMER_MS;
     saved.result = endResult(battle, reason);
   } else {
     saved.stage = 'in-progress';
@@ -223,6 +227,7 @@ function buildView(
     timeouts: { ...saved.timeouts },
     log: { from: first, steps },
     result: saved.result,
+    rematch: saved.rematch,
   };
 }
 
@@ -396,8 +401,13 @@ export async function startBattle(
   }
 }
 
+/** The end screen's time (plus the grace) is up: nobody chose QUIT or REMATCH. */
+export const endScreenOver = (view: Pick<BattleView, 'stage' | 'deadline'>, now: number) =>
+  view.stage === 'ended' && view.deadline !== null && now >= view.deadline + GRACE_MS;
+
 export type ViewResult =
   | { kind: 'view'; view: BattleView; events: BattleEvent[] }
+  | { kind: 'closed' }
   | { kind: 'not-found' }
   | { kind: 'no-battle' }
   | { kind: 'busy' };
@@ -414,18 +424,25 @@ export async function getBattleView(
     readOnlyOnTimeoutError: true,
   });
   if (result.kind !== 'done') return result;
-  return { kind: 'view', view: result.view(from), events: result.events };
+  const view = result.view(from);
+  if (endScreenOver(view, now)) {
+    await expireRoom(db, code, now);
+    return { kind: 'closed' };
+  }
+  return { kind: 'view', view, events: result.events };
 }
 
 export type TimeoutResult =
   | { kind: 'checked'; view: BattleView; events: BattleEvent[] }
+  | { kind: 'closed' }
   | { kind: 'not-found' }
   | { kind: 'no-battle' }
   | { kind: 'busy' };
 
 /**
  * A client's countdown for `step` reached zero: applies due timeouts, the same as the
- * GET. A countdown for an earlier step is already over, so that's a plain read.
+ * GET. A countdown for an earlier step is already over, so that's a plain read. After
+ * the battle, the end screen's countdown running out closes the room.
  */
 export async function triggerTimeout(
   db: Db,
@@ -443,7 +460,12 @@ export async function triggerTimeout(
     { applyTimeouts: (saved) => step >= saved.step },
   );
   if (result.kind !== 'done') return result;
-  return { kind: 'checked', view: result.view(step + 1), events: result.events };
+  const view = result.view(step + 1);
+  if (endScreenOver(view, now)) {
+    await expireRoom(db, code, now);
+    return { kind: 'closed' };
+  }
+  return { kind: 'checked', view, events: result.events };
 }
 
 export type OrderOutcome = 'progressed' | 'unchanged' | 'invalid-order' | 'order-conflict' | 'not-ordering';

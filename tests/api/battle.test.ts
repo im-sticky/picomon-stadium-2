@@ -435,9 +435,10 @@ describe('publishing', () => {
     const { battle } = restoreBattle(row.state);
     const winner = battle.winner === 'P1' ? 1 : 2;
     expect(['P1', 'P2']).toContain(battle.winner);
-    expect(row).toMatchObject({ stage: 'ended', winner, endReason: 'normal', deadline: null });
+    // The end screen gets its own deadline, from the step that ended the battle.
+    expect(row).toMatchObject({ stage: 'ended', winner, endReason: 'normal', deadline: row.updatedAt + TIMER_MS });
     const last = published().at(-1) as BattleEvent;
-    expect(last).toMatchObject({ kind: 'battle-step', step: row.step, deadline: null, result: { winner, reason: 'normal' } });
+    expect(last).toMatchObject({ kind: 'battle-step', step: row.step, deadline: row.deadline, result: { winner, reason: 'normal' } });
     expect((last as { lines: string[] }).lines).toContain(`|win|P${winner}`);
     for (const event of published()) {
       expect(Buffer.byteLength(JSON.stringify(event), 'utf8')).toBeLessThan(64 * 1024);

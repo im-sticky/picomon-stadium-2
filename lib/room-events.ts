@@ -12,11 +12,13 @@ export type RoomEvent =
   | { kind: "type-round-started"; round: number }
   | { kind: "draft-started"; firstDrafter: Slot }
   | { kind: "draft-picked"; pickIndex: number; slot: Slot; pokemonId: string }
-  | { kind: "battle-started"; battleSize: BattleSize; deadline: number; at: number };
+  | { kind: "battle-started"; battleSize: BattleSize; deadline: number; at: number }
+  /** Both players chose REMATCH: game `game` starts at the type battle. */
+  | { kind: "rematch-started"; game: number };
 
 /**
- * The host pressed QUIT after the battle: the room is closed, and both players go
- * back to Home. It isn't a `RoomEvent`, because there's no room state left to apply it to.
+ * A player pressed QUIT after the battle, or the end screen's time ran out: the room
+ * is closed, and both players go back to Home. It isn't a `RoomEvent`, because there's no room state left to apply it to.
  */
 export type RoomClosedEvent = { kind: "room-closed" };
 
@@ -80,6 +82,8 @@ export function parseRoomEvent(data: unknown): RoomEvent | null {
     case "battle-started":
       if (!isBattleSize(d.battleSize) || !Number.isInteger(d.deadline) || !Number.isInteger(d.at)) return null;
       return { kind: d.kind, battleSize: d.battleSize, deadline: d.deadline as number, at: d.at as number };
+    case "rematch-started":
+      return Number.isInteger(d.game) && (d.game as number) >= 2 ? { kind: d.kind, game: d.game as number } : null;
     default:
       return null;
   }
@@ -98,6 +102,15 @@ export function applyEvent(state: RoomState | null, event: SyncEvent): ApplyResu
   if (!state) return { refetch: "no-state" };
   const me = state.you.slot;
   const { phase, typeBattle: tb, draft } = state;
+
+  if (event.kind === "rematch-started") {
+    if (event.game <= state.game) return SAME;
+    // A whole game missed: only the server knows where it's at.
+    if (event.game > state.game + 1 || phase !== "battle") return CONFLICT;
+    return {
+      next: { ...state, game: event.game, phase: "type-battle", typeBattle: newRound(1), draft: null, battle: null },
+    };
+  }
 
   switch (event.kind) {
     case "player-joined":
@@ -167,11 +180,15 @@ export function applyEvent(state: RoomState | null, event: SyncEvent): ApplyResu
 }
 
 /**
- * How far along the room is, as a number that only grows: phase, then (in the
- * type battle) round and how much of it is done, then (in the draft) picks made,
- * then (in the battle) its stage.
+ * How far along the room is, as a number that only grows: the game (a rematch
+ * starts the next one), then phase, then (in the type battle) round and how much of
+ * it is done, then (in the draft) picks made, then (in the battle) its stage.
  */
 export function progress(state: RoomState): number {
+  return (state.game - 1) * 1e7 + gameProgress(state);
+}
+
+function gameProgress(state: RoomState): number {
   const { typeBattle: tb, draft, battle } = state;
   if (state.phase === "battle") return 3e6 + (battle?.stage === "ended" ? 2 : battle?.stage === "in-progress" ? 1 : 0);
   if (state.phase === "draft" && draft) return 2e6 + draft.picks.length;
@@ -186,6 +203,7 @@ export function progress(state: RoomState): number {
 export function stateKey(state: RoomState): string {
   const { phase, battleSize, draftType, players, typeBattle: tb, draft, battle } = state;
   return JSON.stringify({
+    game: state.game,
     phase,
     battleSize,
     draftType,

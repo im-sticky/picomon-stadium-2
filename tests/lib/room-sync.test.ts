@@ -5,7 +5,7 @@ import type { DraftPick, PublicPlayer, RoomState } from "@/lib/types";
 
 const p1: PublicPlayer = { id: "a", name: "Ash", slot: 1 } as PublicPlayer;
 const p2: PublicPlayer = { id: "b", name: "Bea", slot: 2 } as PublicPlayer;
-const state1: RoomState = { code: "ABC234", you: { id: "a", slot: 1 }, players: [p1], phase: "lobby" } as RoomState;
+const state1: RoomState = { code: "ABC234", you: { id: "a", slot: 1 }, players: [p1], phase: "lobby", game: 1 } as RoomState;
 const state2: RoomState = { ...state1, players: [p1, p2] };
 // The host drafts first, so pick 0 is theirs and picks 1-2 are the guest's.
 const draft = (...ids: string[]): RoomState => ({

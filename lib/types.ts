@@ -61,6 +61,8 @@ export type RoomState = {
   you: { id: string; slot: Slot };
   players: PublicPlayer[];
   phase: Phase;
+  /** 1, then +1 for each rematch. */
+  game: number;
   battleSize: BattleSize;
   draftType: DraftType;
   /** Set only in the type-battle phase. */

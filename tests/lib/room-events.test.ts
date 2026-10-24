@@ -11,6 +11,7 @@ const lobby: RoomState = {
   you: { id: "a", slot: 1 },
   players,
   phase: "lobby",
+  game: 1,
   battleSize: 6, draftType: "standard",
   typeBattle: null,
   draft: null,
@@ -198,6 +199,27 @@ describe("applyEvent", () => {
   });
 });
 
+describe("rematch-started", () => {
+  const ended = battling("ended", { winner: 1, reason: "normal" });
+  const rematch: SyncEvent = { kind: "rematch-started", game: 2 };
+
+  it("sends an ended battle back to a fresh type battle, keeping the settings", () => {
+    expect(applyEvent(ended, rematch)).toEqual({
+      next: { ...ended, game: 2, phase: "type-battle", typeBattle: round(1).typeBattle, draft: null, battle: null },
+    });
+  });
+
+  it("is a duplicate once applied, and a conflict if a whole game was missed", () => {
+    expect(applyEvent({ ...round(1), game: 2 }, rematch)).toEqual({ same: true });
+    expect(applyEvent(ended, { kind: "rematch-started", game: 3 })).toEqual({ refetch: "conflict" });
+    expect(applyEvent(drafting(), rematch)).toEqual({ refetch: "conflict" });
+  });
+
+  it("tells the games apart in the state key", () => {
+    expect(stateKey({ ...round(1), game: 2 })).not.toBe(stateKey(round(1)));
+  });
+});
+
 describe("parseRoomEvent", () => {
   it("accepts each event kind and rejects malformed data", () => {
     const events: SyncEvent[] = [
@@ -207,6 +229,7 @@ describe("parseRoomEvent", () => {
       { kind: "draft-started", firstDrafter: 2 },
       picked(4, 1, "snorlax"),
       battleStarted,
+      { kind: "rematch-started", game: 2 },
     ];
     for (const e of events) expect(parseRoomEvent(JSON.parse(JSON.stringify(e)))).toEqual(e);
     expect(parseRoomEvent({})).toBeNull();
@@ -216,6 +239,7 @@ describe("parseRoomEvent", () => {
     // Your own secret pick is never accepted from a shared message.
     expect(parseRoomEvent({ kind: "own-type-pick", round: 1, type: "fire" })).toBeNull();
     expect(parseRoomEvent({ kind: "battle-started", battleSize: 5, deadline: 2_000, at: 1_000 })).toBeNull();
+    expect(parseRoomEvent({ kind: "rematch-started", game: 1 })).toBeNull();
     // Battle events stay a generic "something changed" until the battle client routes them.
     expect(parseRoomEvent({ kind: "battle-order-progress", slot: 1, count: 2 })).toBeNull();
     expect(parseRoomEvent({ kind: "battle-step", step: 1, lines: [], asked: { 1: "move", 2: "move" } })).toBeNull();
@@ -237,6 +261,9 @@ describe("progress and isWaitingOnOpponent", () => {
       battling(),
       battling("in-progress"),
       battling("ended", { winner: 1, reason: "normal" }),
+      // A rematch: the next game counts on from the last one.
+      { ...round(1), game: 2 },
+      { ...battling(), game: 2 },
     ];
     const values = steps.map(progress);
     expect([...values].sort((a, b) => a - b)).toEqual(values);
