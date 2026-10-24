@@ -47,6 +47,14 @@ export function parseBattleStep(data: unknown): StepEvent | null {
   };
 }
 
+export type RematchEvent = Extract<BattleEvent, { kind: "rematch-requested" }>;
+
+/** A `rematch-requested` event in an Ably message's data, or null. */
+export function parseRematchRequested(data: unknown): RematchEvent | null {
+  const d = data as Record<string, unknown> | null;
+  return d?.kind === "rematch-requested" && isSlot(d.slot) ? { kind: d.kind, slot: d.slot } : null;
+}
+
 /** The steps in a view that come after `played`, in order: your own lines. */
 export function stepsFromView(played: number, view: BattleView): StepLines[] {
   const out: StepLines[] = [];
@@ -85,7 +93,8 @@ export function newerClock(current: Clock | null, next: Clock): Clock {
 
 export const clockFromView = (view: BattleView, localNow: number): Clock => ({
   step: view.step,
-  deadline: view.stage === "ended" ? null : view.deadline,
+  // Once ended, it's the end screen's deadline (QUIT / REMATCH).
+  deadline: view.deadline,
   offset: view.serverNow - localNow,
 });
 

@@ -73,7 +73,7 @@ export type BattleView = {
   request: PlayerRequest | null;
   /** Only at 'team-order': your order so far, and how far the opponent's is. */
   order: { yours: number[]; opponentCount: number } | null;
-  /** Unix ms, server clock. */
+  /** Unix ms, server clock. Once ended, when the end screen closes the room. */
   deadline: number | null;
   /** For the client's clock offset. */
   serverNow: number;
@@ -82,6 +82,8 @@ export type BattleView = {
   /** This player's protocol lines for steps `from`..`step`. */
   log: { from: number; steps: string[][] };
   result: BattleResult | null;
+  /** After the battle: the slot that asked for a rematch, if one has. */
+  rematch: Slot | null;
 };
 
 /** Battle events on the room channel, published after the write commits. */
@@ -102,4 +104,6 @@ export type BattleEvent =
       timedOut: Slot[];
       /** Set on the step that ends the battle. */
       result: BattleResult | null;
-    };
+    }
+  /** After the battle, one player asked for a rematch. */
+  | { kind: "rematch-requested"; slot: Slot };

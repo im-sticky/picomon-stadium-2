@@ -207,6 +207,29 @@
     flex: 1;
   }
 
+  /* The end screen: the message, the countdown, then REMATCH and QUIT. The side
+     padding drops to 12px so a two-line message fits beside them, as FIRST/SECOND
+     do on the type battle. */
+  @at-root div#{&}__message--end {
+    padding: 30px 12px 30px 42px;
+  }
+
+  &__endButtons {
+    display: flex;
+    flex: none;
+    gap: 12px;
+  }
+
+  /* 240px minimum; REMATCH widens it a little. The cursor sits 12px in so the label
+     can have 42px each side. */
+  @at-root button#{&}__endButton {
+    padding: 36px 42px;
+
+    svg {
+      left: 12px;
+    }
+  }
+
   /* The moves on the left, the hovered move's info on the right. */
   &__moves {
     display: flex;

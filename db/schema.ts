@@ -17,6 +17,9 @@ export const rooms = sqliteTable('rooms', {
   typeWinner: integer('type_winner'),
   // Slot that drafts first, chosen by the type battle winner.
   firstDrafter: integer('first_drafter'),
+  // Which game this is: 1, then +1 for each rematch. Room state only moves forward
+  // within a game, so clients compare this first.
+  game: integer('game').notNull().default(1),
 });
 
 export const players = sqliteTable(
@@ -96,6 +99,8 @@ export const battles = sqliteTable('battles', {
   // Set when the stage is 'ended'. winner null with an end reason is a tie.
   winner: integer('winner'),
   endReason: text('end_reason'), // 'normal' | 'forfeit' | 'abandoned'
+  // After the battle: the slot that asked for a rematch, until the other agrees.
+  rematchBy: integer('rematch_by'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
 });

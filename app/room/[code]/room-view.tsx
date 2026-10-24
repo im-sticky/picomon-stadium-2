@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import * as Ably from "ably";
-import { parseBattleStep } from "@/lib/battle-feed";
+import { parseBattleStep, parseRematchRequested } from "@/lib/battle-feed";
 import type { BattleEvent } from "@/lib/battle-types";
 import type { PoolPokemon } from "@/lib/draft-pool";
 import { isRoomClosed, parseRoomEvent, type SyncEvent } from "@/lib/room-events";
@@ -75,8 +75,12 @@ export function RoomView({ code, pool }: { code: string; pool: readonly PoolPoke
           const players = msg.data?.players as PublicPlayer[] | undefined;
           const progress = parseOrderProgress(msg.data);
           const step = parseBattleStep(msg.data);
+          const rematch = parseRematchRequested(msg.data);
           if (isRoomClosed(msg.data)) {
             onClosed();
+          } else if (rematch) {
+            // Only the battle's end screen shows it; the room state doesn't change.
+            toBattle(rematch);
           } else if (progress) {
             // Only the Battle order screen needs it; the room state doesn't change.
             toBattle(progress);
@@ -181,6 +185,8 @@ export function RoomView({ code, pool }: { code: string; pool: readonly PoolPoke
     [code],
   );
 
+  const onRoomChanged = useCallback(() => sync.current?.refetch(), []);
+
   const subscribeBattle: SubscribeBattle = useCallback((listener) => {
     const listeners = battleListeners.current;
     listeners.add(listener);
@@ -206,6 +212,7 @@ export function RoomView({ code, pool }: { code: string; pool: readonly PoolPoke
   if (state?.phase === "battle" && state.draft && (ordering || holding)) {
     return (
       <BattleOrderScreen
+        key={state.game}
         state={state}
         draft={state.draft}
         pool={pool}
@@ -216,7 +223,16 @@ export function RoomView({ code, pool }: { code: string; pool: readonly PoolPoke
   }
   if (state?.phase === "battle" && state.draft) {
     return (
-      <BattleScreen state={state} pool={pool} notice={notice} subscribeBattle={subscribeBattle} onClosed={onClosed} />
+      <BattleScreen
+        key={state.game}
+        state={state}
+        pool={pool}
+        notice={notice}
+        subscribeBattle={subscribeBattle}
+        onAction={onAction}
+        onRoomChanged={onRoomChanged}
+        onClosed={onClosed}
+      />
     );
   }
   if (state?.draft) {
@@ -225,7 +241,7 @@ export function RoomView({ code, pool }: { code: string; pool: readonly PoolPoke
   if (state?.typeBattle) {
     return (
       <TypeBattleScreen
-        key={state.typeBattle.round}
+        key={`${state.game}-${state.typeBattle.round}`}
         state={state}
         battle={state.typeBattle}
         notice={notice}
