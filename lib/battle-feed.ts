@@ -93,7 +93,8 @@ export function newerClock(current: Clock | null, next: Clock): Clock {
 
 export const clockFromView = (view: BattleView, localNow: number): Clock => ({
   step: view.step,
-  deadline: view.stage === "ended" ? null : view.deadline,
+  // Once ended, it's the end screen's deadline (QUIT / REMATCH).
+  deadline: view.deadline,
   offset: view.serverNow - localNow,
 });
 

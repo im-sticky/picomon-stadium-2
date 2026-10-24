@@ -113,9 +113,14 @@ describe("the clock", () => {
     expect(formatClock(0)).toBe("0:00");
   });
 
-  it("has no deadline once ended", () => {
+  it("keeps counting down once ended, to the end screen's deadline", () => {
+    const clock = clockFromView(view(5, 5, { stage: "ended", deadline: 100_000 }), 0);
+    expect(clock.deadline).toBe(100_000);
+    expect(secondsLeft(clock, 0)).toBe(75);
+  });
+
+  it("has nothing to count without a deadline", () => {
     const clock = clockFromView(view(5, 5, { stage: "ended", deadline: null }), 0);
-    expect(clock.deadline).toBeNull();
     expect(secondsLeft(clock, 0)).toBe(0);
     expect(timeoutDelay(clock, 0, 0)).toBeNull();
   });
