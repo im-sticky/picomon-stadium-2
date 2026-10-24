@@ -589,6 +589,7 @@ export function BattleScreen({
   const oppSprite = spriteOf(opp);
   const mySprite = spriteOf(me);
   const oppTypes = opp ? (byId.get(opp.pokemonId)?.types ?? []) : [];
+  const myTypes = me ? (byId.get(me.pokemonId)?.types ?? []) : [];
 
   return (
     <Stage className={styles.battle}>
@@ -648,9 +649,17 @@ export function BattleScreen({
           <div className={styles.battle__hpRow}>
             <HpBar value={me.hp} max={me.maxhp} animate className={styles.battle__hpBar} />
           </div>
-          <p className={styles.battle__hpNumbers}>
-            {me.hp}/{me.maxhp}
-          </p>
+          {/* Types on the left, HP numbers on the right: stacked, they'd run into the bottom panel. */}
+          <div className={styles.battle__meRow}>
+            <div className={styles.battle__types} aria-label="Types">
+              {myTypes.map((t) => (
+                <TypeBadge key={t} type={t} />
+              ))}
+            </div>
+            <p className={styles.battle__hpNumbers}>
+              {me.hp}/{me.maxhp}
+            </p>
+          </div>
         </section>
       )}
 
