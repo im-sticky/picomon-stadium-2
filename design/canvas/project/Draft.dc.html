@@ -17,7 +17,8 @@ body{margin:0}
 .frame{border:6px solid #181818;background-color:#F8F8F8}
 .pix{image-rendering:pixelated;display:block}
 .spr{overflow:hidden;flex:none}
-.cell{width:108px;height:108px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;border:6px solid transparent;border-radius:6px;text-decoration:none;color:inherit}
+/* Pokémon grid: 7 across, 3 rows in view; icons at 4× (128px) in 144px cells */
+.cell{width:144px;height:144px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;border:6px solid transparent;border-radius:6px;text-decoration:none;color:inherit}
 a.cell:hover,a.cell:focus-visible,a.cell.on,.taken.on{background:#E8E8E8;outline:none}
 .p2ball{filter:hue-rotate(235deg)}
 .scroller{scrollbar-width:none}
@@ -84,17 +85,17 @@ a.btn.primary{color:#F8F8F8}
   </div>
   <div style="display: flex; gap: 12px; height: 432px">
   <div class="scroller" tabindex="0" ref="{{setScroller}}" onScroll="{{onScroll}}" aria-label="Pokémon available to rent, scrollable" style="height: 432px; flex: 1; min-width: 0; overflow-y: auto">
-  <div role="list" aria-label="Pokémon available to rent" style="display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); justify-items: center; gap: 0px">
+  <div role="list" aria-label="Pokémon available to rent" style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); justify-items: center; gap: 0px">
     <sc-for list="{{cells}}" as="c" hint-placeholder-count="41">
       <div role="listitem">
         <sc-if value="{{c.free}}" hint-placeholder-val="{{ true }}">
           <a class="cell {{c.on}}" href="Detail.dc.html" onMouseEnter="{{c.hover}}" onFocus="{{c.hover}}" aria-label="{{c.aria}}">
-            <div class="spr" style="width: 96px; height: 96px"><img class="pix" src="{{c.src}}" alt="" style="width: 96px; height: 192px"></div>
+            <div class="spr" style="width: 128px; height: 128px"><img class="pix" src="{{c.src}}" alt="" style="width: 128px; height: 256px"></div>
           </a>
         </sc-if>
         <sc-if value="{{c.locked}}" hint-placeholder-val="{{ false }}">
           <div class="cell" aria-label="{{c.aria}}">
-            <div class="spr" style="width: 96px; height: 96px"><img class="pix" src="{{c.src}}" alt="" style="width: 96px; height: 192px"></div>
+            <div class="spr" style="width: 128px; height: 128px"><img class="pix" src="{{c.src}}" alt="" style="width: 128px; height: 256px"></div>
           </div>
         </sc-if>
         <sc-if value="{{c.taken}}" hint-placeholder-val="{{ false }}">
@@ -190,7 +191,7 @@ class Component extends DCLogic {
   renderVals() {
     // Custom scrollbar: 432px bar = 36px up button + 360px track + 36px down button
     const TRACK = 360;
-    const ROW = 108;
+    const ROW = 144;
     const { st, sh, ch } = this.state;
     const max = Math.max(1, sh - ch);
     const thumbPx = sh <= ch ? TRACK : Math.max(36, Math.round(TRACK * ch / sh));

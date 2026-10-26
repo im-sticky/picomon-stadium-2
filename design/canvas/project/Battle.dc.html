@@ -167,6 +167,10 @@ a{color:inherit;text-decoration:none}
           <p style="font-size: 24px; line-height: 48px">What will</p>
           <p style="font-size: 24px; line-height: 48px">{{me.name}} do?</p>
         </div>
+        <!-- Active weather, beside the timer: the 16px icon at 3× -->
+        <sc-if value="{{hasWeather}}" hint-placeholder-val="{{ false }}">
+          <img class="pix" src="{{weather.src}}" alt="{{weather.label}}" title="{{weather.label}}" style="width: 48px; height: 48px; flex: none">
+        </sc-if>
         <p role="timer" aria-label="Time left {{timer}}" style="flex: none; font-size: 32px; line-height: 48px; white-space: nowrap; color: {{timerColor}}">{{timer}}</p>
       </div>
     </sc-if>
@@ -181,8 +185,16 @@ a{color:inherit;text-decoration:none}
             </button>
           </sc-for>
         </div>
+        <!-- Active weather, centred between the moves and the info column -->
+        <div style="flex: 1; display: flex; justify-content: center">
+          <sc-if value="{{hasWeather}}" hint-placeholder-val="{{ false }}">
+            <img class="pix" src="{{weather.src}}" alt="{{weather.label}}" title="{{weather.label}}" style="width: 48px; height: 48px">
+          </sc-if>
+        </div>
+        <!-- The info column keeps its width when nothing is hovered, so the weather icon doesn't move -->
+        <div aria-live="polite" style="width: 228px; flex: none">
         <sc-if value="{{showInfo}}" hint-placeholder-val="{{ false }}">
-          <div aria-live="polite" style="margin-left: auto; width: 228px">
+          <div>
             <div style="display: flex; align-items: center; gap: 12px; height: 48px">
               <img class="pix" src="{{info.catSrc}}" alt="{{info.cat}}" style="width: 64px; height: 32px">
               <span class="tag" style="background: {{info.typeColor}}">{{info.type}}</span>
@@ -191,6 +203,7 @@ a{color:inherit;text-decoration:none}
             <p style="font-size: 24px; line-height: 48px">PP {{info.left}}/{{info.pp}}</p>
           </div>
         </sc-if>
+        </div>
       </div>
     </sc-if>
     <!-- One options box on the right: FIGHT / POKéMON in the menu, BACK in the move list -->
@@ -217,7 +230,7 @@ a{color:inherit;text-decoration:none}
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"timeLeft":{"editor":"int","min":0,"max":75,"default":75},"view":{"editor":"enum","options":["","menu","fight","ability","abilityMe","turn","oppFainted","oppSwitch"],"default":""},"myHp":{"editor":"int","min":0,"max":155,"default":155},"oppHp":{"editor":"int","min":0,"max":170,"default":170},"myStatus":{"editor":"enum","options":["","SLP","FRZ","BRN","PSN","PAR"],"default":""},"oppStatus":{"editor":"enum","options":["","SLP","FRZ","BRN","PSN","PAR"],"default":""},"$preview":{"width":1200,"height":900}}'>
+<script type="text/x-dc" data-dc-script data-props='{"timeLeft":{"editor":"int","min":0,"max":75,"default":75},"view":{"editor":"enum","options":["","menu","fight","ability","abilityMe","turn","oppFainted","oppSwitch"],"default":""},"myHp":{"editor":"int","min":0,"max":155,"default":155},"oppHp":{"editor":"int","min":0,"max":170,"default":170},"myStatus":{"editor":"enum","options":["","SLP","FRZ","BRN","PSN","PAR"],"default":""},"oppStatus":{"editor":"enum","options":["","SLP","FRZ","BRN","PSN","PAR"],"default":""},"weather":{"editor":"enum","options":["","rain","sun","sandstorm","hail"],"default":""},"$preview":{"width":1200,"height":900}}'>
 class Component extends DCLogic {
   constructor(props) {
     super(props);
@@ -405,7 +418,17 @@ class Component extends DCLogic {
     };
 
     const hov = s.hover != null ? MOVES[s.hover] : null;
+    // The active weather's icon (public/sprites/misc/weather-*.png); none when clear
+    const WEATHER = {
+      rain: { src: '/_blob/da05cc79a9860f8814f8c8e34af85755', label: 'Rain' },
+      sun: { src: '/_blob/542e368e5e2c5eb2f69d5f60f27e9fee', label: 'Harsh sunlight' },
+      sandstorm: { src: '/_blob/c86c944ab0248af4df687ac181c3dbaa', label: 'Sandstorm' },
+      hail: { src: '/_blob/006ac6344ed68ab5a7838c4d69b9c304', label: 'Hail' }
+    };
+    const weather = WEATHER[this.props.weather] || null;
     return {
+      hasWeather: !!weather,
+      weather: weather || {},
       timer: Math.floor(this.state.left / 60) + ':' + String(this.state.left % 60).padStart(2, '0'),
       // Red for the last 15 seconds, like the Battle order timer
       timerColor: this.state.left <= 15 ? '#C03028' : '#181818',

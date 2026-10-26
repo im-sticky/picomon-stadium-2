@@ -58,6 +58,22 @@
       "x": 2560,
       "y": 7300
     },
+    "BattleWeather.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "4l · Weather, menu",
+      "w": 1200,
+      "x": 3840,
+      "y": 7300
+    },
+    "BattleWeatherFight.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "4m · Weather, moves",
+      "w": 1200,
+      "x": 5120,
+      "y": 7300
+    },
     "BattleTurn.dc.html": {
       "h": 900,
       "is_interactive": true,
@@ -312,7 +328,9 @@
     "DetailFainted.dc.html",
     "BattleAbilityYou.dc.html",
     "BattleOppFainted.dc.html",
-    "BattleOppSwitch.dc.html"
+    "BattleOppSwitch.dc.html",
+    "BattleWeather.dc.html",
+    "BattleWeatherFight.dc.html"
   ],
   "pages": [],
   "title": "Picomon Stadium Layout"
