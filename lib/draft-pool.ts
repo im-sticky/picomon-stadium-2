@@ -31,12 +31,34 @@ export type PoolPokemon = {
   moves: PoolMove[];
 };
 
+/** The last Pokédex number of Gen 2 (Celebi). */
+const LAST_GEN2 = 251;
+
 /**
- * Every Pokémon in `POKEMON`, read from the patched dex so the screens show what the
- * battle uses. Server only (the dex pulls in `@pkmn/sim`).
+ * Where a Pokémon sorts in the draft: by Pokédex number, with a later-gen evolution
+ * just after its Gen 1–2 pre-evolution (Magnezone after Magneton), or after that
+ * pre-evolution's last Gen 1–2 evolution when it has some (Leafeon after Umbreon).
+ */
+export function dexOrder(id: string): [number, number] {
+  const species = dex.species.get(id);
+  let base = species;
+  while (base.num > LAST_GEN2 && base.prevo) base = dex.species.get(base.prevo);
+  if (base === species) return [species.num, species.num];
+  const siblings = base.evos.map((evo) => dex.species.get(evo).num).filter((num) => num <= LAST_GEN2);
+  return [Math.max(base.num, ...siblings), species.num];
+}
+
+const byDexOrder = (a: string, b: string) => {
+  const [x, y] = [dexOrder(a), dexOrder(b)];
+  return x[0] - y[0] || x[1] - y[1];
+};
+
+/**
+ * Every Pokémon in `POKEMON` in Pokédex order (see `dexOrder`), read from the patched
+ * dex so the screens show what the battle uses. Server only (the dex pulls in `@pkmn/sim`).
  */
 export function draftPool(): PoolPokemon[] {
-  return POKEMON.map((entry) => {
+  return [...POKEMON].sort((a, b) => byDexOrder(a.id, b.id)).map((entry) => {
     const species = dex.species.get(entry.id);
     const ability = dex.abilities.get(entry.ability);
     return {

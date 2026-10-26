@@ -193,7 +193,7 @@ export function DraftScreen({
         {strip(2)}
       </div>
 
-      <PixelScroll label="Pokémon available to rent, scrollable" height={432} step={108}>
+      <PixelScroll label="Pokémon available to rent, scrollable" height={432} step={144}>
         <ul className={styles.draft__grid} aria-label="Pokémon available to rent">
           {grid.map((p) => {
             const owner = rentedBy.get(p.id);
@@ -219,7 +219,7 @@ export function DraftScreen({
               return (
                 <li key={p.id}>
                   <div className={styles.draft__cell} aria-label={label}>
-                    <PokemonIcon src={p.sprite} size={96} />
+                    <PokemonIcon src={p.sprite} size={128} />
                   </div>
                 </li>
               );
@@ -234,7 +234,7 @@ export function DraftScreen({
                   onFocus={() => setHover(p.id)}
                   onClick={() => setOpen({ id: p.id, viewOnly: false })}
                 >
-                  <PokemonIcon src={p.sprite} size={96} />
+                  <PokemonIcon src={p.sprite} size={128} />
                 </button>
               </li>
             );
