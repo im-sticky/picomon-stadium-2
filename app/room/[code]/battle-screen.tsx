@@ -74,7 +74,7 @@ function endMessage(result: BattleResult, name: (slot: Slot) => string): Message
 }
 
 /**
- * The battle (boards 4a–4e, 4i): each player sees it from their own side. The
+ * The battle (boards 4a–4e, 4i–4k): each player sees it from their own side. The
  * server's protocol lines drive every message, HP bar and ability box; the
  * server's deadline drives the countdown. Your Pokémon (4f) and Detail (4g/4h)
  * open from here.
@@ -146,6 +146,8 @@ export function BattleScreen({
   const viewRef = useRef<BattleView | null>(null);
   const playedRef = useRef(0);
   const queue = useRef<Beat[]>([]);
+  /** The scene once everything queued has played: who is on the field when the next step starts. */
+  const queuedScene = useRef<Scene>(initialScene());
   const beatTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loaded = useRef(false);
   const fetching = useRef<number | null>(null);
@@ -187,7 +189,9 @@ export function BattleScreen({
           ...script.current,
           exact: s.exact,
           maxHpOf: (mon) => team.find((m) => m.details.split(",")[0] === mon)?.maxhp,
+          field: queuedScene.current.active,
         });
+        queuedScene.current = beats.reduce(applyBeat, queuedScene.current);
         if (animate) queue.current.push(...beats);
         else setScene((sc) => replay(sc, beats));
         playedRef.current = s.step;
@@ -559,17 +563,23 @@ export function BattleScreen({
     );
   }
 
+  // The opponent's row says how many they have left: fainted balls first, darkened.
+  // Mid-battle it slides in and out in their info box's place; at the intro it's just there.
   const balls = (side: "me" | "opp") => {
     const slot = side === "me" ? you.slot : opponent;
+    const out = side === "opp" ? Math.min(scene.oppFainted, battleSize) : 0;
+    const slide = side === "opp" && !scene.intro && scene.oppBalls ? styles[`battle__balls--${scene.oppBalls}`] : "";
     return (
       <div
-        className={`${styles.battle__balls} ${styles[`battle__balls--${side}`]}`}
-        aria-label={side === "me" ? "Your team" : `${name(opponent)}'s team`}
+        className={`${styles.battle__balls} ${styles[`battle__balls--${side}`]} ${slide}`}
+        {...(side === "me"
+          ? { "aria-label": "Your team" }
+          : { role: "img", "aria-label": `${name(opponent)}'s team: ${battleSize - out} of ${battleSize} left` })}
       >
         {Array.from({ length: battleSize }, (_, k) => (
           <Image
             key={k}
-            className={`${styles.battle__ball} ${slot === 2 ? styles["battle__ball--p2"] : ""}`}
+            className={`${styles.battle__ball} ${slot === 2 ? styles["battle__ball--p2"] : ""} ${k < out ? styles["battle__ball--out"] : ""}`}
             src={BALL_ICON}
             alt=""
             width={32}
@@ -589,6 +599,7 @@ export function BattleScreen({
   const oppSprite = spriteOf(opp);
   const mySprite = spriteOf(me);
   const oppTypes = opp ? (byId.get(opp.pokemonId)?.types ?? []) : [];
+  const myTypes = me ? (byId.get(me.pokemonId)?.types ?? []) : [];
 
   return (
     <Stage className={styles.battle}>
@@ -603,9 +614,10 @@ export function BattleScreen({
           {balls("me")}
         </>
       )}
+      {!scene.intro && scene.oppBalls && balls("opp")}
 
-      {/* A fainted Pokémon's info goes with its sprite. */}
-      {opp && !opp.fainted && (
+      {/* A fainted Pokémon's info goes with its sprite, and steps aside while the ball row is up. */}
+      {opp && !opp.fainted && !scene.oppBalls && (
         <section className={`${styles.battle__info} ${styles["battle__info--opp"]}`} aria-label={opp.name.toUpperCase()}>
           <p className={styles.battle__name}>{opp.name.toUpperCase()}</p>
           <div className={styles.battle__level}>
@@ -651,6 +663,11 @@ export function BattleScreen({
           <p className={styles.battle__hpNumbers}>
             {me.hp}/{me.maxhp}
           </p>
+          <div className={`${styles.battle__types} ${styles["battle__types--me"]}`} aria-label="Types">
+            {myTypes.map((t) => (
+              <TypeBadge key={t} type={t} />
+            ))}
+          </div>
         </section>
       )}
 

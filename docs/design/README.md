@@ -124,6 +124,8 @@ Home ──JOIN──▶ Lobby (full)
 | 4g Detail in battle | `DetailBattle.dc.html` | `Detail` with `battle`: current HP, status, PP left, ◀ SWITCH/BACK ▶ |
 | 4h Detail, fainted | `DetailFainted.dc.html` | `Detail` with `battle` on fainted Gengar: SWITCH disabled |
 | 4i Your ability indicator | `BattleAbilityYou.dc.html` | `Battle` with your Pokémon's ability box showing |
+| 4j Opponent fainted | `BattleOppFainted.dc.html` | `Battle` just after the opponent's Pokémon faints: their ball row in the info box's place, one ball darkened |
+| 4k Opponent switches | `BattleOppSwitch.dc.html` | `Battle` playing an opponent's switch: withdraw, ball row in, send-out, row out |
 
 The `b`/`c`/`d` boards that import another file are the same screen in a different
 state, not separate screens.
@@ -404,6 +406,11 @@ is absolutely placed on the 1200×900 board.
     (1600 ms), the row slides out (300 ms) and the info box returns (500 ms). After
     their last Pokémon faints the row stays up. Its label reads "SILVER's team: 5
     of 6 left".
+    - In the app the server's log drives it. The protocol has no withdraw line, so
+      an opponent's `|switch|` while their Pokémon is still up is a switch, and one
+      after it fainted is the replacement (the next step).
+    - No row for your own switches or faints, the intro's send-outs, or `|drag|`
+      (Roar, Whirlwind). With reduced motion it appears and goes without sliding.
   - Messages, one at a time in the full-width box: "SILVER wants to battle!" (each
     player sees the other's name), "SILVER sent out GYARADOS!", "Go! VENUSAUR!".
     Then any on-entry abilities (below), then the menu.

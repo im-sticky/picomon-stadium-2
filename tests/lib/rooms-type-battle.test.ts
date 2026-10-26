@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { createClient } from '@libsql/client';
+import { createClient, type Client } from '@libsql/client';
 import { drizzle } from 'drizzle-orm/libsql';
 import { migrate } from 'drizzle-orm/libsql/migrator';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -184,13 +184,23 @@ describe('type battle', () => {
     async function withTwoClients(fn: (a: Db, b: Db) => Promise<void>) {
       const dir = mkdtempSync(path.join(tmpdir(), 'type-battle-test-'));
       const url = `file:${path.join(dir, 'test.db')}`;
-      const open = (): Db => drizzle(createClient({ url }), { schema });
+      const clients: Client[] = [];
+      const open = (): Db => {
+        const client = createClient({ url });
+        clients.push(client);
+        return drizzle(client, { schema });
+      };
       try {
         const a = open();
         await migrate(a, { migrationsFolder: 'drizzle' });
         await fn(a, open());
       } finally {
-        rmSync(dir, { recursive: true, force: true });
+        for (const client of clients) client.close();
+        // Best effort: on Windows libsql holds test.db open until the client is
+        // garbage-collected, even after close(), so the folder can't be removed yet.
+        try {
+          rmSync(dir, { recursive: true, force: true });
+        } catch {}
       }
     }
 
