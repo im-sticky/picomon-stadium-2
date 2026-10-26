@@ -290,6 +290,34 @@ describe("stepBeats: the opponent's ball row", () => {
   });
 });
 
+describe("stepBeats: your fainted Pokémon", () => {
+  const field = play(INTRO_P1, host);
+  const at = (lines: string[], scene: Scene, ctx = host) => replay(scene, stepBeats(lines, { ...ctx, field: scene.active }));
+
+  it("starts at none", () => {
+    expect(initialScene().myFainted).toBe(0);
+  });
+
+  it("counts each of your faints once, and not the opponent's", () => {
+    let scene = at(["|-damage|p1a: Gyarados|0 fnt", "|faint|p1a: Gyarados"], field);
+    expect(scene).toMatchObject({ myFainted: 1, oppFainted: 0 });
+    // A repeated faint line for the same Pokémon doesn't count twice.
+    expect(at(["|faint|p1a: Gyarados"], scene).myFainted).toBe(1);
+    scene = at(["|switch|p1a: Gengar|Gengar, L50, M|136/136", "|turn|3"], scene);
+    expect(at(["|faint|p1a: Gengar"], scene).myFainted).toBe(2);
+    expect(at(["|faint|p2a: Arcanine"], field)).toMatchObject({ myFainted: 0, oppFainted: 1 });
+  });
+
+  it("is counted from your own side as the guest", () => {
+    expect(at(["|faint|p2a: Arcanine"], play(INTRO_P2, guest), guest)).toMatchObject({ myFainted: 1, oppFainted: 0 });
+  });
+
+  it("is restored by replay after a refresh", () => {
+    const beats = [...stepBeats(INTRO_P1, host), ...stepBeats(["|faint|p1a: Gyarados"], { ...host, field: field.active })];
+    expect(replay(initialScene(), beats)).toMatchObject({ myFainted: 1, message: ["", ""], ability: null });
+  });
+});
+
 describe("stepBeats: weather", () => {
   const RAIN = ["|move|p1a: Gyarados|Rain Dance|p1a: Gyarados", "|-weather|RainDance"];
   const UPKEEP = ["|", "|-weather|RainDance|[upkeep]", "|upkeep", "|turn|3"];

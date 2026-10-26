@@ -48,6 +48,8 @@ import type { RoomAction, SubscribeBattle } from "./room-view";
 import styles from "./battle.module.scss";
 
 const BALL_ICON = "/sprites/misc/icon-pokeballball.png";
+/** Every ball row has this many places, as at 6V6; smaller battles leave the rest empty. */
+const BALL_PLACES = 6;
 /** After a `battle-step`, wait this long for your own view (exact HP) before playing the public lines. */
 const VIEW_WAIT_MS = 1500;
 /** Backoff before each retry of a failed view fetch; the last one repeats while the screen is up. */
@@ -577,30 +579,38 @@ export function BattleScreen({
     );
   }
 
-  // The opponent's row says how many they have left: fainted balls first, darkened.
-  // Mid-battle it slides in and out in their info box's place; at the intro it's just there.
+  // The intro and the end screen: the opponent's trainer and both ball rows, just there.
+  const board = scene.intro || ended;
+
+  // Each row says how many that side has left: fainted balls first, darkened. It always
+  // has 6 places, the ones past the battle size empty. Mid-battle the opponent's row
+  // slides in and out in their info box's place.
   const balls = (side: "me" | "opp") => {
     const slot = side === "me" ? you.slot : opponent;
-    const out = side === "opp" ? Math.min(scene.oppFainted, battleSize) : 0;
-    const slide = side === "opp" && !scene.intro && scene.oppBalls ? styles[`battle__balls--${scene.oppBalls}`] : "";
+    const out = Math.min(side === "me" ? scene.myFainted : scene.oppFainted, battleSize);
+    const slide = side === "opp" && !board && scene.oppBalls ? styles[`battle__balls--${scene.oppBalls}`] : "";
+    const owner = side === "me" ? "Your team" : `${name(opponent)}'s team`;
     return (
       <div
         className={`${styles.battle__balls} ${styles[`battle__balls--${side}`]} ${slide}`}
-        {...(side === "me"
-          ? { "aria-label": "Your team" }
-          : { role: "img", "aria-label": `${name(opponent)}'s team: ${battleSize - out} of ${battleSize} left` })}
+        role="img"
+        aria-label={`${owner}: ${battleSize - out} of ${battleSize} left`}
       >
-        {Array.from({ length: battleSize }, (_, k) => (
-          <Image
-            key={k}
-            className={`${styles.battle__ball} ${slot === 2 ? styles["battle__ball--p2"] : ""} ${k < out ? styles["battle__ball--out"] : ""}`}
-            src={BALL_ICON}
-            alt=""
-            width={32}
-            height={32}
-            unoptimized
-          />
-        ))}
+        {Array.from({ length: BALL_PLACES }, (_, k) =>
+          k < battleSize ? (
+            <Image
+              key={k}
+              className={`${styles.battle__ball} ${slot === 2 ? styles["battle__ball--p2"] : ""} ${k < out ? styles["battle__ball--out"] : ""}`}
+              src={BALL_ICON}
+              alt=""
+              width={32}
+              height={32}
+              unoptimized
+            />
+          ) : (
+            <EmptyBall key={k} />
+          ),
+        )}
       </div>
     );
   };
@@ -610,14 +620,15 @@ export function BattleScreen({
     mon && !mon.fainted ? (pokemonSprites[mon.transformedInto ?? ""] ?? pokemonSprites[mon.pokemonId]) : undefined;
   const spriteClass = (mon: Battler | null) =>
     mon?.transformedInto ? `${styles.battle__sprite} ${styles["battle__sprite--transformed"]}` : styles.battle__sprite;
-  const oppSprite = spriteOf(opp);
-  const mySprite = spriteOf(me);
+  // The end screen shows no Pokémon: their sprites and info boxes are gone.
+  const oppSprite = ended ? undefined : spriteOf(opp);
+  const mySprite = ended ? undefined : spriteOf(me);
   const oppTypes = opp ? (byId.get(opp.pokemonId)?.types ?? []) : [];
   const myTypes = me ? (byId.get(me.pokemonId)?.types ?? []) : [];
 
   return (
     <Stage className={styles.battle}>
-      {scene.intro && (
+      {board && (
         <>
           {isTrainer(opponentTrainer) && (
             <div className={styles.battle__trainer}>
@@ -628,10 +639,10 @@ export function BattleScreen({
           {balls("me")}
         </>
       )}
-      {!scene.intro && scene.oppBalls && balls("opp")}
+      {!board && scene.oppBalls && balls("opp")}
 
       {/* A fainted Pokémon's info goes with its sprite, and steps aside while the ball row is up. */}
-      {opp && !opp.fainted && !scene.oppBalls && (
+      {!ended && opp && !opp.fainted && !scene.oppBalls && (
         <section className={`${styles.battle__info} ${styles["battle__info--opp"]}`} aria-label={opp.name.toUpperCase()}>
           <p className={styles.battle__name}>{opp.name.toUpperCase()}</p>
           <div className={styles.battle__level}>
@@ -662,7 +673,7 @@ export function BattleScreen({
           <PokemonBack key={`me-${scene.entrances.me}`} sprite={mySprite} alt={me!.name.toUpperCase()} className={spriteClass(me)} />
         </div>
       )}
-      {me && !me.fainted && (
+      {!ended && me && !me.fainted && (
         <section className={`${styles.battle__info} ${styles["battle__info--me"]}`} aria-label={me.name.toUpperCase()}>
           <p className={styles.battle__name}>{me.name.toUpperCase()}</p>
           <div className={styles.battle__level}>
@@ -725,6 +736,15 @@ function MoveInfo({ move, info }: { move: MoveOption; info: PoolMove | undefined
         {move.pp === null ? "PP --" : `PP ${move.pp}/${move.maxpp}`}
       </p>
     </>
+  );
+}
+
+/** A ball row's unused place: an empty grey circle, the ball's size. */
+function EmptyBall() {
+  return (
+    <svg className={styles.battle__emptyBall} width="32" height="32" viewBox="0 0 16 16" shapeRendering="crispEdges" aria-hidden="true">
+      <path d="M5 1h6v1h-6z M3 2h2v1h-2z M11 2h2v1h-2z M2 3h1v2h-1z M13 3h1v2h-1z M1 5h1v6h-1z M14 5h1v6h-1z M2 11h1v2h-1z M13 11h1v2h-1z M3 13h2v1h-2z M11 13h2v1h-2z M5 14h6v1h-6z" />
+    </svg>
   );
 }
 
