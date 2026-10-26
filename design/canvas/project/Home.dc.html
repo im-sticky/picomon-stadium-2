@@ -30,6 +30,11 @@ a.btn{color:inherit;text-decoration:none}
 .btn:focus-visible{outline:none;background-color:#E8E8E8}
 .btn.primary{background-color:#181818;color:#F8F8F8;--l:#F8F8F8;--e:#181818}
 .btn.primary path{fill:#F8F8F8}
+/* The trainer sprite's box is a link to Choose a Trainer: the ▶ cursor and a grey fill on hover/focus, like a button */
+.pick{position:relative;display:flex;align-items:center;justify-content:center;width:240px;height:204px;box-sizing:border-box;color:inherit;text-decoration:none}
+.pick .cur{position:absolute;left:9px;top:50%;margin-top:-12px}
+.pick:hover .cur,.pick:focus-visible .cur{visibility:visible}
+.pick:hover,.pick:focus-visible{outline:none;background-color:#E8E8E8}
 .radio{display:flex;align-items:center;gap:8px;font-size:16px;line-height:24px;cursor:pointer}
 .radio input{appearance:none;-webkit-appearance:none;margin:0;width:24px;height:24px;box-sizing:border-box;border:3px solid #181818;background:#F8F8F8;cursor:pointer}
 .radio input:checked{background:#181818;box-shadow:inset 0 0 0 3px #F8F8F8}
@@ -57,22 +62,7 @@ a.btn{color:inherit;text-decoration:none}
           <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
           HOST
         </button>
-        <fieldset aria-label="Battle size" style="border: 0; margin: 0; padding: 0; display: flex; gap: 24px; height: 32px; align-items: center">
-          <sc-for list="{{sizes}}" as="o" hint-placeholder-count="3">
-            <label class="radio">
-              <input type="radio" name="battle-size" value="{{o.value}}" checked="{{o.checked}}" onChange="{{o.pick}}">
-              <span>{{o.label}}</span>
-            </label>
-          </sc-for>
-        </fieldset>
-        <fieldset aria-label="Draft type" style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
-          <sc-for list="{{drafts}}" as="o" hint-placeholder-count="3">
-            <label class="radio" style="height: 32px">
-              <input type="radio" name="draft-type" value="{{o.value}}" checked="{{o.checked}}" onChange="{{o.pick}}">
-              <span>{{o.label}}</span>
-            </label>
-          </sc-for>
-        </fieldset>
+        <!-- Battle size and draft type are set in the waiting room -->
       </div>
       <div style="display: flex; flex-direction: column; gap: 24px">
         <div>
@@ -83,23 +73,15 @@ a.btn{color:inherit;text-decoration:none}
           <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
           JOIN
         </button>
-        <!-- Pushed to the bottom of the column so it lines up with CHANGE -->
-        <a class="btn" href="Rules.dc.html" style="margin-top: auto">
-          <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
-          RULES
-        </a>
+        <!-- RULES is in the waiting room -->
       </div>
-      <section aria-label="Your trainer" style="display: flex; flex-direction: column; gap: 24px">
-        <div>
-          <p class="lbl">TRAINER</p>
-          <p style="font-size: 24px; line-height: 32px; margin-bottom: 12px">{{trainer.name}}</p>
-          <div class="frame" style="width: 240px; height: 204px; box-sizing: border-box; display: flex; align-items: center; justify-content: center">
-            <img class="pix" src="{{trainer.src}}" alt="{{trainer.name}}" style="width: 168px; height: 168px">
-          </div>
-        </div>
-        <a class="btn" href="Trainers.dc.html">
+      <section aria-label="Your trainer">
+        <p class="lbl">TRAINER</p>
+        <p style="font-size: 24px; line-height: 32px; margin-bottom: 12px">{{trainer.name}}</p>
+        <!-- The sprite is the button: it opens Choose a Trainer -->
+        <a class="frame pick" href="Trainers.dc.html" aria-label="Change trainer ({{trainer.name}})">
           <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
-          CHANGE
+          <img class="pix" src="{{trainer.src}}" alt="" style="width: 168px; height: 168px">
         </a>
       </section>
     </div>
@@ -116,24 +98,11 @@ a.btn{color:inherit;text-decoration:none}
 class Component extends DCLogic {
   constructor(props) {
     super(props);
-    // Prototype only: boards don't share state, so the battle size is handed to the
-    // battle order board through localStorage (the app keeps it on the room)
-    let size = 6;
-    try {
-      const saved = parseInt(localStorage.getItem('picomon.battleSize'), 10);
-      if ([3, 4, 6].includes(saved)) size = saved;
-    } catch (e) {}
     // Your trainer: the one you picked on Choose a Trainer, or a random one the first
     // time (prototype only, via localStorage; the app keeps it with the player)
     let trainer = null;
     try { trainer = localStorage.getItem('picomon.trainer'); } catch (e) {}
-    // Draft type, chosen by the host: standard by default (prototype only, via localStorage)
-    let draft = 'standard';
-    try {
-      const saved = localStorage.getItem('picomon.draftType');
-      if (['standard', 'unlimited', 'pokeball'].includes(saved)) draft = saved;
-    } catch (e) {}
-    this.state = { code: props.code || '', error: props.error || '', size, trainer, draft };
+    this.state = { code: props.code || '', error: props.error || '', trainer };
   }
   renderVals() {
     // public/sprites/trainers: [file name, blob id]. The name is the file name in title case.
@@ -200,29 +169,8 @@ class Component extends DCLogic {
     };
     const [msg1, msg2] = MSG[error] || MSG[''];
 
-    // Battle size, chosen by the host: how many Pokémon each player sends into battle
-    const sizes = [3, 4, 6].map((n) => ({
-      value: String(n),
-      label: n + 'V' + n,
-      checked: this.state.size === n,
-      pick: () => {
-        try { localStorage.setItem('picomon.battleSize', String(n)); } catch (e) {}
-        this.setState({ size: n });
-      }
-    }));
-
-    const drafts = [['standard', 'Standard Draft'], ['unlimited', 'Unlimited Draft'], ['pokeball', 'Poké Ball Draft']].map(([value, label]) => ({
-      value,
-      label,
-      checked: this.state.draft === value,
-      pick: () => {
-        try { localStorage.setItem('picomon.draftType', value); } catch (e) {}
-        this.setState({ draft: value });
-      }
-    }));
-
     return {
-      code, msg1, msg2, host, submit, sizes, drafts, trainer,
+      code, msg1, msg2, host, submit, trainer,
       setCode: (e) => this.setState({ code: e.target.value.toUpperCase() }),
       setGoHost: (el) => { this.goHost = el; },
       setGoJoin: (el) => { this.goJoin = el; }

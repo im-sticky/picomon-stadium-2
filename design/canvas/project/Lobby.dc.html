@@ -16,9 +16,11 @@ body{margin:0}
 .gb p,.gb h1,.gb h2{margin:0;font-weight:400}
 .frame{border:6px solid #181818;background-color:#F8F8F8}
 button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+button:disabled{cursor:default}
 .cur{flex:none;visibility:hidden}
 .lbl{font-size:16px;line-height:32px;color:#585858}
-.cell{width:96px;height:120px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:64px;line-height:64px;padding-left:6px}
+/* The code as one 64px string, on the row's 120px height (as the app) */
+.code{display:flex;align-items:center;height:120px;font-size:64px;line-height:64px}
 .btn{position:relative;display:flex;align-items:center;justify-content:center;width:240px;box-sizing:border-box;padding:36px 24px;font-size:24px;border:6px solid #181818}
 .btn .cur{position:absolute;left:30px;top:50%;margin-top:-12px}
 .btn:hover .cur,.btn:focus-visible .cur{visibility:visible}
@@ -26,7 +28,20 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 a.btn{color:inherit;text-decoration:none}
 .btn.primary{background-color:#181818;color:#F8F8F8;--l:#F8F8F8;--e:#181818}
 .btn.primary path{fill:#F8F8F8}
+/* Until an opponent joins, READY can't be pressed */
+.btn:disabled{opacity:.4}
+.btn:disabled .cur{visibility:hidden}
 .prow{display:flex;align-items:center;gap:24px;height:48px;font-size:24px}
+/* Ready: a green pixel checkmark beside the name (#188030, 4.9:1 on the light ground) */
+.tick{display:block;flex:none}
+/* Battle size and draft type: the guest's read-only rows, one 48px row each */
+.opt{display:flex;align-items:center;justify-content:flex-end;height:48px}
+/* The host's radio lists (as Home had them): two titled columns, three 32px rows each, starting level with the code */
+.radios{border:0;margin:0;padding:0;display:flex;flex-direction:column}
+.radio{display:flex;align-items:center;gap:8px;height:32px;font-size:16px;line-height:24px;white-space:nowrap;cursor:pointer}
+.radio input{appearance:none;-webkit-appearance:none;margin:0;width:24px;height:24px;box-sizing:border-box;border:3px solid #181818;background:#F8F8F8;cursor:pointer}
+.radio input:checked{background:#181818;box-shadow:inset 0 0 0 3px #F8F8F8}
+.radio input:focus-visible{outline:3px solid #181818;outline-offset:3px}
 /* Pixel corners: two 3px steps off the outer edge, a 3px square rounding the thick line's inner edge, one step off the thin line */
 .frame,.btn{--l:#181818;--e:var(--l);background-image:linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e));background-position:left 6px top 3px,left 6px bottom 3px,left 3px top 6px,right 3px top 6px,left top,right top,left bottom,right bottom;background-size:calc(100% - 12px) 3px,calc(100% - 12px) 3px,3px calc(100% - 12px),3px calc(100% - 12px),3px 3px,3px 3px,3px 3px,3px 3px;background-repeat:no-repeat}
 .frame,.btn{clip-path:polygon(6px 0,calc(100% - 6px) 0,calc(100% - 6px) 3px,calc(100% - 3px) 3px,calc(100% - 3px) 6px,100% 6px,100% calc(100% - 6px),calc(100% - 3px) calc(100% - 6px),calc(100% - 3px) calc(100% - 3px),calc(100% - 6px) calc(100% - 3px),calc(100% - 6px) 100%,6px 100%,6px calc(100% - 3px),3px calc(100% - 3px),3px calc(100% - 6px),0 calc(100% - 6px),0 6px,3px 6px,3px 3px,6px 3px)}
@@ -34,39 +49,66 @@ a.btn{color:inherit;text-decoration:none}
 </helmet>
 <div class="gb" style="width: 1200px; height: 900px; box-sizing: border-box; padding: 24px 72px; display: flex; flex-direction: column; gap: 18px">
   <h1 style="font-size: 32px; line-height: 48px; text-align: center">{{title}}</h1>
-  <section class="frame" aria-label="Room code" style="padding: 30px 42px">
-    <p class="lbl" style="margin-bottom: 12px">ROOM CODE</p>
-    <div style="display: flex; align-items: center; gap: 12px">
-      <sc-for list="{{chars}}" as="ch" hint-placeholder-count="4">
-        <span class="frame cell">{{ch}}</span>
-      </sc-for>
-      <sc-if value="{{waiting}}" hint-placeholder-val="{{ true }}">
-        <button type="button" class="btn" onClick="{{copy}}" style="margin-left: 24px">
-          <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
-          {{copyLabel}}
-        </button>
+  <!-- Two columns, tops aligned: the room code on the left, the settings on the right, so every title sits on one line -->
+  <section class="frame" aria-label="Room code" style="padding: 30px 42px; display: flex; align-items: flex-start; gap: 12px">
+    <div>
+      <p class="lbl" style="margin-bottom: 12px">ROOM CODE</p>
+      <span class="code">{{code}}</span>
+    </div>
+    <!-- Battle size and draft type: the host changes them here until the battle starts; the guest sees them read-only.
+         A change clears both players' READY. -->
+    <div aria-label="Battle size and draft type" style="margin-left: auto">
+      <sc-if value="{{isHost}}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; gap: 48px">
+          <fieldset class="radios" aria-labelledby="lobby-battle-type">
+            <p class="lbl" id="lobby-battle-type" style="margin-bottom: 12px">BATTLE TYPE</p>
+            <sc-for list="{{sizes}}" as="o" hint-placeholder-count="3">
+              <label class="radio">
+                <input type="radio" name="battle-size" value="{{o.value}}" checked="{{o.checked}}" onChange="{{o.pick}}">
+                <span>{{o.label}}</span>
+              </label>
+            </sc-for>
+          </fieldset>
+          <fieldset class="radios" aria-labelledby="lobby-draft-type">
+            <p class="lbl" id="lobby-draft-type" style="margin-bottom: 12px">DRAFT TYPE</p>
+            <sc-for list="{{drafts}}" as="o" hint-placeholder-count="3">
+              <label class="radio">
+                <input type="radio" name="draft-type" value="{{o.value}}" checked="{{o.checked}}" onChange="{{o.pick}}">
+                <span>{{o.label}}</span>
+              </label>
+            </sc-for>
+          </fieldset>
+        </div>
       </sc-if>
-      <!-- The host's choices from Home: battle size and draft type -->
-      <div aria-label="Battle size and draft type" style="margin-left: auto; text-align: right">
-        <p style="font-size: 32px; line-height: 48px">{{format}}</p>
-        <p style="font-size: 16px; line-height: 32px; white-space: nowrap">{{draftType}}</p>
-      </div>
+      <sc-if value="{{isGuest}}" hint-placeholder-val="{{ false }}">
+        <!-- Centred on the code's 120px row, below the titles' line -->
+        <div style="margin-top: 44px; height: 120px; display: flex; flex-direction: column; justify-content: center">
+          <p class="opt" style="font-size: 32px">{{format}}</p>
+          <p class="opt" style="font-size: 16px">{{draftType}}</p>
+        </div>
+      </sc-if>
     </div>
   </section>
   <section class="frame" aria-label="Players" style="padding: 30px 42px">
     <p class="lbl">PLAYERS</p>
     <div class="prow">
       <span style="color: #C03028; width: 48px">P1</span>
-      <span style="flex: 1">{{host}}</span>
-      <span style="font-size: 16px; color: #585858">HOST</span>
+      <span>{{host}}</span>
+      <sc-if value="{{p1Ready}}" hint-placeholder-val="{{ false }}">
+        <svg class="tick" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" role="img" aria-label="Ready"><path d="M7 1h1v1h-1z M6 2h2v1h-2z M0 3h1v1h-1z M5 3h2v1h-2z M0 4h2v1h-2z M4 4h2v1h-2z M1 5h4v1h-4z M2 6h2v1h-2z" fill="#188030"></path></svg>
+      </sc-if>
+      <span style="margin-left: auto; font-size: 16px; color: #585858">HOST</span>
     </div>
     <div class="prow">
       <span style="color: #2860B8; width: 48px">P2</span>
       <sc-if value="{{full}}" hint-placeholder-val="{{ false }}">
-        <span style="flex: 1">{{guest}}</span>
+        <span>{{guest}}</span>
       </sc-if>
       <sc-if value="{{waiting}}" hint-placeholder-val="{{ true }}">
-        <span style="flex: 1; color: #A8A8A8">- - - - - -</span>
+        <span style="color: #A8A8A8">- - - - - -</span>
+      </sc-if>
+      <sc-if value="{{p2Ready}}" hint-placeholder-val="{{ false }}">
+        <svg class="tick" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" role="img" aria-label="Ready"><path d="M7 1h1v1h-1z M6 2h2v1h-2z M0 3h1v1h-1z M5 3h2v1h-2z M0 4h2v1h-2z M4 4h2v1h-2z M1 5h4v1h-4z M2 6h2v1h-2z" fill="#188030"></path></svg>
       </sc-if>
     </div>
   </section>
@@ -74,63 +116,173 @@ a.btn{color:inherit;text-decoration:none}
     <p style="font-size: 24px; line-height: 48px">{{msg1}}</p>
     <p style="font-size: 24px; line-height: 48px">{{msg2}}</p>
   </div>
-  <sc-if value="{{full}}" hint-placeholder-val="{{ false }}">
-    <div style="display: flex; justify-content: center">
-      <a class="btn primary" href="Main.dc.html" style="width: 384px">
-        <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
-        START BATTLE
-      </a>
-    </div>
-  </sc-if>
+  <!-- Both players: READY (pressed again: CANCEL READY), then DRAFT RULES.
+       When both are ready, the battle starts 2 seconds later. -->
+  <div style="display: flex; justify-content: center; gap: 24px">
+    <button type="button" class="{{readyCls}}" aria-pressed="{{meReady}}" disabled="{{waiting}}" onClick="{{toggleReady}}" style="width: 384px">
+      <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
+      {{readyLabel}}
+    </button>
+    <!-- Grows to fit its label, 60px each side to clear the ▶ cursor (as the app's buttons) -->
+    <a class="btn" href="Rules.dc.html" style="width: auto; min-width: 240px; padding: 36px 60px">
+      <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
+      DRAFT RULES
+    </a>
+  </div>
+  <a href="Main.dc.html" ref="{{setGoStart}}" hidden aria-hidden="true" tabindex="-1"></a>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"full":{"editor":"boolean","default":false},"$preview":{"width":1200,"height":900}}'>
+<script type="text/x-dc" data-dc-script data-props='{"full":{"editor":"boolean","default":false},"guest":{"editor":"boolean","default":false},"play":{"editor":"boolean","default":false},"$preview":{"width":1200,"height":900}}'>
 class Component extends DCLogic {
   constructor(props) {
     super(props);
-    this.state = { copied: false };
-  }
-  componentWillUnmount() {
-    clearTimeout(this.tc);
-  }
-  isFull() {
-    return this.props.full === true || this.props.full === 'true';
-  }
-  renderVals() {
-    const CODE = 'K7QM';
-    const full = this.isFull();
-    let key = null;
-    try { key = localStorage.getItem('picomon.trainer'); } catch (e) {}
-    const trainerName = key ? key.split('_').map((w) => w[0].toUpperCase() + w.slice(1)).join(' ') : 'Gold';
-    // The host's battle size and draft type from Home (prototype: via localStorage)
+    // The room's battle size and draft type: 6V6 and Standard Draft when the room opens.
+    // Prototype only: kept in localStorage so the draft and battle boards follow them (the app keeps them on the room)
     let size = null;
     let draft = null;
     try {
       size = parseInt(localStorage.getItem('picomon.battleSize'), 10);
       draft = localStorage.getItem('picomon.draftType');
     } catch (e) {}
-    const n = [3, 4, 6].includes(size) ? size : 6;
-    const DRAFTS = { standard: 'Standard Draft', unlimited: 'Unlimited Draft', pokeball: 'Poké Ball Draft' };
-    const copy = () => {
-      if (navigator.clipboard) navigator.clipboard.writeText(CODE).catch(() => {});
-      this.setState({ copied: true });
-      clearTimeout(this.tc);
-      this.tc = setTimeout(() => this.setState({ copied: false }), 1500);
+    this.state = {
+      size: [3, 4, 6].includes(size) ? size : 6,
+      draft: ['standard', 'unlimited', 'pokeball'].includes(draft) ? draft : 'standard',
+      // You and your opponent; `count` is the start countdown (2, 1) once both are ready;
+      // `changed` says the host's option change just cleared READY
+      meReady: false, oppReady: false, count: null, changed: false
     };
+  }
+  componentDidMount() {
+    if (this.isPlay()) this.playLoop();
+  }
+  componentWillUnmount() {
+    this.clearTimers();
+  }
+  clearTimers() {
+    clearTimeout(this.ot);
+    clearTimeout(this.c1);
+    clearTimeout(this.c2);
+    clearTimeout(this.p1);
+    clearTimeout(this.p2);
+    clearTimeout(this.p3);
+  }
+  isPlay() {
+    return this.props.play === true || this.props.play === 'true';
+  }
+  // The "Getting ready" board: the opponent readies, then you, the countdown runs, and it loops
+  playLoop() {
+    this.clearTimers();
+    this.setState({ meReady: false, oppReady: false, count: null, changed: false });
+    this.p1 = setTimeout(() => this.setState({ oppReady: true }), 1200);
+    this.p2 = setTimeout(() => {
+      this.setState({ meReady: true });
+      this.startCountdown();
+    }, 2800);
+  }
+  isFull() {
+    return this.props.full === true || this.props.full === 'true';
+  }
+  isGuest() {
+    return this.props.guest === true || this.props.guest === 'true';
+  }
+  // Both ready: count down 2 seconds, then the battle starts (the type battle, 1a)
+  startCountdown() {
+    this.setState({ count: 2 });
+    this.c1 = setTimeout(() => this.setState({ count: 1 }), 1000);
+    this.c2 = setTimeout(() => {
+      // The playing board starts over instead of leaving
+      if (this.isPlay()) this.p3 = setTimeout(() => this.playLoop(), 1500);
+      else if (this.goStart) this.goStart.click();
+    }, 2000);
+  }
+  toggleReady() {
+    this.clearTimers();
+    if (this.state.meReady) return this.setState({ meReady: false, count: null });
+    this.setState({ meReady: true, count: null, changed: false });
+    if (this.state.oppReady) return this.startCountdown();
+    // Prototype only: the opponent readies up 1.5 seconds after you
+    this.ot = setTimeout(() => {
+      this.setState({ oppReady: true });
+      if (this.state.meReady) this.startCountdown();
+    }, 1500);
+  }
+  // The host changed an option: nobody is ready any more, and any countdown stops
+  setOption(change) {
+    this.clearTimers();
+    const wasReady = this.state.meReady || this.state.oppReady;
+    this.setState(Object.assign({ meReady: false, oppReady: false, count: null, changed: wasReady }, change));
+  }
+  renderVals() {
+    const CODE = 'K7QM';
+    const full = this.isFull();
+    const guest = this.isGuest();
+    const s = this.state;
+    let key = null;
+    try { key = localStorage.getItem('picomon.trainer'); } catch (e) {}
+    const trainerName = key ? key.split('_').map((w) => w[0].toUpperCase() + w.slice(1)).join(' ') : 'Gold';
+    const SIZES = [3, 4, 6];
+    const DRAFT_KEYS = ['standard', 'unlimited', 'pokeball'];
+    const DRAFTS = { standard: 'Standard Draft', unlimited: 'Unlimited Draft', pokeball: 'Poké Ball Draft' };
+    const n = s.size;
+    // The host's radio lists: battle sizes largest first; draft types without the word "Draft" (the column title says it)
+    const DRAFT_OPTIONS = { standard: 'Standard', unlimited: 'Unlimited', pokeball: 'Poké Ball' };
+    const sizes = SIZES.slice().reverse().map((size) => ({
+      value: String(size),
+      label: size + 'V' + size,
+      checked: n === size,
+      pick: () => {
+        try { localStorage.setItem('picomon.battleSize', String(size)); } catch (e) {}
+        this.setOption({ size });
+      }
+    }));
+    const drafts = DRAFT_KEYS.map((draft) => ({
+      value: draft,
+      label: DRAFT_OPTIONS[draft],
+      checked: s.draft === draft,
+      pick: () => {
+        try { localStorage.setItem('picomon.draftType', draft); } catch (e) {}
+        this.setOption({ draft });
+      }
+    }));
+    // On the guest's view the host is the sample opponent, Silver, and you are P2
+    const hostName = guest ? 'SILVER' : trainerName.toUpperCase();
+    const guestName = guest ? trainerName.toUpperCase() : 'SILVER';
+    const oppName = guest ? hostName : guestName;
+    const meReady = full && s.meReady;
+    const oppReady = full && s.oppReady;
+
+    // The status box follows the room: waiting, options changed, who's ready, the countdown
+    let msg = ['Both players connected!', 'Ready to battle?'];
+    if (!full) msg = ['Send this code to a friend.', 'Waiting for an opponent...'];
+    else if (s.count) msg = ['Both players ready!', 'Starting in ' + s.count + '...'];
+    else if (s.changed) msg = ['Battle options changed.', 'Ready up again.'];
+    else if (meReady) msg = ['Waiting for ' + oppName, 'to get ready...'];
+    else if (oppReady) msg = [oppName + ' is ready!', 'Ready to battle?'];
+
     return {
       title: full ? 'ROOM ' + CODE : 'WAITING ROOM',
-      chars: CODE.split(''),
+      code: CODE,
       format: n + 'V' + n,
-      draftType: DRAFTS[draft] || DRAFTS.standard,
+      draftType: DRAFTS[s.draft],
       full,
       waiting: !full,
+      isHost: !guest,
+      isGuest: guest,
+      sizes,
+      drafts,
       // Your trainer's name is your player name (prototype: what Home or Choose a Trainer saved)
-      host: trainerName.toUpperCase(),
-      guest: 'SILVER',
-      copy,
-      copyLabel: this.state.copied ? 'COPIED!' : 'COPY',
-      msg1: full ? 'Both players connected!' : 'Send this code to a friend.',
-      msg2: full ? 'Ready to battle?' : 'Waiting for an opponent...'
+      host: hostName,
+      guest: guestName,
+      p1Ready: guest ? oppReady : meReady,
+      p2Ready: guest ? meReady : oppReady,
+      meReady,
+      // Ready: the button turns plain and offers to cancel
+      readyCls: meReady ? 'btn' : 'btn primary',
+      readyLabel: meReady ? 'CANCEL READY' : 'READY',
+      toggleReady: () => this.toggleReady(),
+      setGoStart: (el) => { this.goStart = el; },
+      msg1: msg[0],
+      msg2: msg[1]
     };
   }
 }

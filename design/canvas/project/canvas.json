@@ -161,6 +161,22 @@
       "x": 3840,
       "y": -2629
     },
+    "LobbyGuest.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "0g · Waiting room, guest",
+      "w": 1200,
+      "x": 5120,
+      "y": -2629
+    },
+    "LobbyReady.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "0h · Getting ready (plays)",
+      "w": 1200,
+      "x": 6400,
+      "y": -2629
+    },
     "Main.dc.html": {
       "h": 900,
       "is_interactive": true,
@@ -272,6 +288,8 @@
     "HomeError.dc.html",
     "Lobby.dc.html",
     "LobbyFull.dc.html",
+    "LobbyGuest.dc.html",
+    "LobbyReady.dc.html",
     "Rules.dc.html",
     "Trainers.dc.html",
     "Main.dc.html",
