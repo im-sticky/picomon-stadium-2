@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { setDbForTests, type Db } from '@/db/client';
-import { battles, draftPicks, rooms, typePicks } from '@/db/schema';
+import { battles, draftPicks, rooms } from '@/db/schema';
 import { createTestDb } from '@/tests/helpers/test-db';
 import { draftedRoom, T0, type TestRoom } from '@/tests/helpers/battle-room';
 
@@ -199,12 +199,14 @@ describe('POST rematch', () => {
     expect(notifyRoomEvent).not.toHaveBeenCalled();
   });
 
-  it('starts a new game at the type battle when both ask, keeping the settings', async () => {
+  it('starts a new game at the Battle order when both ask, keeping the draft', async () => {
     const room = await ended();
     const before = await getRoomState(db, room.code, room[1], now);
+    const picksBefore = await db.select().from(draftPicks).where(eq(draftPicks.roomCode, room.code));
     await rematch(room.code, room[1]);
     vi.mocked(notifyRoomEvent).mockClear();
 
+    now += 1_000;
     const res = await rematch(room.code, room[2]);
     expect(await res.json()).toEqual({ ok: true, event: { kind: 'rematch-started', game: 2 } });
     expect(vi.mocked(notifyRoomEvent).mock.calls).toEqual([[room.code, { kind: 'rematch-started', game: 2 }]]);
@@ -212,20 +214,44 @@ describe('POST rematch', () => {
     const after = await getRoomState(db, room.code, room[2], now);
     expect(after).toMatchObject({
       game: 2,
-      phase: 'type-battle',
+      phase: 'battle',
       battleSize: before!.battleSize,
       draftType: before!.draftType,
       players: before!.players,
-      typeBattle: { round: 1, yourPick: null, opponentPick: null, winner: null, firstDrafter: null },
-      draft: null,
-      battle: null,
+      typeBattle: null,
+      draft: before!.draft,
+      battle: { stage: 'team-order', result: null },
     });
-    for (const table of [battles, draftPicks, typePicks]) {
-      expect(await db.select().from(table).where(eq(table.roomCode, room.code))).toEqual([]);
+    expect(await db.select().from(draftPicks).where(eq(draftPicks.roomCode, room.code))).toEqual(picksBefore);
+
+    // A fresh battle: back at step 0 with no orders, result or rematch ask, and a new order deadline.
+    for (const slot of [1, 2] as const) {
+      const view = await battleRoute(req(`/api/rooms/${room.code}/battle`, 'GET', undefined, room[slot]), ctx(room.code));
+      expect(await view.json()).toMatchObject({
+        stage: 'team-order',
+        step: 0,
+        order: { yours: [], opponentCount: 0 },
+        deadline: now + TIMER_MS,
+        timeouts: { 1: 0, 2: 0 },
+        log: { from: 0 },
+        result: null,
+        rematch: null,
+      });
     }
-    // The battle is gone, so a late battle read says so.
-    const late = await battleRoute(req(`/api/rooms/${room.code}/battle`, 'GET', undefined, room[1]), ctx(room.code));
-    expect(late.status).toBe(409);
+
+    // Both pick a fresh order, and the next battle starts from the same teams.
+    expect(await submitOrder(db, room.code, room[1], [3, 2, 1], now)).toMatchObject({ kind: 'progressed' });
+    expect(await submitOrder(db, room.code, room[2], [2, 1, 3], now)).toMatchObject({ kind: 'progressed' });
+    expect((await getRoomState(db, room.code, room[1], now))?.battle).toEqual({ stage: 'in-progress', result: null });
+  });
+
+  it('is not ended (409) once the rematch has started', async () => {
+    const room = await ended();
+    await rematch(room.code, room[1]);
+    await rematch(room.code, room[2]);
+    vi.mocked(notifyRoomEvent).mockClear();
+    expect((await rematch(room.code, room[1])).status).toBe(409);
+    expect(notifyRoomEvent).not.toHaveBeenCalled();
   });
 
   it('needs the battle to have ended', async () => {

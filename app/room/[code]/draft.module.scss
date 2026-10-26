@@ -1,5 +1,5 @@
 /* Draft (boards 2a/2c/2e). Sizes follow docs/design/README.md. BEM block `draft`. */
-@use "../../styles/mixins" as *;
+@use '../../styles/mixins' as *;
 
 .draft {
   display: flex;
@@ -93,10 +93,10 @@
     text-align: center;
   }
 
-  /* 9 equal columns of 108px cells, 4 rows visible. */
+  /* 7 equal columns of 144px cells (icons at 4×, 128px), 3 rows visible. */
   &__grid {
     display: grid;
-    grid-template-columns: repeat(9, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     justify-items: center;
     @include bare-list;
   }
@@ -105,8 +105,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 108px;
-    height: 108px;
+    width: 144px;
+    height: 144px;
     box-sizing: border-box;
     @include bare-button;
     border: 6px solid transparent;

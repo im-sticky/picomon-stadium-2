@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest';
 import type { Db } from '@/db/client';
 import { POKEMON } from '@/data/pokemon';
 import { createTestDb } from '@/tests/helpers/test-db';
-import { chooseDraftOrder, createRoom, getRoomState, joinRoom, pickPokemon, pickType, startTypeBattle } from '@/lib/rooms';
+import { chooseDraftOrder, createRoom, getRoomState, joinRoom, pickPokemon, pickType } from '@/lib/rooms';
+import { readyAndStart } from '@/tests/helpers/lobby';
 import { draftTurn, TOTAL_PICKS } from '@/lib/draft';
 import type { DraftType, Slot } from '@/lib/types';
 
@@ -26,7 +27,7 @@ async function draftRoom(db: Db, order: 'first' | 'second', draftType: DraftType
   const joined = await joinRoom(db, host.code, 'Misty', T0, null);
   if (joined.kind !== 'joined') throw new Error('join failed');
   const room = { code: host.code, 1: host.secret, 2: joined.secret } as const;
-  await startTypeBattle(db, room.code, room[1], T0);
+  await readyAndStart(db, room.code, room, T0);
   await pickType(db, room.code, room[1], 'fire', T0);
   await pickType(db, room.code, room[2], 'water', T0);
   await chooseDraftOrder(db, room.code, room[2], order, T0);

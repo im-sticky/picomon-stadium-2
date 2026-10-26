@@ -1,4 +1,4 @@
-/* Lobby: waiting room and both-players-in (boards 0c/0d). BEM block `lobby`. */
+/* Lobby: waiting room, both players in, guest view, getting ready (boards 0c/0d/0g/0h). BEM block `lobby`. */
 @use "../../styles/mixins" as *;
 
 .lobby {
@@ -15,11 +15,20 @@
     padding: 30px 42px;
   }
 
-  &__codeRow {
+  /* Two columns, tops aligned: the room code on the left, the options on the right,
+     so every title sits on one line. */
+  &__codePanel {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 12px;
-    margin-top: 12px;
+  }
+
+  /* A section label with room below it, on the same line as the option titles. */
+  &__codeLabel {
+    margin-bottom: 12px;
+    font-size: 16px;
+    line-height: 32px;
+    color: var(--text-2);
   }
 
   /* The code as one 64px string, on the row's 120px height. */
@@ -31,28 +40,36 @@
     line-height: 64px;
   }
 
-  /* Wide enough for "COPIED!" so the button doesn't resize when the label changes.
-     Tag-qualified so it outranks the shared button styles. */
-  @at-root button#{&}__copy {
-    min-width: 300px;
-    margin-left: 12px;
-  }
-
-  /* Battle size over draft type, right-aligned on the code row. */
-  &__settings {
+  &__options {
     margin-left: auto;
-    text-align: right;
   }
 
-  &__format {
-    font-size: 32px;
-    line-height: 48px;
+  /* The host's BATTLE TYPE and DRAFT TYPE lists, side by side. */
+  &__optionColumns {
+    display: flex;
+    gap: 48px;
   }
 
-  &__draftType {
+  /* The guest's read-only options: below the titles' line, centred on the code's 120px row. */
+  &__guestOptions {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 120px;
+    margin-top: 44px;
+  }
+
+  &__guestRow {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    height: 48px;
     font-size: 16px;
-    line-height: 32px;
     white-space: nowrap;
+
+    &--size {
+      font-size: 32px;
+    }
   }
 
   &__players {
@@ -81,7 +98,6 @@
   }
 
   &__name {
-    flex: 1;
     text-transform: uppercase;
 
     &--empty {
@@ -89,17 +105,27 @@
     }
   }
 
+  /* A READY player's green checkmark, right after the name. */
+  &__tick {
+    display: block;
+    flex: none;
+    fill: var(--ready);
+  }
+
+  /* Pushed to the row's right edge. */
   &__tag {
+    margin-left: auto;
     font-size: 16px;
     color: var(--text-2);
   }
 
-  &__start {
+  &__buttons {
     display: flex;
     justify-content: center;
+    gap: 24px;
   }
 
-  @at-root button#{&}__startButton {
+  @at-root button#{&}__readyButton {
     min-width: 384px;
   }
 }

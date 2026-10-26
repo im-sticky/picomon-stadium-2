@@ -12,7 +12,11 @@ import {
   type DraftType,
 } from '@/lib/types';
 
-/** Hosts a room as `trainer`, with the host's battle size and draft type. */
+/**
+ * Hosts a room as `trainer`. Home sends only the trainer, so the room opens at 6V6 and
+ * Standard Draft, and the host changes them in the waiting room (`…/options`). An
+ * optional `battleSize` and `draftType` are still accepted.
+ */
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const player = playerFromTrainer(body?.trainer);

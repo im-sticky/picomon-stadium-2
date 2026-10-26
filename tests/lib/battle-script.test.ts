@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { applyBeat, HOLD, initialScene, replay, stepBeats, wrapMessage, type ScriptContext } from "@/lib/battle-script";
+import {
+  applyBeat,
+  HOLD,
+  initialScene,
+  replay,
+  stepBeats,
+  wrapMessage,
+  type Beat,
+  type Scene,
+  type ScriptContext,
+} from "@/lib/battle-script";
 
 // Lines as the engine writes them (lib/battle-engine's linesFor), from a 3v3 with a
 // fixed seed: Gyarados (P1) against Arcanine (P2), both with Intimidate.
@@ -178,7 +188,7 @@ describe("stepBeats: status, faints and switches", () => {
     const beats = stepBeats(["|-weather|RainDance|[from] ability: Drizzle|[of] p2a: Politoed"], host);
     expect(beats).toEqual([
       { hold: HOLD.ability, ability: { side: "opp", name: "POLITOED", ability: "Drizzle" } },
-      { hold: HOLD.message, message: ["It started", "to rain!"] },
+      { hold: HOLD.message, message: ["It started", "to rain!"], weather: "rain" },
     ]);
     const healed = stepBeats(["|-heal|p1a: Gyarados|171/171|[from] ability: Water Absorb|[of] p2a: Arcanine"], host);
     expect(healed[0].ability).toEqual({ side: "me", name: "GYARADOS", ability: "Water Absorb" });
@@ -191,6 +201,136 @@ describe("stepBeats: status, faints and switches", () => {
   it("explains a move that can't be used", () => {
     expect(messages(["|cant|p1a: Gyarados|par"], host)).toEqual([["GYARADOS is paralyzed!", "It can't move!"]]);
     expect(messages(["|cant|p2a: Arcanine|flinch"], host)).toEqual([["ARCANINE", "flinched!"]]);
+  });
+});
+
+describe("stepBeats: the opponent's ball row", () => {
+  // As the battle screen calls it: with who is on the field when the step starts.
+  const beatsAt = (lines: string[], scene: Scene, ctx = host) => stepBeats(lines, { ...ctx, field: scene.active });
+  const at = (lines: string[], scene: Scene, ctx = host) => replay(scene, beatsAt(lines, scene, ctx));
+  const field = play(INTRO_P1, host);
+  const FAINT = ["|move|p1a: Gyarados|Waterfall|p2a: Arcanine", "|-damage|p2a: Arcanine|0 fnt", "|faint|p2a: Arcanine", "|upkeep"];
+  const REPLACE = ["|", "|switch|p2a: Blissey|Blissey, L50, F|100/100", "|turn|3"];
+  const rowOf = (beats: Beat[]) => beats.flatMap((b) => (b.oppBalls ? [b.oppBalls] : []));
+
+  it("slides in after the opponent's faint and stays up for the replacement", () => {
+    const beats = beatsAt(FAINT, field);
+    const faint = beats.findIndex((b) => b.faint);
+    expect(beats[faint]).toMatchObject({ hold: HOLD.oppFaint, message: ["ARCANINE fainted!", ""] });
+    expect(beats[faint + 1]).toEqual({ hold: HOLD.ballsIn, oppBalls: "in" });
+    const fainted = at(FAINT, field);
+    expect(fainted).toMatchObject({ oppBalls: "in", oppFainted: 1, active: { opp: { fainted: true } } });
+
+    // The next step: the send-out with the row up, then it slides out.
+    const next = beatsAt(REPLACE, fainted);
+    expect(next.map((b) => [b.message, b.oppBalls, b.hold])).toEqual([
+      [["SILVER sent out", "BLISSEY!"], undefined, HOLD.ballsSendOut],
+      [undefined, "leave", HOLD.ballsOut],
+      [undefined, "off", HOLD.ballsGone],
+    ]);
+    const sentOut = next.slice(0, 1).reduce(applyBeat, fainted);
+    expect(sentOut).toMatchObject({ oppBalls: "in", active: { opp: { name: "Blissey" } } });
+    expect(at(REPLACE, fainted)).toMatchObject({ oppBalls: null, oppFainted: 1, active: { opp: { name: "Blissey", fainted: false } } });
+  });
+
+  it("stays up when the opponent has no Pokémon left", () => {
+    const end = at([...FAINT, "|win|GOLD"], field);
+    expect(end).toMatchObject({ oppBalls: "in", oppFainted: 1 });
+  });
+
+  it("withdraws on a voluntary switch, then slides in, sends out and slides out", () => {
+    const beats = beatsAt(["|", "|switch|p2a: Blissey|Blissey, L50, F|100/100", "|turn|2"], field);
+    expect(beats.map((b) => [b.message, b.oppBalls, b.hold])).toEqual([
+      [["SILVER withdrew", "ARCANINE!"], undefined, HOLD.withdraw],
+      [undefined, "in", HOLD.ballsIn],
+      [["SILVER sent out", "BLISSEY!"], undefined, HOLD.ballsSendOut],
+      [undefined, "leave", HOLD.ballsOut],
+      [undefined, "off", HOLD.ballsGone],
+    ]);
+    // The withdraw takes the sprite and info off the field; nobody fainted.
+    expect(applyBeat(field, beats[0]).active.opp).toBeNull();
+    expect(beats.reduce(applyBeat, field)).toMatchObject({ oppBalls: null, oppFainted: 0, active: { opp: { name: "Blissey" } } });
+  });
+
+  it("tells a U-turn switch from a faint in the same step", () => {
+    const lines = ["|move|p2a: Arcanine|U-turn|p1a: Gyarados", "|-damage|p1a: Gyarados|100/171", "|switch|p2a: Blissey|Blissey, L50, F|100/100|[from] U-turn"];
+    expect(messages(lines, { ...host, field: field.active })).toContainEqual(["SILVER withdrew", "ARCANINE!"]);
+    // A faint earlier in the same step makes the switch a replacement.
+    const both = beatsAt(["|faint|p2a: Arcanine", "|switch|p2a: Blissey|Blissey, L50, F|100/100"], field);
+    expect(both.flatMap((b) => (b.message ? [b.message] : []))).toEqual([
+      ["ARCANINE fainted!", ""],
+      ["SILVER sent out", "BLISSEY!"],
+    ]);
+    expect(rowOf(both)).toEqual(["in", "leave", "off"]);
+  });
+
+  it("shows no row for your own switches and faints, the intro, or a drag", () => {
+    expect(rowOf(stepBeats(INTRO_P1, { ...host, field: initialScene().active }))).toEqual([]);
+    expect(rowOf(beatsAt(["|switch|p1a: Gengar|Gengar, L50, M|136/136"], field))).toEqual([]);
+    expect(rowOf(beatsAt(["|faint|p1a: Gyarados"], field))).toEqual([]);
+    const dragged = beatsAt(["|drag|p2a: Blissey|Blissey, L50, F|100/100"], field);
+    expect(rowOf(dragged)).toEqual([]);
+    expect(dragged.map((b) => b.message)).toEqual([["BLISSEY was", "dragged out!"]]);
+  });
+
+  it("is seen the same way from the guest's side", () => {
+    const guestField = play(INTRO_P2, guest);
+    const beats = beatsAt(["|switch|p1a: Gengar|Gengar, L50, M|100/100"], guestField, guest);
+    expect(beats[0].message).toEqual(["GOLD withdrew", "GYARADOS!"]);
+    expect(rowOf(beats)).toEqual(["in", "leave", "off"]);
+  });
+
+  it("counts each of the opponent's faints once, across steps", () => {
+    let scene = at(FAINT, field);
+    scene = at(REPLACE, scene);
+    scene = at(["|faint|p2a: Blissey"], scene);
+    expect(scene).toMatchObject({ oppFainted: 2, oppBalls: "in" });
+    // A repeated faint line for the same Pokémon doesn't count twice.
+    expect(at(["|faint|p2a: Blissey"], scene).oppFainted).toBe(2);
+  });
+});
+
+describe("stepBeats: weather", () => {
+  const RAIN = ["|move|p1a: Gyarados|Rain Dance|p1a: Gyarados", "|-weather|RainDance"];
+  const UPKEEP = ["|", "|-weather|RainDance|[upkeep]", "|upkeep", "|turn|3"];
+  const CLEAR = ["|", "|-weather|none", "|upkeep", "|turn|4"];
+
+  it("starts clear", () => {
+    expect(initialScene().weather).toBeNull();
+  });
+
+  it("sets the weather on a -weather line, with its message", () => {
+    const beats = stepBeats(RAIN, host);
+    const beat = beats.find((b) => b.weather);
+    expect(beat).toMatchObject({ weather: "rain", message: ["It started", "to rain!"] });
+    expect(beats.reduce(applyBeat, initialScene()).weather).toBe("rain");
+  });
+
+  it("maps each weather id", () => {
+    for (const [id, weather] of [["RainDance", "rain"], ["SunnyDay", "sun"], ["Sandstorm", "sandstorm"], ["Hail", "hail"]]) {
+      expect(play([`|-weather|${id}|[from] ability: Drought|[of] p2a: Arcanine`], host).weather).toBe(weather);
+    }
+  });
+
+  it("keeps the weather on upkeep", () => {
+    const rain = play(RAIN, host);
+    const beats = stepBeats(UPKEEP, host);
+    expect(beats.map((b) => b.message)).toContainEqual(["Rain continues", "to fall."]);
+    expect(beats.reduce(applyBeat, rain).weather).toBe("rain");
+    // A step with no weather line leaves it alone too.
+    expect(play(["|", "|upkeep", "|turn|3"], host, rain).weather).toBe("rain");
+  });
+
+  it("clears on none", () => {
+    const beats = stepBeats(CLEAR, host);
+    expect(beats.find((b) => b.weather)).toMatchObject({ weather: "none", message: ["The weather", "cleared up."] });
+    expect(play(CLEAR, host, play(RAIN, host)).weather).toBeNull();
+  });
+
+  it("is restored by replay after a refresh", () => {
+    const beats = [...stepBeats(RAIN, host), ...stepBeats(UPKEEP, host)];
+    expect(replay(initialScene(), beats)).toMatchObject({ weather: "rain", message: ["", ""], ability: null });
+    expect(replay(initialScene(), [...beats, ...stepBeats(CLEAR, host)]).weather).toBeNull();
   });
 });
 

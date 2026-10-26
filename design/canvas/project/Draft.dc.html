@@ -1,434 +1,744 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<title>Draft</title>
-<script src="./support.js"></script>
-</head>
-<body>
-<x-dc>
-<helmet>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap" rel="stylesheet">
-<style>
-body{margin:0}
-.gb{font-family:'Press Start 2P',monospace;color:#181818;background:#F8F8F8;-webkit-font-smoothing:none}
-.gb p,.gb h1,.gb h2{margin:0;font-weight:400}
-.frame{border:6px solid #181818;background-color:#F8F8F8}
-.pix{image-rendering:pixelated;display:block}
-.spr{overflow:hidden;flex:none}
-.cell{width:108px;height:108px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;border:6px solid transparent;border-radius:6px;text-decoration:none;color:inherit}
-a.cell:hover,a.cell:focus-visible,a.cell.on,.taken.on{background:#E8E8E8;outline:none}
-.p2ball{filter:hue-rotate(235deg)}
-.scroller{scrollbar-width:none}
-.scroller::-webkit-scrollbar{display:none}
-.scroller:focus-visible{outline:3px solid #181818;outline-offset:3px}
-.sbar{width:36px;height:432px;display:flex;flex-direction:column;flex:none}
-.sbtn,.sthumb{box-sizing:border-box;background:#181818;border:0;box-shadow:inset 3px 3px 0 #585858}
-.sbtn{width:36px;height:36px;padding:0;display:flex;align-items:center;justify-content:center;cursor:pointer;font:inherit}
-.strack{position:relative;flex:1;background-color:#585858;background-image:conic-gradient(#181818 25%,#585858 0 50%,#181818 0 75%,#585858 0);background-size:6px 6px}
-.sthumb{position:absolute;left:0;width:36px;cursor:grab}
-.slot{width:64px;height:64px;display:flex;align-items:center;justify-content:center}
-.slotlink{display:block;border-radius:4px}
-.slotlink:hover,.slotlink:focus-visible{background:#E8E8E8;outline:none}
-.cur{flex:none}
-button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
-.btn{position:relative;display:flex;align-items:center;justify-content:center;width:240px;box-sizing:border-box;padding:36px 24px;font-size:24px;border:6px solid #181818}
-.btn .cur{position:absolute;left:30px;top:50%;margin-top:-12px;visibility:hidden}
-.btn:hover .cur,.btn:focus-visible .cur{visibility:visible}
-.btn:focus-visible{outline:none;background-color:#E8E8E8}
-.btn.primary{background-color:#181818;color:#F8F8F8;--l:#F8F8F8;--e:#181818}
-.btn.primary path{fill:#F8F8F8}
-a.btn{color:inherit;text-decoration:none}
-a.btn.primary{color:#F8F8F8}
-.tag{display:inline-block;width:148px;height:28px;box-sizing:border-box;text-align:center;font-size:16px;line-height:28px;color:#F8F8F8;clip-path:polygon(4px 0,calc(100% - 4px) 0,calc(100% - 4px) 4px,100% 4px,100% calc(100% - 4px),calc(100% - 4px) calc(100% - 4px),calc(100% - 4px) 100%,4px 100%,4px calc(100% - 4px),0 calc(100% - 4px),0 4px,4px 4px)}
-/* Pixel corners: two 3px steps off the outer edge, a 3px square rounding the thick line's inner edge, one step off the thin line */
-.frame,.btn{--l:#181818;--e:var(--l);background-image:linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e));background-position:left 6px top 3px,left 6px bottom 3px,left 3px top 6px,right 3px top 6px,left top,right top,left bottom,right bottom;background-size:calc(100% - 12px) 3px,calc(100% - 12px) 3px,3px calc(100% - 12px),3px calc(100% - 12px),3px 3px,3px 3px,3px 3px,3px 3px;background-repeat:no-repeat}
-.frame,.btn{clip-path:polygon(6px 0,calc(100% - 6px) 0,calc(100% - 6px) 3px,calc(100% - 3px) 3px,calc(100% - 3px) 6px,100% 6px,100% calc(100% - 6px),calc(100% - 3px) calc(100% - 6px),calc(100% - 3px) calc(100% - 3px),calc(100% - 6px) calc(100% - 3px),calc(100% - 6px) 100%,6px 100%,6px calc(100% - 3px),3px calc(100% - 3px),3px calc(100% - 6px),0 calc(100% - 6px),0 6px,3px 6px,3px 3px,6px 3px)}
-</style>
-</helmet>
-<div class="gb" style="width: 1200px; height: 900px; box-sizing: border-box; padding: 24px 60px; display: flex; flex-direction: column; gap: 12px">
-  <h1 style="font-size: 32px; line-height: 48px; text-align: center">{{title}}</h1>
-  <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; height: 92px; margin-bottom: 12px">
-    <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px">
-    <p style="font-size: 16px; line-height: 24px; color: #585858; visibility: {{p1leftVis}}">{{left}}</p>
-    <div aria-label="Player 1 team" style="display: flex; align-items: center; gap: 8px">
-      <sc-for list="{{p1team}}" as="s" hint-placeholder-count="6">
-        <div class="slot">
-          <sc-if value="{{s.filled}}" hint-placeholder-val="{{ false }}">
-            <a class="slotlink" href="DetailRented.dc.html" aria-label="View {{s.name}}"><div class="spr" style="width: 64px; height: 64px"><img class="pix" src="{{s.src}}" alt="" style="width: 64px; height: 128px"></div></a>
-          </sc-if>
-          <sc-if value="{{s.empty}}" hint-placeholder-val="{{ true }}">
-            <img class="pix" src="/_blob/42adad1d7cf5061d3889e683f8adb86c" alt="Empty slot" style="width: 32px; height: 32px; opacity: .2">
-          </sc-if>
-        </div>
-      </sc-for>
-    </div>
-    </div>
-    <p aria-label="Battle format" style="align-self: center; font-size: 32px; line-height: 48px; text-align: center">{{format}}</p>
-    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px">
-    <p style="font-size: 16px; line-height: 24px; color: #585858; visibility: {{p2leftVis}}">{{left}}</p>
-    <div aria-label="Player 2 team" style="display: flex; align-items: center; gap: 8px">
-      <sc-for list="{{p2team}}" as="s" hint-placeholder-count="6">
-        <div class="slot">
-          <sc-if value="{{s.filled}}" hint-placeholder-val="{{ false }}">
-            <a class="slotlink" href="DetailRented.dc.html" aria-label="View {{s.name}}"><div class="spr" style="width: 64px; height: 64px"><img class="pix" src="{{s.src}}" alt="" style="width: 64px; height: 128px"></div></a>
-          </sc-if>
-          <sc-if value="{{s.empty}}" hint-placeholder-val="{{ true }}">
-            <img class="pix p2ball" src="/_blob/42adad1d7cf5061d3889e683f8adb86c" alt="Empty slot" style="width: 32px; height: 32px; opacity: .2">
-          </sc-if>
-        </div>
-      </sc-for>
-    </div>
-    </div>
-  </div>
-  <div style="display: flex; gap: 12px; height: 432px">
-  <div class="scroller" tabindex="0" ref="{{setScroller}}" onScroll="{{onScroll}}" aria-label="Pokémon available to rent, scrollable" style="height: 432px; flex: 1; min-width: 0; overflow-y: auto">
-  <div role="list" aria-label="Pokémon available to rent" style="display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); justify-items: center; gap: 0px">
-    <sc-for list="{{cells}}" as="c" hint-placeholder-count="41">
-      <div role="listitem">
-        <sc-if value="{{c.free}}" hint-placeholder-val="{{ true }}">
-          <a class="cell {{c.on}}" href="Detail.dc.html" onMouseEnter="{{c.hover}}" onFocus="{{c.hover}}" aria-label="{{c.aria}}">
-            <div class="spr" style="width: 96px; height: 96px"><img class="pix" src="{{c.src}}" alt="" style="width: 96px; height: 192px"></div>
-          </a>
-        </sc-if>
-        <sc-if value="{{c.locked}}" hint-placeholder-val="{{ false }}">
-          <div class="cell" aria-label="{{c.aria}}">
-            <div class="spr" style="width: 96px; height: 96px"><img class="pix" src="{{c.src}}" alt="" style="width: 96px; height: 192px"></div>
-          </div>
-        </sc-if>
-        <sc-if value="{{c.taken}}" hint-placeholder-val="{{ false }}">
-          <div class="cell taken {{c.on}}" onMouseEnter="{{c.hover}}">
-            <img class="pix {{c.ballCls}}" src="/_blob/fb383c33e038829411911e9eeb755646" alt="{{c.aria}}" style="width: 96px; height: 96px">
-          </div>
-        </sc-if>
-      </div>
-    </sc-for>
-  </div>
-  </div>
-  <div class="sbar" aria-hidden="true">
-    <button type="button" class="sbtn" tabindex="-1" onClick="{{scrollUp}}">
-      <svg width="21" height="12" viewBox="0 0 7 4" shape-rendering="crispEdges"><path d="M3 0h1v1h1v1h1v1h1v1H0V3h1V2h1V1h1z" fill="#F8F8F8"></path></svg>
-    </button>
-    <div class="strack" onPointerDown="{{trackDown}}">
-      <div class="sthumb" onPointerDown="{{thumbDown}}" style="top: {{thumbTop}}; height: {{thumbH}}"></div>
-    </div>
-    <button type="button" class="sbtn" tabindex="-1" onClick="{{scrollDown}}">
-      <svg width="21" height="12" viewBox="0 0 7 4" shape-rendering="crispEdges" style="transform: scaleY(-1)"><path d="M3 0h1v1h1v1h1v1H0V3h1V2h1V1h1z" fill="#F8F8F8"></path></svg>
-    </button>
-  </div>
-  </div>
-  <p style="font-size: 16px; line-height: 24px; text-align: center; color: #585858; visibility: {{hintVis}}">Hover for moves · Click for details</p>
-  <div class="frame" style="flex-grow: 1; padding: 18px 36px; display: flex; flex-direction: column">
-    <sc-if value="{{hasInfo}}" hint-placeholder-val="{{ true }}">
-      <div style="flex: 1; display: flex; align-items: center; gap: 48px">
-        <div style="width: 308px; flex: none; display: flex; flex-direction: column; gap: 8px">
-          <div style="display: flex; align-items: center; gap: 12px; height: 32px">
-            <img class="pix" src="{{info.ballSrc}}" alt="" style="width: 32px; height: 32px">
-            <p style="font-size: 24px; line-height: 32px">{{info.name}}</p>
-          </div>
-          <div style="display: flex; gap: 12px">
-            <sc-for list="{{info.types}}" as="t" hint-placeholder-count="2">
-              <span class="tag" style="background: {{t.color}}">{{t.label}}</span>
-            </sc-for>
-          </div>
-          <p aria-label="Ability" style="font-size: 16px; line-height: 24px">{{info.ability}}</p>
-          <div aria-label="Held item" style="display: flex; align-items: center; gap: 12px; height: 32px">
-            <img class="pix" src="/_blob/304d19156319bb03d1ef9b08ad02f23e" alt="Held item" style="width: 32px; height: 32px">
-            <span style="font-size: 16px">{{info.item}}</span>
-          </div>
-        </div>
-        <div style="flex: 1; min-width: 0">
-          <sc-if value="{{info.isTaken}}" hint-placeholder-val="{{ false }}">
-            <p style="font-size: 24px; line-height: 48px">Rented by {{info.takenBy}}.</p>
-          </sc-if>
-          <sc-if value="{{info.isFree}}" hint-placeholder-val="{{ true }}">
-            <div aria-label="Moves" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 36px; row-gap: 16px">
-              <sc-for list="{{info.moves}}" as="m" hint-placeholder-count="4">
-                <div style="display: flex; flex-direction: column">
-                  <span style="font-size: 24px; line-height: 32px">{{m.name}}</span>
-                  <span style="font-size: 16px; line-height: 24px; text-align: right">PP {{m.pp}}/{{m.pp}}</span>
+  <head>
+    <meta charset="utf-8" />
+    <title>Draft</title>
+    <script src="./support.js"></script>
+  </head>
+  <body>
+    <x-dc>
+      <helmet>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap" rel="stylesheet" />
+        <style>
+          body {
+            margin: 0;
+          }
+          .gb {
+            font-family: 'Press Start 2P', monospace;
+            color: #181818;
+            background: #f8f8f8;
+            -webkit-font-smoothing: none;
+          }
+          .gb p,
+          .gb h1,
+          .gb h2 {
+            margin: 0;
+            font-weight: 400;
+          }
+          .frame {
+            border: 6px solid #181818;
+            background-color: #f8f8f8;
+          }
+          .pix {
+            image-rendering: pixelated;
+            display: block;
+          }
+          .spr {
+            overflow: hidden;
+            flex: none;
+          }
+          /* Pokémon grid: 7 across, 3 rows in view; icons at 4× (128px) in 144px cells */
+          .cell {
+            width: 144px;
+            height: 144px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 6px solid transparent;
+            border-radius: 6px;
+            text-decoration: none;
+            color: inherit;
+          }
+          a.cell:hover,
+          a.cell:focus-visible,
+          a.cell.on,
+          .taken.on {
+            background: #e8e8e8;
+            outline: none;
+          }
+          .p2ball {
+            filter: hue-rotate(235deg);
+          }
+          .scroller {
+            scrollbar-width: none;
+          }
+          .scroller::-webkit-scrollbar {
+            display: none;
+          }
+          .scroller:focus-visible {
+            outline: 3px solid #181818;
+            outline-offset: 3px;
+          }
+          .sbar {
+            width: 36px;
+            height: 432px;
+            display: flex;
+            flex-direction: column;
+            flex: none;
+          }
+          .sbtn,
+          .sthumb {
+            box-sizing: border-box;
+            background: #181818;
+            border: 0;
+            box-shadow: inset 3px 3px 0 #585858;
+          }
+          .sbtn {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font: inherit;
+          }
+          .strack {
+            position: relative;
+            flex: 1;
+            background-color: #585858;
+            background-image: conic-gradient(#181818 25%, #585858 0 50%, #181818 0 75%, #585858 0);
+            background-size: 6px 6px;
+          }
+          .sthumb {
+            position: absolute;
+            left: 0;
+            width: 36px;
+            cursor: grab;
+          }
+          .slot {
+            width: 64px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .slotlink {
+            display: block;
+            border-radius: 4px;
+          }
+          .slotlink:hover,
+          .slotlink:focus-visible {
+            background: #e8e8e8;
+            outline: none;
+          }
+          .cur {
+            flex: none;
+          }
+          button {
+            font: inherit;
+            color: inherit;
+            background: none;
+            border: 0;
+            padding: 0;
+            cursor: pointer;
+          }
+          .btn {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 240px;
+            box-sizing: border-box;
+            padding: 36px 24px;
+            font-size: 24px;
+            border: 6px solid #181818;
+          }
+          .btn .cur {
+            position: absolute;
+            left: 30px;
+            top: 50%;
+            margin-top: -12px;
+            visibility: hidden;
+          }
+          .btn:hover .cur,
+          .btn:focus-visible .cur {
+            visibility: visible;
+          }
+          .btn:focus-visible {
+            outline: none;
+            background-color: #e8e8e8;
+          }
+          .btn.primary {
+            background-color: #181818;
+            color: #f8f8f8;
+            --l: #f8f8f8;
+            --e: #181818;
+          }
+          .btn.primary path {
+            fill: #f8f8f8;
+          }
+          a.btn {
+            color: inherit;
+            text-decoration: none;
+          }
+          a.btn.primary {
+            color: #f8f8f8;
+          }
+          .tag {
+            display: inline-block;
+            width: 148px;
+            height: 28px;
+            box-sizing: border-box;
+            text-align: center;
+            font-size: 16px;
+            line-height: 28px;
+            color: #f8f8f8;
+            clip-path: polygon(
+              4px 0,
+              calc(100% - 4px) 0,
+              calc(100% - 4px) 4px,
+              100% 4px,
+              100% calc(100% - 4px),
+              calc(100% - 4px) calc(100% - 4px),
+              calc(100% - 4px) 100%,
+              4px 100%,
+              4px calc(100% - 4px),
+              0 calc(100% - 4px),
+              0 4px,
+              4px 4px
+            );
+          }
+          /* Pixel corners: two 3px steps off the outer edge, a 3px square rounding the thick line's inner edge, one step off the thin line */
+          .frame,
+          .btn {
+            --l: #181818;
+            --e: var(--l);
+            background-image:
+              linear-gradient(var(--l), var(--l)), linear-gradient(var(--l), var(--l)),
+              linear-gradient(var(--l), var(--l)), linear-gradient(var(--l), var(--l)),
+              linear-gradient(var(--e), var(--e)), linear-gradient(var(--e), var(--e)),
+              linear-gradient(var(--e), var(--e)), linear-gradient(var(--e), var(--e));
+            background-position:
+              left 6px top 3px,
+              left 6px bottom 3px,
+              left 3px top 6px,
+              right 3px top 6px,
+              left top,
+              right top,
+              left bottom,
+              right bottom;
+            background-size:
+              calc(100% - 12px) 3px,
+              calc(100% - 12px) 3px,
+              3px calc(100% - 12px),
+              3px calc(100% - 12px),
+              3px 3px,
+              3px 3px,
+              3px 3px,
+              3px 3px;
+            background-repeat: no-repeat;
+          }
+          .frame,
+          .btn {
+            clip-path: polygon(
+              6px 0,
+              calc(100% - 6px) 0,
+              calc(100% - 6px) 3px,
+              calc(100% - 3px) 3px,
+              calc(100% - 3px) 6px,
+              100% 6px,
+              100% calc(100% - 6px),
+              calc(100% - 3px) calc(100% - 6px),
+              calc(100% - 3px) calc(100% - 3px),
+              calc(100% - 6px) calc(100% - 3px),
+              calc(100% - 6px) 100%,
+              6px 100%,
+              6px calc(100% - 3px),
+              3px calc(100% - 3px),
+              3px calc(100% - 6px),
+              0 calc(100% - 6px),
+              0 6px,
+              3px 6px,
+              3px 3px,
+              6px 3px
+            );
+          }
+        </style>
+      </helmet>
+      <div
+        class="gb"
+        style="
+          width: 1200px;
+          height: 900px;
+          box-sizing: border-box;
+          padding: 24px 60px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        "
+      >
+        <h1 style="font-size: 32px; line-height: 48px; text-align: center">{{title}}</h1>
+        <div
+          style="
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 24px;
+            height: 92px;
+            margin-bottom: 12px;
+          "
+        >
+          <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px">
+            <p style="font-size: 16px; line-height: 24px; color: #585858; visibility: {{p1leftVis}}">{{left}}</p>
+            <div aria-label="Player 1 team" style="display: flex; align-items: center; gap: 8px">
+              <sc-for list="{{p1team}}" as="s" hint-placeholder-count="6">
+                <div class="slot">
+                  <sc-if value="{{s.filled}}" hint-placeholder-val="{{ false }}">
+                    <a class="slotlink" href="DetailRented.dc.html" aria-label="View {{s.name}}"
+                      ><div class="spr" style="width: 64px; height: 64px">
+                        <img class="pix" src="{{s.src}}" alt="" style="width: 64px; height: 128px" /></div
+                    ></a>
+                  </sc-if>
+                  <sc-if value="{{s.empty}}" hint-placeholder-val="{{ true }}">
+                    <img
+                      class="pix"
+                      src="/_blob/42adad1d7cf5061d3889e683f8adb86c"
+                      alt="Empty slot"
+                      style="width: 32px; height: 32px; opacity: 0.2"
+                    />
+                  </sc-if>
                 </div>
               </sc-for>
+            </div>
+          </div>
+          <p
+            aria-label="Battle format"
+            style="align-self: center; font-size: 32px; line-height: 48px; text-align: center"
+          >
+            {{format}}
+          </p>
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px">
+            <p style="font-size: 16px; line-height: 24px; color: #585858; visibility: {{p2leftVis}}">{{left}}</p>
+            <div aria-label="Player 2 team" style="display: flex; align-items: center; gap: 8px">
+              <sc-for list="{{p2team}}" as="s" hint-placeholder-count="6">
+                <div class="slot">
+                  <sc-if value="{{s.filled}}" hint-placeholder-val="{{ false }}">
+                    <a class="slotlink" href="DetailRented.dc.html" aria-label="View {{s.name}}"
+                      ><div class="spr" style="width: 64px; height: 64px">
+                        <img class="pix" src="{{s.src}}" alt="" style="width: 64px; height: 128px" /></div
+                    ></a>
+                  </sc-if>
+                  <sc-if value="{{s.empty}}" hint-placeholder-val="{{ true }}">
+                    <img
+                      class="pix p2ball"
+                      src="/_blob/42adad1d7cf5061d3889e683f8adb86c"
+                      alt="Empty slot"
+                      style="width: 32px; height: 32px; opacity: 0.2"
+                    />
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 12px; height: 432px">
+          <div
+            class="scroller"
+            tabindex="0"
+            ref="{{setScroller}}"
+            onScroll="{{onScroll}}"
+            aria-label="Pokémon available to rent, scrollable"
+            style="height: 432px; flex: 1; min-width: 0; overflow-y: auto"
+          >
+            <div
+              role="list"
+              aria-label="Pokémon available to rent"
+              style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); justify-items: center; gap: 0px"
+            >
+              <sc-for list="{{cells}}" as="c" hint-placeholder-count="41">
+                <div role="listitem">
+                  <sc-if value="{{c.free}}" hint-placeholder-val="{{ true }}">
+                    <a
+                      class="cell {{c.on}}"
+                      href="Detail.dc.html"
+                      onMouseEnter="{{c.hover}}"
+                      onFocus="{{c.hover}}"
+                      aria-label="{{c.aria}}"
+                    >
+                      <div class="spr" style="width: 128px; height: 128px">
+                        <img class="pix" src="{{c.src}}" alt="" style="width: 128px; height: 256px" />
+                      </div>
+                    </a>
+                  </sc-if>
+                  <sc-if value="{{c.locked}}" hint-placeholder-val="{{ false }}">
+                    <div class="cell" aria-label="{{c.aria}}">
+                      <div class="spr" style="width: 128px; height: 128px">
+                        <img class="pix" src="{{c.src}}" alt="" style="width: 128px; height: 256px" />
+                      </div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{c.taken}}" hint-placeholder-val="{{ false }}">
+                    <div class="cell taken {{c.on}}" onMouseEnter="{{c.hover}}">
+                      <img
+                        class="pix {{c.ballCls}}"
+                        src="/_blob/fb383c33e038829411911e9eeb755646"
+                        alt="{{c.aria}}"
+                        style="width: 96px; height: 96px"
+                      />
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div class="sbar" aria-hidden="true">
+            <button type="button" class="sbtn" tabindex="-1" onClick="{{scrollUp}}">
+              <svg width="21" height="12" viewBox="0 0 7 4" shape-rendering="crispEdges">
+                <path d="M3 0h1v1h1v1h1v1h1v1H0V3h1V2h1V1h1z" fill="#F8F8F8"></path>
+              </svg>
+            </button>
+            <div class="strack" onPointerDown="{{trackDown}}">
+              <div class="sthumb" onPointerDown="{{thumbDown}}" style="top: {{thumbTop}}; height: {{thumbH}}"></div>
+            </div>
+            <button type="button" class="sbtn" tabindex="-1" onClick="{{scrollDown}}">
+              <svg width="21" height="12" viewBox="0 0 7 4" shape-rendering="crispEdges" style="transform: scaleY(-1)">
+                <path d="M3 0h1v1h1v1h1v1H0V3h1V2h1V1h1z" fill="#F8F8F8"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <p style="font-size: 16px; line-height: 24px; text-align: center; color: #585858; visibility: {{hintVis}}">
+          Hover for moves · Click for details
+        </p>
+        <div class="frame" style="flex-grow: 1; padding: 18px 36px; display: flex; flex-direction: column">
+          <sc-if value="{{hasInfo}}" hint-placeholder-val="{{ true }}">
+            <div style="flex: 1; display: flex; align-items: center; gap: 48px">
+              <div style="width: 308px; flex: none; display: flex; flex-direction: column; gap: 8px">
+                <div style="display: flex; align-items: center; gap: 12px; height: 32px">
+                  <img class="pix" src="{{info.ballSrc}}" alt="" style="width: 32px; height: 32px" />
+                  <p style="font-size: 24px; line-height: 32px">{{info.name}}</p>
+                </div>
+                <div style="display: flex; gap: 12px">
+                  <sc-for list="{{info.types}}" as="t" hint-placeholder-count="2">
+                    <span class="tag" style="background: {{t.color}}">{{t.label}}</span>
+                  </sc-for>
+                </div>
+                <p aria-label="Ability" style="font-size: 16px; line-height: 24px">{{info.ability}}</p>
+                <div aria-label="Held item" style="display: flex; align-items: center; gap: 12px; height: 32px">
+                  <img
+                    class="pix"
+                    src="/_blob/304d19156319bb03d1ef9b08ad02f23e"
+                    alt="Held item"
+                    style="width: 32px; height: 32px"
+                  />
+                  <span style="font-size: 16px">{{info.item}}</span>
+                </div>
+              </div>
+              <div style="flex: 1; min-width: 0">
+                <sc-if value="{{info.isTaken}}" hint-placeholder-val="{{ false }}">
+                  <p style="font-size: 24px; line-height: 48px">Rented by {{info.takenBy}}.</p>
+                </sc-if>
+                <sc-if value="{{info.isFree}}" hint-placeholder-val="{{ true }}">
+                  <div
+                    aria-label="Moves"
+                    style="
+                      display: grid;
+                      grid-template-columns: repeat(2, minmax(0, 1fr));
+                      column-gap: 36px;
+                      row-gap: 16px;
+                    "
+                  >
+                    <sc-for list="{{info.moves}}" as="m" hint-placeholder-count="4">
+                      <div style="display: flex; flex-direction: column">
+                        <span style="font-size: 24px; line-height: 32px">{{m.name}}</span>
+                        <span style="font-size: 16px; line-height: 24px; text-align: right">PP {{m.pp}}/{{m.pp}}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{noInfo}}" hint-placeholder-val="{{ false }}">
+            <p style="font-size: 24px; line-height: 48px">{{prompt1}}</p>
+            <p style="font-size: 24px; line-height: 48px">{{prompt2}}</p>
+          </sc-if>
+          <sc-if value="{{done}}" hint-placeholder-val="{{ false }}">
+            <div style="flex: 1; display: flex; align-items: center; justify-content: center">
+              <a class="btn primary" href="TeamOrder.dc.html" style="width: 384px">
+                <svg
+                  class="cur"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 8 8"
+                  shape-rendering="crispEdges"
+                  aria-hidden="true"
+                >
+                  <path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path>
+                </svg>
+                START BATTLE
+              </a>
             </div>
           </sc-if>
         </div>
       </div>
-    </sc-if>
-    <sc-if value="{{noInfo}}" hint-placeholder-val="{{ false }}">
-      <p style="font-size: 24px; line-height: 48px">{{prompt1}}</p>
-      <p style="font-size: 24px; line-height: 48px">{{prompt2}}</p>
-    </sc-if>
-    <sc-if value="{{done}}" hint-placeholder-val="{{ false }}">
-      <div style="flex: 1; display: flex; align-items: center; justify-content: center">
-        <a class="btn primary" href="TeamOrder.dc.html" style="width: 384px">
-          <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
-          START BATTLE
-        </a>
-      </div>
-    </sc-if>
-  </div>
-</div>
-</x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"p1picks":{"editor":"text","default":""},"p2picks":{"editor":"text","default":""},"hover":{"editor":"int","min":0,"max":41,"default":1},"draft":{"editor":"enum","options":["","pokeball"],"default":""},"$preview":{"width":1200,"height":900}}'>
-class Component extends DCLogic {
-  constructor(props) {
-    super(props);
-    this.state = { h: null, st: 0, sh: 1, ch: 1 };
-  }
-  componentDidMount() {
-    this.t = setTimeout(() => this.measure(), 50);
-  }
-  componentWillUnmount() {
-    clearTimeout(this.t);
-    if (this.stopDrag) this.stopDrag();
-  }
-  measure() {
-    const el = this.scroller;
-    if (el) this.setState({ st: el.scrollTop, sh: el.scrollHeight, ch: el.clientHeight });
-  }
-  renderVals() {
-    // Custom scrollbar: 432px bar = 36px up button + 360px track + 36px down button
-    const TRACK = 360;
-    const ROW = 108;
-    const { st, sh, ch } = this.state;
-    const max = Math.max(1, sh - ch);
-    const thumbPx = sh <= ch ? TRACK : Math.max(36, Math.round(TRACK * ch / sh));
-    const thumbTopPx = sh <= ch ? 0 : Math.round(st / max * (TRACK - thumbPx));
-    const scrollBy = (dy) => this.scroller && this.scroller.scrollBy({ top: dy, behavior: 'smooth' });
-    const trackDown = (e) => {
-      if (e.target !== e.currentTarget) return;
-      const rect = e.currentTarget.getBoundingClientRect();
-      const y = (e.clientY - rect.top) * TRACK / rect.height;
-      scrollBy(y < thumbTopPx ? -ch : ch);
-    };
-    const thumbDown = (e) => {
-      const el = this.scroller;
-      if (!el || sh <= ch) return;
-      e.preventDefault();
-      // The canvas may be zoomed: convert screen pixels back to design pixels
-      const scale = e.currentTarget.parentElement.getBoundingClientRect().height / TRACK;
-      const startY = e.clientY;
-      const start = el.scrollTop;
-      const ratio = max / (TRACK - thumbPx);
-      const move = (ev) => { el.scrollTop = start + (ev.clientY - startY) / scale * ratio; };
-      const up = () => this.stopDrag && this.stopDrag();
-      this.stopDrag = () => {
-        window.removeEventListener('pointermove', move);
-        window.removeEventListener('pointerup', up);
-        this.stopDrag = null;
-      };
-      window.addEventListener('pointermove', move);
-      window.addEventListener('pointerup', up);
-    };
-    // Draft pool: [name, types, icon blob id]
-    const STANDARD = [
-      ['VENUSAUR', 'GRASS POISON', '306822b5b874f91ba29da9143239f925'],
-      ['CHARIZARD', 'FIRE FLYING', 'fdc9afe1d3ee4535cc58e8d64c0fa82d'],
-      ['BLASTOISE', 'WATER', '17fbd00ba256194c1bb6229c837a8236'],
-      ['RAICHU', 'ELECTRIC', '12116b3c1ed02964fdf7c7c0ee361067'],
-      ['NIDOKING', 'POISON GROUND', 'dd91d63bbe065beedf1c16e774194570'],
-      ['NIDOQUEEN', 'POISON GROUND', 'd0f4d67ce2240135666373a17189d0b6'],
-      ['NINETALES', 'FIRE', '6911748f92ca0e1d5708851baa1fc098'],
-      ['ARCANINE', 'FIRE', 'b549b068a760cfac423e61bdb5d2cc64'],
-      ['ALAKAZAM', 'PSYCHIC', 'c25458a95948aa9045b1bac83777ada4'],
-      ['MACHAMP', 'FIGHTING', '56adfc606d626b7878b3ec711b09a538'],
-      ['GENGAR', 'GHOST POISON', 'f777e20e17c63332aea4dab6a5721cbb'],
-      ['GOLEM', 'ROCK GROUND', 'aa3e27dcb0e5c43b7904ea7a974b0638'],
-      ['SLOWBRO', 'WATER PSYCHIC', '0c62d17a0b81ef5fc1c9e628b9ccf156'],
-      ['STARMIE', 'WATER PSYCHIC', '22b72198a1d859b518905519db5f43af'],
-      ['JYNX', 'ICE PSYCHIC', '84208ea82876e1dc4525a2a2ddcf32c6'],
-      ['GYARADOS', 'WATER FLYING', 'db7415dad60d2c609f07bc348686093b'],
-      ['LAPRAS', 'WATER ICE', '30e03c98871bfb829d5c337179f2ab46'],
-      ['SNORLAX', 'NORMAL', '8eca4cdf0e562954f2b141182ad432f5'],
-      ['DRAGONITE', 'DRAGON FLYING', '70fdd9aa41dfbf01ce9085c9ee344623'],
-      ['AERODACTYL', 'ROCK FLYING', '80dddd5a92082476f68d053262f6fda3'],
-      ['MEGANIUM', 'GRASS', '438fe50b84f72d8409bc5be6cf2c8445'],
-      ['TYPHLOSION', 'FIRE', '2ab5b35c6562ee9bc002398db8d93170'],
-      ['FERALIGATR', 'WATER', '75811f7abf5913a3a1bffc651f321e80'],
-      ['AMPHAROS', 'ELECTRIC', '89dfb3749bef90e99fe2979f7d693155'],
-      ['AZUMARILL', 'WATER', '1b280762d3f2ec9199baaf6a45f05f97'],
-      ['ESPEON', 'PSYCHIC', '6eb54a67a386c80b42172697faba72c4'],
-      ['UMBREON', 'DARK', 'd9c40340fac330e0c4397407caca7eab'],
-      ['SCIZOR', 'BUG STEEL', 'f337c3d1d07de7d7ad52748ab67cf8c1'],
-      ['HERACROSS', 'BUG FIGHTING', '0146f56a29d76e01016c2451d5bb7439'],
-      ['SKARMORY', 'STEEL FLYING', '50b4118af0ef5eace503910fe0569056'],
-      ['HOUNDOOM', 'DARK FIRE', 'c9919cdba2800d9e86121f0b58dc9972'],
-      ['KINGDRA', 'WATER DRAGON', '0595b79dd88b11df378d507e44c0937b'],
-      ['DONPHAN', 'GROUND', '75bfa2b8c623b76c29c81cd6e68931fe'],
-      ['BLISSEY', 'NORMAL', '17d01c5943b4048a5277bba5019196e1'],
-      ['TYRANITAR', 'ROCK DARK', 'a0c6aad3e5c4a34d09bd20acb400ca99'],
-      ['CROBAT', 'POISON FLYING', '18c3d603516c234bded3b21bc7fd617c'],
-      ['STEELIX', 'STEEL GROUND', '33edfe3e3a41ce86f9743189bc6e0f23'],
-      ['POLITOED', 'WATER', '5b5da011ebe735480619db9be738fddf'],
-      ['MANTINE', 'WATER FLYING', '4895dd543ff02fa462a8b9bedbf4a551'],
-      ['MILTANK', 'NORMAL', 'b90aa033e69727c1872aecaa302dd7bb'],
-      ['ZAPDOS', 'ELECTRIC FLYING', '3caaf4f1640a8b9d31be5b3059e23bf2']
-    ];
-    // Poké Ball draft: only Poké Ball tier Pokémon, i.e. not isGreat, isUltra or isMaster
-    // in data/pokemon (all of them as of this design)
-    const POKEBALL = [
-      ['ARBOK', 'POISON', '5d7e961fedfeb81b4296a743b40601e3'],
-      ['ARIADOS', 'BUG POISON', 'ff018a24c26b2add41cc062e264e89c3'],
-      ['AZUMARILL', 'WATER FAIRY', '1b280762d3f2ec9199baaf6a45f05f97'],
-      ['BEEDRILL', 'BUG POISON', 'f4bce01dc52169b215692931e1619310'],
-      ['BUTTERFREE', 'BUG FLYING', '212fbf85ed652bebf9cc0934e9c05b2c'],
-      ['CORSOLA', 'WATER ROCK', 'ad79e62f370240a0046cf55d2130fb06'],
-      ['DELIBIRD', 'ICE FLYING', '8d3f421c805ce82802d979ef95d00cbd'],
-      ['DITTO', 'NORMAL', '4c4e5c48569af323ffe5b7e42ab31f74'],
-      ['DODRIO', 'NORMAL FLYING', 'b8f6a2189b7e9d1169b4f0b9a07d4a4b'],
-      ['DUGTRIO', 'GROUND', '2497d61bb8c8b57d0f3dfe051ff0bf46'],
-      ['DUNSPARCE', 'NORMAL', '4a8120292e40727839151ccf64d5b212'],
-      ['FARFETCH\'D', 'NORMAL FLYING', '04ba8e591ab4d97caf4ce62afbcf347e'],
-      ['FEAROW', 'NORMAL FLYING', 'd956a677ae1e840a552914c76fa5bdc9'],
-      ['FORRETRESS', 'BUG STEEL', '25af020b4e0830c11873723ffd291f9d'],
-      ['FURRET', 'NORMAL', '91e7ab0737bd7df59ce135dfdeec7e5a'],
-      ['GIRAFARIG', 'NORMAL PSYCHIC', 'b4cef90cfa8cbd2ab5f2173ca159bca3'],
-      ['GRANBULL', 'FAIRY', '12c45b9027afd86410d4619f78959186'],
-      ['HITMONCHAN', 'FIGHTING', '335d1b270593c05df63b64ea90eadac2'],
-      ['HITMONLEE', 'FIGHTING', 'a1e262295af140c75ffcf5a875a8f70f'],
-      ['HITMONTOP', 'FIGHTING', '1e700218e93ebc4a251a8cf4ed5e7b7b'],
-      ['KINGLER', 'WATER', 'e51218b789118b301f7fd16ec4ed9f88'],
-      ['LEDIAN', 'BUG FLYING', 'e3a9a8a726faa0e44251aa55ea54f19b'],
-      ['MANTINE', 'WATER FLYING', '4895dd543ff02fa462a8b9bedbf4a551'],
-      ['MAROWAK', 'GROUND', '6b9965cc4f4cd61c9d61e8074c695779'],
-      ['NOCTOWL', 'NORMAL FLYING', '2dcdb92213097311fb730556e658a7fe'],
-      ['PARASECT', 'BUG GRASS', '1c98d130bba7446abb5d592ee163232b'],
-      ['PERSIAN', 'NORMAL', 'e21c62cf534f90717a4e979c60c56f9a'],
-      ['PRIMEAPE', 'FIGHTING', 'c41c9b96a821c94fca6faf6394720a12'],
-      ['QUAGSIRE', 'WATER GROUND', '2e8daa756049961df385df3b743fc43b'],
-      ['QWILFISH', 'WATER POISON', '2301f2396158a582722158b9ebdf31ba'],
-      ['RATICATE', 'NORMAL', 'a1864dfb932b7703c6406173b1126fef'],
-      ['SANDSLASH', 'GROUND', 'd9e04542a4af0465b0247f3da9af2e76'],
-      ['SMEARGLE', 'NORMAL', '133b0a415e72e418b2995da20dd6f9a1'],
-      ['STANTLER', 'NORMAL', '9cbb5132ac884dda181328d99a51dff5'],
-      ['SUDOWOODO', 'ROCK', '11b1cc36a1f085661660d6bc85cbcc35'],
-      ['VENOMOTH', 'BUG POISON', 'ebb525fd2de3e96b6c474e6ccc45c287'],
-      ['WIGGLYTUFF', 'NORMAL FAIRY', 'a94e91679945d1e8cc560d9848bab357'],
-      ['WOBBUFFET', 'PSYCHIC', 'e1528a34abb1219f67185b5d05b48edd']
-    ];
-    const pokeBall = this.props.draft === 'pokeball';
-    const POOL = pokeBall ? POKEBALL : STANDARD;
-    const IDS = POOL.map((p) => p[2]);
-    // Sample: pool numbers that get a Master Ball (Dragonite, Tyranitar, Zapdos); none in a Poké Ball draft
-    const MASTER = pokeBall ? [] : [19, 35, 41];
-    const TYPE = {
-      BUG: '#94bc4a', DARK: '#736c75', DRAGON: '#6a7baf', ELECTRIC: '#e5c531', FAIRY: '#e397d1',
-      FIGHTING: '#cb5f48', FIRE: '#ea7a3c', FLYING: '#7da6de', GHOST: '#846ab6', GRASS: '#71c558',
-      GROUND: '#cc9f4f', ICE: '#70cbd4', NORMAL: '#aab09f', POISON: '#b468b7', PSYCHIC: '#e5709b',
-      ROCK: '#b2a061', STEEL: '#89a1b0', WATER: '#539ae2', '???': '#81a596'
-    };
-    // [name, PP] per move; only Venusaur has real data so far
-    const MOVES = pokeBall ? {} : {
-      1: [['SLUDGE BOMB', 10], ['ENERGY BALL', 10], ['SLEEP POWDER', 15], ['LEECH SEED', 10]]
-    };
-    const ABILITY = pokeBall ? {} : { 1: 'Overgrow' };
-    const pad = (n) => (n < 10 ? '0' : '') + n;
-    const dex = (n) => ({
-      name: POOL[n - 1][0],
-      types: POOL[n - 1][1].split(' '),
-      ability: ABILITY[n] || '[ABILITY]',
-      moves: (MOVES[n] || [['[MOVE]', '--'], ['[MOVE]', '--'], ['[MOVE]', '--'], ['[MOVE]', '--']])
-        .map(([name, pp]) => ({ name, pp }))
-    });
-    const parse = (s) => String(s || '').split(',').map((x) => parseInt(x, 10)).filter((x) => x > 0 && x <= IDS.length);
-    const p1 = parse(this.props.p1picks);
-    const p2 = parse(this.props.p2picks);
-    const h = this.state.h != null ? this.state.h : (this.props.hover ?? 1);
+    </x-dc>
+    <script
+      type="text/x-dc"
+      data-dc-script
+      data-props='{"p1picks":{"editor":"text","default":""},"p2picks":{"editor":"text","default":""},"hover":{"editor":"int","min":0,"max":41,"default":1},"draft":{"editor":"enum","options":["","pokeball"],"default":""},"$preview":{"width":1200,"height":900}}'
+    >
+      class Component extends DCLogic {
+        constructor(props) {
+          super(props);
+          this.state = { h: null, st: 0, sh: 1, ch: 1 };
+        }
+        componentDidMount() {
+          this.t = setTimeout(() => this.measure(), 50);
+        }
+        componentWillUnmount() {
+          clearTimeout(this.t);
+          if (this.stopDrag) this.stopDrag();
+        }
+        measure() {
+          const el = this.scroller;
+          if (el) this.setState({ st: el.scrollTop, sh: el.scrollHeight, ch: el.clientHeight });
+        }
+        renderVals() {
+          // Custom scrollbar: 432px bar = 36px up button + 360px track + 36px down button
+          const TRACK = 360;
+          const ROW = 144;
+          const { st, sh, ch } = this.state;
+          const max = Math.max(1, sh - ch);
+          const thumbPx = sh <= ch ? TRACK : Math.max(36, Math.round(TRACK * ch / sh));
+          const thumbTopPx = sh <= ch ? 0 : Math.round(st / max * (TRACK - thumbPx));
+          const scrollBy = (dy) => this.scroller && this.scroller.scrollBy({ top: dy, behavior: 'smooth' });
+          const trackDown = (e) => {
+            if (e.target !== e.currentTarget) return;
+            const rect = e.currentTarget.getBoundingClientRect();
+            const y = (e.clientY - rect.top) * TRACK / rect.height;
+            scrollBy(y < thumbTopPx ? -ch : ch);
+          };
+          const thumbDown = (e) => {
+            const el = this.scroller;
+            if (!el || sh <= ch) return;
+            e.preventDefault();
+            // The canvas may be zoomed: convert screen pixels back to design pixels
+            const scale = e.currentTarget.parentElement.getBoundingClientRect().height / TRACK;
+            const startY = e.clientY;
+            const start = el.scrollTop;
+            const ratio = max / (TRACK - thumbPx);
+            const move = (ev) => { el.scrollTop = start + (ev.clientY - startY) / scale * ratio; };
+            const up = () => this.stopDrag && this.stopDrag();
+            this.stopDrag = () => {
+              window.removeEventListener('pointermove', move);
+              window.removeEventListener('pointerup', up);
+              this.stopDrag = null;
+            };
+            window.addEventListener('pointermove', move);
+            window.addEventListener('pointerup', up);
+          };
+          // Draft pool: [name, types, icon blob id]
+          const STANDARD = [
+            ['VENUSAUR', 'GRASS POISON', '306822b5b874f91ba29da9143239f925'],
+            ['CHARIZARD', 'FIRE FLYING', 'fdc9afe1d3ee4535cc58e8d64c0fa82d'],
+            ['BLASTOISE', 'WATER', '17fbd00ba256194c1bb6229c837a8236'],
+            ['RAICHU', 'ELECTRIC', '12116b3c1ed02964fdf7c7c0ee361067'],
+            ['NIDOKING', 'POISON GROUND', 'dd91d63bbe065beedf1c16e774194570'],
+            ['NIDOQUEEN', 'POISON GROUND', 'd0f4d67ce2240135666373a17189d0b6'],
+            ['NINETALES', 'FIRE', '6911748f92ca0e1d5708851baa1fc098'],
+            ['ARCANINE', 'FIRE', 'b549b068a760cfac423e61bdb5d2cc64'],
+            ['ALAKAZAM', 'PSYCHIC', 'c25458a95948aa9045b1bac83777ada4'],
+            ['MACHAMP', 'FIGHTING', '56adfc606d626b7878b3ec711b09a538'],
+            ['GENGAR', 'GHOST POISON', 'f777e20e17c63332aea4dab6a5721cbb'],
+            ['GOLEM', 'ROCK GROUND', 'aa3e27dcb0e5c43b7904ea7a974b0638'],
+            ['SLOWBRO', 'WATER PSYCHIC', '0c62d17a0b81ef5fc1c9e628b9ccf156'],
+            ['STARMIE', 'WATER PSYCHIC', '22b72198a1d859b518905519db5f43af'],
+            ['JYNX', 'ICE PSYCHIC', '84208ea82876e1dc4525a2a2ddcf32c6'],
+            ['GYARADOS', 'WATER FLYING', 'db7415dad60d2c609f07bc348686093b'],
+            ['LAPRAS', 'WATER ICE', '30e03c98871bfb829d5c337179f2ab46'],
+            ['SNORLAX', 'NORMAL', '8eca4cdf0e562954f2b141182ad432f5'],
+            ['DRAGONITE', 'DRAGON FLYING', '70fdd9aa41dfbf01ce9085c9ee344623'],
+            ['AERODACTYL', 'ROCK FLYING', '80dddd5a92082476f68d053262f6fda3'],
+            ['MEGANIUM', 'GRASS', '438fe50b84f72d8409bc5be6cf2c8445'],
+            ['TYPHLOSION', 'FIRE', '2ab5b35c6562ee9bc002398db8d93170'],
+            ['FERALIGATR', 'WATER', '75811f7abf5913a3a1bffc651f321e80'],
+            ['AMPHAROS', 'ELECTRIC', '89dfb3749bef90e99fe2979f7d693155'],
+            ['AZUMARILL', 'WATER', '1b280762d3f2ec9199baaf6a45f05f97'],
+            ['ESPEON', 'PSYCHIC', '6eb54a67a386c80b42172697faba72c4'],
+            ['UMBREON', 'DARK', 'd9c40340fac330e0c4397407caca7eab'],
+            ['SCIZOR', 'BUG STEEL', 'f337c3d1d07de7d7ad52748ab67cf8c1'],
+            ['HERACROSS', 'BUG FIGHTING', '0146f56a29d76e01016c2451d5bb7439'],
+            ['SKARMORY', 'STEEL FLYING', '50b4118af0ef5eace503910fe0569056'],
+            ['HOUNDOOM', 'DARK FIRE', 'c9919cdba2800d9e86121f0b58dc9972'],
+            ['KINGDRA', 'WATER DRAGON', '0595b79dd88b11df378d507e44c0937b'],
+            ['DONPHAN', 'GROUND', '75bfa2b8c623b76c29c81cd6e68931fe'],
+            ['BLISSEY', 'NORMAL', '17d01c5943b4048a5277bba5019196e1'],
+            ['TYRANITAR', 'ROCK DARK', 'a0c6aad3e5c4a34d09bd20acb400ca99'],
+            ['CROBAT', 'POISON FLYING', '18c3d603516c234bded3b21bc7fd617c'],
+            ['STEELIX', 'STEEL GROUND', '33edfe3e3a41ce86f9743189bc6e0f23'],
+            ['POLITOED', 'WATER', '5b5da011ebe735480619db9be738fddf'],
+            ['MANTINE', 'WATER FLYING', '4895dd543ff02fa462a8b9bedbf4a551'],
+            ['MILTANK', 'NORMAL', 'b90aa033e69727c1872aecaa302dd7bb'],
+            ['ZAPDOS', 'ELECTRIC FLYING', '3caaf4f1640a8b9d31be5b3059e23bf2']
+          ];
+          // Poké Ball draft: only Poké Ball tier Pokémon, i.e. not isGreat, isUltra or isMaster
+          // in data/pokemon (all of them as of this design)
+          const POKEBALL = [
+            ['ARBOK', 'POISON', '5d7e961fedfeb81b4296a743b40601e3'],
+            ['ARIADOS', 'BUG POISON', 'ff018a24c26b2add41cc062e264e89c3'],
+            ['AZUMARILL', 'WATER FAIRY', '1b280762d3f2ec9199baaf6a45f05f97'],
+            ['BEEDRILL', 'BUG POISON', 'f4bce01dc52169b215692931e1619310'],
+            ['BUTTERFREE', 'BUG FLYING', '212fbf85ed652bebf9cc0934e9c05b2c'],
+            ['CORSOLA', 'WATER ROCK', 'ad79e62f370240a0046cf55d2130fb06'],
+            ['DELIBIRD', 'ICE FLYING', '8d3f421c805ce82802d979ef95d00cbd'],
+            ['DITTO', 'NORMAL', '4c4e5c48569af323ffe5b7e42ab31f74'],
+            ['DODRIO', 'NORMAL FLYING', 'b8f6a2189b7e9d1169b4f0b9a07d4a4b'],
+            ['DUGTRIO', 'GROUND', '2497d61bb8c8b57d0f3dfe051ff0bf46'],
+            ['DUNSPARCE', 'NORMAL', '4a8120292e40727839151ccf64d5b212'],
+            ['FARFETCH\'D', 'NORMAL FLYING', '04ba8e591ab4d97caf4ce62afbcf347e'],
+            ['FEAROW', 'NORMAL FLYING', 'd956a677ae1e840a552914c76fa5bdc9'],
+            ['FORRETRESS', 'BUG STEEL', '25af020b4e0830c11873723ffd291f9d'],
+            ['FURRET', 'NORMAL', '91e7ab0737bd7df59ce135dfdeec7e5a'],
+            ['GIRAFARIG', 'NORMAL PSYCHIC', 'b4cef90cfa8cbd2ab5f2173ca159bca3'],
+            ['GRANBULL', 'FAIRY', '12c45b9027afd86410d4619f78959186'],
+            ['HITMONCHAN', 'FIGHTING', '335d1b270593c05df63b64ea90eadac2'],
+            ['HITMONLEE', 'FIGHTING', 'a1e262295af140c75ffcf5a875a8f70f'],
+            ['HITMONTOP', 'FIGHTING', '1e700218e93ebc4a251a8cf4ed5e7b7b'],
+            ['KINGLER', 'WATER', 'e51218b789118b301f7fd16ec4ed9f88'],
+            ['LEDIAN', 'BUG FLYING', 'e3a9a8a726faa0e44251aa55ea54f19b'],
+            ['MANTINE', 'WATER FLYING', '4895dd543ff02fa462a8b9bedbf4a551'],
+            ['MAROWAK', 'GROUND', '6b9965cc4f4cd61c9d61e8074c695779'],
+            ['NOCTOWL', 'NORMAL FLYING', '2dcdb92213097311fb730556e658a7fe'],
+            ['PARASECT', 'BUG GRASS', '1c98d130bba7446abb5d592ee163232b'],
+            ['PERSIAN', 'NORMAL', 'e21c62cf534f90717a4e979c60c56f9a'],
+            ['PRIMEAPE', 'FIGHTING', 'c41c9b96a821c94fca6faf6394720a12'],
+            ['QUAGSIRE', 'WATER GROUND', '2e8daa756049961df385df3b743fc43b'],
+            ['QWILFISH', 'WATER POISON', '2301f2396158a582722158b9ebdf31ba'],
+            ['RATICATE', 'NORMAL', 'a1864dfb932b7703c6406173b1126fef'],
+            ['SANDSLASH', 'GROUND', 'd9e04542a4af0465b0247f3da9af2e76'],
+            ['SMEARGLE', 'NORMAL', '133b0a415e72e418b2995da20dd6f9a1'],
+            ['STANTLER', 'NORMAL', '9cbb5132ac884dda181328d99a51dff5'],
+            ['SUDOWOODO', 'ROCK', '11b1cc36a1f085661660d6bc85cbcc35'],
+            ['VENOMOTH', 'BUG POISON', 'ebb525fd2de3e96b6c474e6ccc45c287'],
+            ['WIGGLYTUFF', 'NORMAL FAIRY', 'a94e91679945d1e8cc560d9848bab357'],
+            ['WOBBUFFET', 'PSYCHIC', 'e1528a34abb1219f67185b5d05b48edd']
+          ];
+          const pokeBall = this.props.draft === 'pokeball';
+          const POOL = pokeBall ? POKEBALL : STANDARD;
+          const IDS = POOL.map((p) => p[2]);
+          // Sample: pool numbers that get a Master Ball (Dragonite, Tyranitar, Zapdos); none in a Poké Ball draft
+          const MASTER = pokeBall ? [] : [19, 35, 41];
+          const TYPE = {
+            BUG: '#94bc4a', DARK: '#736c75', DRAGON: '#6a7baf', ELECTRIC: '#e5c531', FAIRY: '#e397d1',
+            FIGHTING: '#cb5f48', FIRE: '#ea7a3c', FLYING: '#7da6de', GHOST: '#846ab6', GRASS: '#71c558',
+            GROUND: '#cc9f4f', ICE: '#70cbd4', NORMAL: '#aab09f', POISON: '#b468b7', PSYCHIC: '#e5709b',
+            ROCK: '#b2a061', STEEL: '#89a1b0', WATER: '#539ae2', '???': '#81a596'
+          };
+          // [name, PP] per move; only Venusaur has real data so far
+          const MOVES = pokeBall ? {} : {
+            1: [['SLUDGE BOMB', 10], ['ENERGY BALL', 10], ['SLEEP POWDER', 15], ['LEECH SEED', 10]]
+          };
+          const ABILITY = pokeBall ? {} : { 1: 'Overgrow' };
+          const pad = (n) => (n < 10 ? '0' : '') + n;
+          const dex = (n) => ({
+            name: POOL[n - 1][0],
+            types: POOL[n - 1][1].split(' '),
+            ability: ABILITY[n] || '[ABILITY]',
+            moves: (MOVES[n] || [['[MOVE]', '--'], ['[MOVE]', '--'], ['[MOVE]', '--'], ['[MOVE]', '--']])
+              .map(([name, pp]) => ({ name, pp }))
+          });
+          const parse = (s) => String(s || '').split(',').map((x) => parseInt(x, 10)).filter((x) => x > 0 && x <= IDS.length);
+          const p1 = parse(this.props.p1picks);
+          const p2 = parse(this.props.p2picks);
+          const h = this.state.h != null ? this.state.h : (this.props.hover ?? 1);
 
-    // Player 1 is always the host; names come from the room
-    const NAMES = { 1: 'GOLD', 2: 'SILVER' };
-    // Battle format the host chose on Home (prototype only: read from localStorage;
-    // the app keeps it on the room). The draft is always 6 each regardless.
-    let size = 6;
-    try {
-      const saved = parseInt(localStorage.getItem('picomon.battleSize'), 10);
-      if ([3, 4, 6].includes(saved)) size = saved;
-    } catch (e) {}
-    const format = size + 'V' + size;
+          // Player 1 is always the host; names come from the room
+          const NAMES = { 1: 'GOLD', 2: 'SILVER' };
+          // Battle format the host chose on Home (prototype only: read from localStorage;
+          // the app keeps it on the room). The draft is always 6 each regardless.
+          let size = 6;
+          try {
+            const saved = parseInt(localStorage.getItem('picomon.battleSize'), 10);
+            if ([3, 4, 6].includes(saved)) size = saved;
+          } catch (e) {}
+          const format = size + 'V' + size;
 
-    // Snake order: P1, P2 P2, P1 P1, ... P1
-    const ORDER = [1, 2, 2, 1, 1, 2, 2, 1, 1, 2, 2, 1];
-    const n = Math.min(p1.length + p2.length, 12);
-    const turn = ORDER[n] || 0;
-    let left = 0;
-    for (let i = n; i < ORDER.length && ORDER[i] === turn; i++) left++;
+          // Snake order: P1, P2 P2, P1 P1, ... P1
+          const ORDER = [1, 2, 2, 1, 1, 2, 2, 1, 1, 2, 2, 1];
+          const n = Math.min(p1.length + p2.length, 12);
+          const turn = ORDER[n] || 0;
+          let left = 0;
+          for (let i = n; i < ORDER.length && ORDER[i] === turn; i++) left++;
 
-    const src = (no) => '/_blob/' + IDS[no - 1];
-    const team = (picks) => Array.from({ length: 6 }, (_, i) => {
-      const no = picks[i];
-      return no ? { filled: true, empty: false, src: src(no), name: dex(no).name } : { filled: false, empty: true };
-    });
+          const src = (no) => '/_blob/' + IDS[no - 1];
+          const team = (picks) => Array.from({ length: 6 }, (_, i) => {
+            const no = picks[i];
+            return no ? { filled: true, empty: false, src: src(no), name: dex(no).name } : { filled: false, empty: true };
+          });
 
-    // All 12 picks made: the grid locks and the box shows START BATTLE
-    const done = n >= 12;
+          // All 12 picks made: the grid locks and the box shows START BATTLE
+          const done = n >= 12;
 
-    const cells = IDS.map((_, i) => {
-      const no = i + 1;
-      const by = p1.includes(no) ? 1 : p2.includes(no) ? 2 : 0;
-      return {
-        src: src(no),
-        free: !by && !done,
-        locked: !by && done,
-        taken: !!by,
-        ballCls: by === 2 ? 'p2ball' : '',
-        on: h === no ? 'on' : '',
-        aria: by ? dex(no).name + ' rented by ' + NAMES[by] : 'View ' + dex(no).name,
-        hover: () => this.setState({ h: no })
-      };
-    });
+          const cells = IDS.map((_, i) => {
+            const no = i + 1;
+            const by = p1.includes(no) ? 1 : p2.includes(no) ? 2 : 0;
+            return {
+              src: src(no),
+              free: !by && !done,
+              locked: !by && done,
+              taken: !!by,
+              ballCls: by === 2 ? 'p2ball' : '',
+              on: h === no ? 'on' : '',
+              aria: by ? dex(no).name + ' rented by ' + NAMES[by] : 'View ' + dex(no).name,
+              hover: () => this.setState({ h: no })
+            };
+          });
 
-    let info = null;
-    if (h > 0 && h <= IDS.length) {
-      const d = dex(h);
-      const by = p1.includes(h) ? 1 : p2.includes(h) ? 2 : 0;
-      info = {
-        no: 'No.' + pad(h),
-        name: d.name,
-        types: d.types.map((t) => ({ label: t, color: TYPE[t] })),
-        moves: d.moves,
-        ability: d.ability,
-        // Every Pokémon holds an item; placeholder name
-        item: 'Rocky Helmet',
-        // Certain Pokémon show a Master Ball instead of a Poké Ball
-        ballSrc: MASTER.includes(h)
-          ? '/_blob/1232bfea6d5fbe714ce6f5a04bb1772c'
-          : '/_blob/42adad1d7cf5061d3889e683f8adb86c',
-        isTaken: !!by,
-        isFree: !by,
-        takenBy: NAMES[by]
-      };
-    }
+          let info = null;
+          if (h > 0 && h <= IDS.length) {
+            const d = dex(h);
+            const by = p1.includes(h) ? 1 : p2.includes(h) ? 2 : 0;
+            info = {
+              no: 'No.' + pad(h),
+              name: d.name,
+              types: d.types.map((t) => ({ label: t, color: TYPE[t] })),
+              moves: d.moves,
+              ability: d.ability,
+              // Every Pokémon holds an item; placeholder name
+              item: 'Rocky Helmet',
+              // Certain Pokémon show a Master Ball instead of a Poké Ball
+              ballSrc: MASTER.includes(h)
+                ? '/_blob/1232bfea6d5fbe714ce6f5a04bb1772c'
+                : '/_blob/42adad1d7cf5061d3889e683f8adb86c',
+              isTaken: !!by,
+              isFree: !by,
+              takenBy: NAMES[by]
+            };
+          }
 
-    return {
-      // Your turn says YOUR, so it's clear even if both players picked the same trainer
-      title: turn === 1 ? 'YOUR CHOICE' : turn ? NAMES[turn] + "'S CHOICE" : 'DRAFT COMPLETE',
-      pickNo: Math.min(n + 1, 12),
-      left: turn ? left + (left === 1 ? ' PICK' : ' PICKS') : '',
-      p1leftVis: turn === 1 ? 'visible' : 'hidden',
-      p2leftVis: turn === 2 ? 'visible' : 'hidden',
-      format,
-      p1team: team(p1),
-      p2team: team(p2),
-      cells,
-      setScroller: (el) => { this.scroller = el; },
-      onScroll: () => this.measure(),
-      scrollUp: () => scrollBy(-ROW),
-      scrollDown: () => scrollBy(ROW),
-      trackDown,
-      thumbDown,
-      thumbTop: thumbTopPx + 'px',
-      thumbH: thumbPx + 'px',
-      info: info || { types: [], moves: [] },
-      done,
-      hintVis: done ? 'hidden' : 'visible',
-      hasInfo: !!info && !done,
-      noInfo: !info && !done,
-      prompt1: 'Hover a POKéMON to see its moves.',
-      prompt2: 'Click one to see its details.'
-    };
-  }
-}
-</script>
-</body>
+          return {
+            // Your turn says YOUR, so it's clear even if both players picked the same trainer
+            title: turn === 1 ? 'YOUR CHOICE' : turn ? NAMES[turn] + "'S CHOICE" : 'DRAFT COMPLETE',
+            pickNo: Math.min(n + 1, 12),
+            left: turn ? left + (left === 1 ? ' PICK' : ' PICKS') : '',
+            p1leftVis: turn === 1 ? 'visible' : 'hidden',
+            p2leftVis: turn === 2 ? 'visible' : 'hidden',
+            format,
+            p1team: team(p1),
+            p2team: team(p2),
+            cells,
+            setScroller: (el) => { this.scroller = el; },
+            onScroll: () => this.measure(),
+            scrollUp: () => scrollBy(-ROW),
+            scrollDown: () => scrollBy(ROW),
+            trackDown,
+            thumbDown,
+            thumbTop: thumbTopPx + 'px',
+            thumbH: thumbPx + 'px',
+            info: info || { types: [], moves: [] },
+            done,
+            hintVis: done ? 'hidden' : 'visible',
+            hasInfo: !!info && !done,
+            noInfo: !info && !done,
+            prompt1: 'Hover a POKéMON to see its moves.',
+            prompt2: 'Click one to see its details.'
+          };
+        }
+      }
+    </script>
+  </body>
 </html>

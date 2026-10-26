@@ -25,6 +25,7 @@ import {
   type Beat,
   type Message,
   type Scene,
+  type Weather,
 } from "@/lib/battle-script";
 import type { BattleChoice, BattleResult, BattleView, MoveOption, TeamMember } from "@/lib/battle-types";
 import type { PoolMove, PoolPokemon } from "@/lib/draft-pool";
@@ -74,7 +75,7 @@ function endMessage(result: BattleResult, name: (slot: Slot) => string): Message
 }
 
 /**
- * The battle (boards 4a–4e, 4i): each player sees it from their own side. The
+ * The battle (boards 4a–4e, 4i–4k): each player sees it from their own side. The
  * server's protocol lines drive every message, HP bar and ability box; the
  * server's deadline drives the countdown. Your Pokémon (4f) and Detail (4g/4h)
  * open from here.
@@ -94,7 +95,7 @@ export function BattleScreen({
   subscribeBattle: SubscribeBattle;
   /** For REMATCH: its result (a new game) updates the room state. */
   onAction: RoomAction;
-  /** The battle is gone but the room isn't (a rematch started): fetch the room state. */
+  /** The battle was replaced (a rematch started) or is gone: fetch the room state. */
   onRoomChanged: () => void;
   /** The room is closed (QUIT, or the end screen's time ran out): go to Home. */
   onClosed: () => void;
@@ -146,6 +147,8 @@ export function BattleScreen({
   const viewRef = useRef<BattleView | null>(null);
   const playedRef = useRef(0);
   const queue = useRef<Beat[]>([]);
+  /** The scene once everything queued has played: who is on the field when the next step starts. */
+  const queuedScene = useRef<Scene>(initialScene());
   const beatTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loaded = useRef(false);
   const fetching = useRef<number | null>(null);
@@ -187,7 +190,9 @@ export function BattleScreen({
           ...script.current,
           exact: s.exact,
           maxHpOf: (mon) => team.find((m) => m.details.split(",")[0] === mon)?.maxhp,
+          field: queuedScene.current.active,
         });
+        queuedScene.current = beats.reduce(applyBeat, queuedScene.current);
         if (animate) queue.current.push(...beats);
         else setScene((sc) => replay(sc, beats));
         playedRef.current = s.step;
@@ -201,6 +206,9 @@ export function BattleScreen({
   /** Takes a view of yours: queues its new steps and keeps its request, deadline and result. */
   const applyView = useCallback(
     (incoming: BattleView) => {
+      // This screen comes after the Battle order, so a view back at it is a rematch's
+      // new battle (same draft, next game): the room state moves to it.
+      if (incoming.stage === "team-order") return void roomChangedRef.current();
       let next = incoming;
       const current = viewRef.current;
       // An older step's view (a slow response) has nothing new.
@@ -239,7 +247,7 @@ export function BattleScreen({
           try {
             const res = await fetch(`/api/rooms/${code}/battle?from=${from}`);
             if (res.status === 404) return closedRef.current();
-            // No battle any more (a rematch started): the room state says what's next.
+            // No battle any more: the room state says what's next.
             if (res.status === 409) return roomChangedRef.current();
             if (res.ok) {
               if (live.current) applyView((await res.json()) as BattleView);
@@ -495,7 +503,12 @@ export function BattleScreen({
               </MenuItem>
             ))}
           </div>
-          {hovered && <MoveInfo move={hovered} info={movesById.get(hovered.id)} />}
+          <div className={styles.battle__moveWeather}>
+            <WeatherIcon weather={scene.weather} />
+          </div>
+          <div className={styles.battle__moveInfo} aria-live="polite">
+            {hovered && <MoveInfo move={hovered} info={movesById.get(hovered.id)} />}
+          </div>
         </Frame>
         <Frame className={styles.battle__options} role="menu">
           <MenuItem onClick={() => setMode("battle")}>BACK</MenuItem>
@@ -508,7 +521,12 @@ export function BattleScreen({
         <MessageBox
           className={styles.battle__message}
           message={failed ? FAILED : ["What will", `${me ? me.name.toUpperCase() : ""} do?`]}
-          actions={clock && <Countdown clock={clock} />}
+          actions={
+            <>
+              <WeatherIcon weather={scene.weather} />
+              {clock && <Countdown clock={clock} />}
+            </>
+          }
         />
         <Frame className={styles.battle__options} role="menu">
           <MenuItem
@@ -559,17 +577,23 @@ export function BattleScreen({
     );
   }
 
+  // The opponent's row says how many they have left: fainted balls first, darkened.
+  // Mid-battle it slides in and out in their info box's place; at the intro it's just there.
   const balls = (side: "me" | "opp") => {
     const slot = side === "me" ? you.slot : opponent;
+    const out = side === "opp" ? Math.min(scene.oppFainted, battleSize) : 0;
+    const slide = side === "opp" && !scene.intro && scene.oppBalls ? styles[`battle__balls--${scene.oppBalls}`] : "";
     return (
       <div
-        className={`${styles.battle__balls} ${styles[`battle__balls--${side}`]}`}
-        aria-label={side === "me" ? "Your team" : `${name(opponent)}'s team`}
+        className={`${styles.battle__balls} ${styles[`battle__balls--${side}`]} ${slide}`}
+        {...(side === "me"
+          ? { "aria-label": "Your team" }
+          : { role: "img", "aria-label": `${name(opponent)}'s team: ${battleSize - out} of ${battleSize} left` })}
       >
         {Array.from({ length: battleSize }, (_, k) => (
           <Image
             key={k}
-            className={`${styles.battle__ball} ${slot === 2 ? styles["battle__ball--p2"] : ""}`}
+            className={`${styles.battle__ball} ${slot === 2 ? styles["battle__ball--p2"] : ""} ${k < out ? styles["battle__ball--out"] : ""}`}
             src={BALL_ICON}
             alt=""
             width={32}
@@ -589,6 +613,7 @@ export function BattleScreen({
   const oppSprite = spriteOf(opp);
   const mySprite = spriteOf(me);
   const oppTypes = opp ? (byId.get(opp.pokemonId)?.types ?? []) : [];
+  const myTypes = me ? (byId.get(me.pokemonId)?.types ?? []) : [];
 
   return (
     <Stage className={styles.battle}>
@@ -603,9 +628,10 @@ export function BattleScreen({
           {balls("me")}
         </>
       )}
+      {!scene.intro && scene.oppBalls && balls("opp")}
 
-      {/* A fainted Pokémon's info goes with its sprite. */}
-      {opp && !opp.fainted && (
+      {/* A fainted Pokémon's info goes with its sprite, and steps aside while the ball row is up. */}
+      {opp && !opp.fainted && !scene.oppBalls && (
         <section className={`${styles.battle__info} ${styles["battle__info--opp"]}`} aria-label={opp.name.toUpperCase()}>
           <p className={styles.battle__name}>{opp.name.toUpperCase()}</p>
           <div className={styles.battle__level}>
@@ -651,6 +677,11 @@ export function BattleScreen({
           <p className={styles.battle__hpNumbers}>
             {me.hp}/{me.maxhp}
           </p>
+          <div className={`${styles.battle__types} ${styles["battle__types--me"]}`} aria-label="Types">
+            {myTypes.map((t) => (
+              <TypeBadge key={t} type={t} />
+            ))}
+          </div>
         </section>
       )}
 
@@ -671,7 +702,7 @@ function MoveInfo({ move, info }: { move: MoveOption; info: PoolMove | undefined
   const power = info?.power ? `${info.power}P` : "---";
   const accuracy = info?.accuracy ? `${info.accuracy}%` : "---";
   return (
-    <div className={styles.battle__moveInfo} aria-live="polite">
+    <>
       <div className={styles.battle__moveType}>
         {info && (
           <>
@@ -693,6 +724,30 @@ function MoveInfo({ move, info }: { move: MoveOption; info: PoolMove | undefined
       <p className={styles.battle__moveLine}>
         {move.pp === null ? "PP --" : `PP ${move.pp}/${move.maxpp}`}
       </p>
-    </div>
+    </>
+  );
+}
+
+const WEATHER_LABELS: Record<Weather, string> = {
+  rain: "Rain",
+  sun: "Harsh sunlight",
+  sandstorm: "Sandstorm",
+  hail: "Hail",
+};
+
+/** The active weather's icon; nothing when it's clear. */
+function WeatherIcon({ weather }: { weather: Weather | null }) {
+  if (!weather) return null;
+  const label = WEATHER_LABELS[weather];
+  return (
+    <Image
+      className={styles.battle__weather}
+      src={`/sprites/misc/weather-${weather}.png`}
+      alt={label}
+      title={label}
+      width={48}
+      height={48}
+      unoptimized
+    />
   );
 }

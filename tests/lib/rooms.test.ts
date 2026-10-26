@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { eq } from 'drizzle-orm';
-import { createClient } from '@libsql/client';
+import { createClient, type Client } from '@libsql/client';
 import { drizzle } from 'drizzle-orm/libsql';
 import { migrate } from 'drizzle-orm/libsql/migrator';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -65,6 +65,7 @@ describe('rooms', () => {
       game: 1,
       battleSize: 6,
       draftType: 'standard',
+      lobby: { version: 0, ready: { 1: false, 2: false }, startAt: null, optionsChanged: false, serverNow: T0 },
       typeBattle: null,
       draft: null,
       battle: null,
@@ -97,7 +98,12 @@ describe('rooms', () => {
     // two transactions at once. Use a file-backed DB with two clients instead.
     const dir = mkdtempSync(path.join(tmpdir(), 'rooms-test-'));
     const url = `file:${path.join(dir, 'test.db')}`;
-    const open = (): Db => drizzle(createClient({ url }), { schema });
+    const clients: Client[] = [];
+    const open = (): Db => {
+      const client = createClient({ url });
+      clients.push(client);
+      return drizzle(client, { schema });
+    };
     try {
       const dbA = open();
       const dbB = open();
@@ -109,7 +115,12 @@ describe('rooms', () => {
       ]);
       expect(results.map((r) => r.kind).sort()).toEqual(['full', 'joined']);
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      for (const client of clients) client.close();
+      // Best effort: on Windows libsql holds test.db open until the client is
+      // garbage-collected, even after close(), so the folder can't be removed yet.
+      try {
+        rmSync(dir, { recursive: true, force: true });
+      } catch {}
     }
   });
 

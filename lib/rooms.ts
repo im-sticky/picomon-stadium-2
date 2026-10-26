@@ -5,13 +5,14 @@ import { generateCode } from '@/lib/codes';
 import { draftPickError, TOTAL_PICKS, type DraftPickError } from '@/lib/draft';
 import { getPokemon } from '@/lib/pokemon-dex';
 import { typeBattleWinner } from '@/lib/type-battle';
-import { DEFAULT_BATTLE_SIZE, DEFAULT_DRAFT_TYPE } from '@/lib/types';
-import { GRACE_MS, type BattleResult, type BattleStage, type EndReason } from '@/lib/battle-types';
+import { DEFAULT_BATTLE_SIZE, DEFAULT_DRAFT_TYPE, START_COUNTDOWN_MS } from '@/lib/types';
+import type { BattleResult, BattleStage, EndReason } from '@/lib/battle-types';
 import type {
   BattleSize,
   DraftPick,
   DraftType,
   DraftView,
+  LobbyView,
   Phase,
   PublicPlayer,
   RoomState,
@@ -195,9 +196,21 @@ export async function getRoomState(
     game: room.game,
     battleSize: room.battleSize as BattleSize,
     draftType: room.draftType as DraftType,
+    lobby: phase === 'lobby' ? lobbyView(room, now) : null,
     typeBattle: phase === 'type-battle' ? await typeBattleView(db, room, me.slot) : null,
     draft: phase === 'draft' || phase === 'battle' ? await draftView(db, room) : null,
     battle: phase === 'battle' ? await battleSummary(db, code) : null,
+  };
+}
+
+/** The waiting room's READY state; `now` is the server time it was read at. */
+function lobbyView(room: LiveRoom, now: number): LobbyView {
+  return {
+    version: room.lobbyVersion,
+    ready: { 1: room.p1Ready, 2: room.p2Ready },
+    startAt: room.startAt,
+    optionsChanged: room.optionsChanged,
+    serverNow: now,
   };
 }
 
@@ -223,6 +236,11 @@ export type LiveRoom = {
   typeWinner: number | null;
   firstDrafter: number | null;
   game: number;
+  p1Ready: boolean;
+  p2Ready: boolean;
+  startAt: number | null;
+  optionsChanged: boolean;
+  lobbyVersion: number;
 };
 
 export async function findLiveRoom(db: Pick<Db, 'select'>, code: string, now: number): Promise<LiveRoom | null> {
@@ -236,6 +254,11 @@ export async function findLiveRoom(db: Pick<Db, 'select'>, code: string, now: nu
       typeWinner: rooms.typeWinner,
       firstDrafter: rooms.firstDrafter,
       game: rooms.game,
+      p1Ready: rooms.p1Ready,
+      p2Ready: rooms.p2Ready,
+      startAt: rooms.startAt,
+      optionsChanged: rooms.optionsChanged,
+      lobbyVersion: rooms.lobbyVersion,
     })
     .from(rooms)
     .where(and(eq(rooms.code, code), gt(rooms.expiresAt, now)));
@@ -307,14 +330,114 @@ export async function findActivePlayer(
   return row ?? null;
 }
 
-export type StartResult =
-  | { kind: 'started' }
+/** A lobby change: the room's options and READY state after it, for the `lobby-updated` event. */
+export type LobbyUpdate = { battleSize: BattleSize; draftType: DraftType; lobby: LobbyView };
+
+export type OptionsResult =
+  | ({ kind: 'updated' } & LobbyUpdate)
+  | { kind: 'unchanged' }
   | { kind: 'already-started' }
   | { kind: 'not-found' }
-  | { kind: 'not-host' }
+  | { kind: 'not-host' };
+
+/**
+ * The host changes the battle size and draft type in the waiting room. A change
+ * clears both players' READY and any countdown; `optionsChanged` records whether
+ * anyone was ready, for "Battle options changed.".
+ */
+export async function setRoomOptions(
+  db: Db,
+  code: string,
+  secret: string | null,
+  { battleSize, draftType }: { battleSize: BattleSize; draftType: DraftType },
+  now: number,
+): Promise<OptionsResult> {
+  if (!secret) return { kind: 'not-found' };
+  return withBusyRetry(() =>
+    db.transaction(async (tx): Promise<OptionsResult> => {
+      const room = await findLiveRoom(tx, code, now);
+      const me = room && (await findMember(tx, code, secret));
+      if (!room || !me) return { kind: 'not-found' };
+      if (me.slot !== 1) return { kind: 'not-host' };
+      if (room.phase !== 'lobby') return { kind: 'already-started' };
+      if (room.battleSize === battleSize && room.draftType === draftType) return { kind: 'unchanged' };
+      const next = {
+        battleSize,
+        draftType,
+        p1Ready: false,
+        p2Ready: false,
+        startAt: null,
+        optionsChanged: room.p1Ready || room.p2Ready,
+        lobbyVersion: room.lobbyVersion + 1,
+      };
+      await tx.update(rooms).set(next).where(eq(rooms.code, code));
+      return { kind: 'updated', battleSize, draftType, lobby: lobbyView({ ...room, ...next }, now) };
+    }),
+  );
+}
+
+export type ReadyResult =
+  | ({ kind: 'updated' } & LobbyUpdate)
+  | { kind: 'unchanged' }
+  | { kind: 'already-started' }
+  | { kind: 'not-found' }
   | { kind: 'not-full' };
 
-/** The host moves a full room from the lobby into the type battle (round 1). */
+/**
+ * Sets this player's READY to `ready` (not a toggle, so a retry changes nothing).
+ * The second player to ready sets the countdown: the type battle starts at `startAt`.
+ */
+export async function setReady(
+  db: Db,
+  code: string,
+  secret: string | null,
+  ready: boolean,
+  now: number,
+): Promise<ReadyResult> {
+  if (!secret) return { kind: 'not-found' };
+  return withBusyRetry(() =>
+    db.transaction(async (tx): Promise<ReadyResult> => {
+      const room = await findLiveRoom(tx, code, now);
+      const me = room && (await findMember(tx, code, secret));
+      if (!room || !me) return { kind: 'not-found' };
+      if (room.phase !== 'lobby') return { kind: 'already-started' };
+      const mine = me.slot === 1 ? room.p1Ready : room.p2Ready;
+      if (mine === ready) return { kind: 'unchanged' };
+      if (ready && (await listPlayers(tx, code)).length < 2) return { kind: 'not-full' };
+      const theirs = me.slot === 1 ? room.p2Ready : room.p1Ready;
+      const next = {
+        [me.slot === 1 ? 'p1Ready' : 'p2Ready']: ready,
+        startAt: ready && theirs ? now + START_COUNTDOWN_MS : null,
+        optionsChanged: ready ? false : room.optionsChanged,
+        lobbyVersion: room.lobbyVersion + 1,
+      };
+      await tx.update(rooms).set(next).where(eq(rooms.code, code));
+      return {
+        kind: 'updated',
+        battleSize: room.battleSize as BattleSize,
+        draftType: room.draftType as DraftType,
+        lobby: lobbyView({ ...room, ...next }, now),
+      };
+    }),
+  );
+}
+
+/** How early (server time) a start may come, to absorb a client's clock-offset error. */
+export const START_TOLERANCE_MS = 250;
+
+export type StartResult =
+  | { kind: 'started'; battleSize: BattleSize; draftType: DraftType }
+  | { kind: 'already-started' }
+  | { kind: 'not-found' }
+  | { kind: 'not-full' }
+  | { kind: 'not-ready' }
+  | { kind: 'too-early'; startAt: number };
+
+/**
+ * Moves a full room from the lobby into the type battle (round 1) once both players
+ * are READY and the countdown is over. Either player's client asks when its timer
+ * runs out; the server decides.
+ */
 export async function startTypeBattle(
   db: Db,
   code: string,
@@ -327,11 +450,15 @@ export async function startTypeBattle(
       const room = await findLiveRoom(tx, code, now);
       const me = room && (await findMember(tx, code, secret));
       if (!room || !me) return { kind: 'not-found' };
-      if (me.slot !== 1) return { kind: 'not-host' };
       if (room.phase !== 'lobby') return { kind: 'already-started' };
       if ((await listPlayers(tx, code)).length < 2) return { kind: 'not-full' };
-      await tx.update(rooms).set({ phase: 'type-battle', typeRound: 1 }).where(eq(rooms.code, code));
-      return { kind: 'started' };
+      if (!room.p1Ready || !room.p2Ready || room.startAt === null) return { kind: 'not-ready' };
+      if (now < room.startAt - START_TOLERANCE_MS) return { kind: 'too-early', startAt: room.startAt };
+      await tx
+        .update(rooms)
+        .set({ phase: 'type-battle', typeRound: 1, startAt: null })
+        .where(eq(rooms.code, code));
+      return { kind: 'started', battleSize: room.battleSize as BattleSize, draftType: room.draftType as DraftType };
     }),
   );
 }
@@ -556,55 +683,6 @@ export async function closeRoom(db: Db, code: string, secret: string | null, now
       if (battle?.stage !== 'ended') return { kind: 'not-ended' };
       // Only a still-live room is closed, so a racing second QUIT changes nothing.
       return (await expireRoom(tx, code, now)) ? { kind: 'closed' } : { kind: 'not-found' };
-    }),
-  );
-}
-
-export type RematchResult =
-  | { kind: 'requested'; slot: Slot }
-  | { kind: 'already-requested' }
-  | { kind: 'restarted'; game: number }
-  | { kind: 'closed' }
-  | { kind: 'not-ended' }
-  | { kind: 'not-found' };
-
-/**
- * REMATCH after the battle. The first player to ask is recorded; when the other asks
- * too, the room goes back to the type battle as a new game: the type picks, draft
- * picks and battle are deleted, and the battle size and draft type are kept. Asking
- * after the end screen's time is up closes the room instead, as the timeout would.
- */
-export async function requestRematch(db: Db, code: string, secret: string | null, now: number): Promise<RematchResult> {
-  if (!secret) return { kind: 'not-found' };
-  return withBusyRetry(() =>
-    db.transaction(async (tx): Promise<RematchResult> => {
-      const room = await findLiveRoom(tx, code, now);
-      const me = room && (await findMember(tx, code, secret));
-      if (!room || !me) return { kind: 'not-found' };
-      if (room.phase !== 'battle') return { kind: 'not-ended' };
-      const [battle] = await tx
-        .select({ stage: battles.stage, deadline: battles.deadline, rematchBy: battles.rematchBy })
-        .from(battles)
-        .where(eq(battles.roomCode, code));
-      if (battle?.stage !== 'ended') return { kind: 'not-ended' };
-      if (battle.deadline !== null && now >= battle.deadline + GRACE_MS) {
-        return (await expireRoom(tx, code, now)) ? { kind: 'closed' } : { kind: 'not-found' };
-      }
-      if (battle.rematchBy === me.slot) return { kind: 'already-requested' };
-      if (battle.rematchBy === null) {
-        await tx.update(battles).set({ rematchBy: me.slot }).where(eq(battles.roomCode, code));
-        return { kind: 'requested', slot: me.slot };
-      }
-      // The other player asked first: start the next game.
-      await tx.delete(battles).where(eq(battles.roomCode, code));
-      await tx.delete(draftPicks).where(eq(draftPicks.roomCode, code));
-      await tx.delete(typePicks).where(eq(typePicks.roomCode, code));
-      const game = room.game + 1;
-      await tx
-        .update(rooms)
-        .set({ phase: 'type-battle', typeRound: 1, typeWinner: null, firstDrafter: null, game })
-        .where(eq(rooms.code, code));
-      return { kind: 'restarted', game };
     }),
   );
 }

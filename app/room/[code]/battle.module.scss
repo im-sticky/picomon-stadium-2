@@ -1,4 +1,4 @@
-/* The battle (boards 4a–4e, 4i). Everything is absolutely placed on the 1200×900
+/* The battle (boards 4a–4e, 4i–4k). Everything is absolutely placed on the 1200×900
    board, with the sizes in docs/design/README.md. BEM blocks `battle`, `menuItem`
    and `countdown`. */
 @use "../../styles/mixins" as *;
@@ -42,6 +42,20 @@
       right: 72px;
       border-right: 3px solid var(--ink);
     }
+
+    /* Mid-battle the opponent's row slides in from the left edge, and back out once
+       the new Pokémon is in (6 pixel steps). */
+    &--in {
+      animation: ballsIn 0.3s steps(6) both;
+    }
+
+    &--leave {
+      animation: ballsOut 0.3s steps(6) both;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
   }
 
   &__ball {
@@ -50,9 +64,18 @@
     &--p2 {
       filter: hue-rotate(235deg);
     }
+
+    /* A fainted Pokémon's ball: the same sprite, darkened. */
+    &--out {
+      filter: brightness(0.3);
+    }
+
+    &--p2#{&}--out {
+      filter: hue-rotate(235deg) brightness(0.3);
+    }
   }
 
-  /* Name, status slot + L50, the 384px HP bar; then types (opponent) or HP numbers (you). */
+  /* Name, status slot + L50, the 384px HP bar; then types (opponent) or HP numbers and types (you). */
   &__info {
     position: absolute;
     width: 384px;
@@ -62,8 +85,9 @@
       left: 72px;
     }
 
+    /* Raised to make room for the type badges; still clears the bottom boxes. */
     &--me {
-      top: 420px;
+      top: 396px;
       right: 72px;
     }
   }
@@ -100,6 +124,12 @@
     display: flex;
     gap: 12px;
     margin-top: 12px;
+
+    /* Yours sit under the HP numbers, whose 48px line leaves the gap. */
+    &--me {
+      justify-content: flex-end;
+      margin-top: 0;
+    }
   }
 
   &__hpNumbers {
@@ -230,7 +260,8 @@
     }
   }
 
-  /* The moves on the left, the hovered move's info on the right. */
+  /* The moves on the left, the hovered move's info on the right, the weather
+     centred between them. */
   &__moves {
     display: flex;
     flex: 1;
@@ -244,9 +275,22 @@
     flex-direction: column;
   }
 
+  &__moveWeather {
+    display: flex;
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* Keeps its width with nothing hovered, so the weather icon doesn't move. */
   &__moveInfo {
+    flex: none;
     width: 228px;
-    margin-left: auto;
+  }
+
+  /* The active weather's 16px icon at 3×. */
+  &__weather {
+    @include pixelated;
+    flex: none;
   }
 
   &__moveType {
@@ -287,6 +331,18 @@
 @keyframes abilityFromLeft {
   from {
     transform: translateX(-100%);
+  }
+}
+
+@keyframes ballsIn {
+  from {
+    transform: translateX(-480px);
+  }
+}
+
+@keyframes ballsOut {
+  to {
+    transform: translateX(-480px);
   }
 }
 

@@ -7,11 +7,11 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { primary?: boolean
 const buttonClass = (primary?: boolean, className?: string) =>
   [styles.button, primary && styles["button--primary"], className].filter(Boolean).join(" ");
 
-/** The ▶ cursor shown on hover/focus. */
-function Cursor() {
+/** The ▶ cursor shown on hover/focus. `className` places it (a `Button`'s by default). */
+export function Cursor({ className = styles.button__cursor }: { className?: string }) {
   return (
     <svg
-      className={styles.button__cursor}
+      className={className}
       width="24"
       height="24"
       viewBox="0 0 8 8"

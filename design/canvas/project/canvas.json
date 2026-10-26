@@ -23,8 +23,8 @@
       "is_interactive": true,
       "title": "4i · Your ability indicator",
       "w": 1200,
-      "x": 3840,
-      "y": 6200
+      "x": 0,
+      "y": 7300
     },
     "BattleFight.dc.html": {
       "h": 900,
@@ -41,6 +41,38 @@
       "w": 1200,
       "x": 2560,
       "y": 5100
+    },
+    "BattleOppFainted.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "4j · Opponent fainted",
+      "w": 1200,
+      "x": 1280,
+      "y": 7300
+    },
+    "BattleOppSwitch.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "4k · Opponent switches (plays)",
+      "w": 1200,
+      "x": 2560,
+      "y": 7300
+    },
+    "BattleWeather.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "4l · Weather, menu",
+      "w": 1200,
+      "x": 3840,
+      "y": 7300
+    },
+    "BattleWeatherFight.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "4m · Weather, moves",
+      "w": 1200,
+      "x": 5120,
+      "y": 7300
     },
     "BattleTurn.dc.html": {
       "h": 900,
@@ -98,6 +130,14 @@
       "x": 2560,
       "y": 1320
     },
+    "DraftPokeBall.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "2g · Poké Ball draft",
+      "w": 1200,
+      "x": 3840,
+      "y": 1320
+    },
     "DraftRented.dc.html": {
       "h": 900,
       "is_interactive": true,
@@ -135,6 +175,22 @@
       "title": "0d · Both players in",
       "w": 1200,
       "x": 3840,
+      "y": -2629
+    },
+    "LobbyGuest.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "0g · Waiting room, guest",
+      "w": 1200,
+      "x": 5120,
+      "y": -2629
+    },
+    "LobbyReady.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "0h · Getting ready (plays)",
+      "w": 1200,
+      "x": 6400,
       "y": -2629
     },
     "Main.dc.html": {
@@ -191,14 +247,6 @@
       "w": 1200,
       "x": 1280,
       "y": -1464
-    },
-    "DraftPokeBall.dc.html": {
-      "h": 900,
-      "is_interactive": true,
-      "title": "2g · Poké Ball draft",
-      "w": 1200,
-      "x": 3840,
-      "y": 1320
     }
   },
   "createdOnFiles": {
@@ -256,6 +304,8 @@
     "HomeError.dc.html",
     "Lobby.dc.html",
     "LobbyFull.dc.html",
+    "LobbyGuest.dc.html",
+    "LobbyReady.dc.html",
     "Rules.dc.html",
     "Trainers.dc.html",
     "Main.dc.html",
@@ -276,7 +326,11 @@
     "Party.dc.html",
     "DetailBattle.dc.html",
     "DetailFainted.dc.html",
-    "BattleAbilityYou.dc.html"
+    "BattleAbilityYou.dc.html",
+    "BattleOppFainted.dc.html",
+    "BattleOppSwitch.dc.html",
+    "BattleWeather.dc.html",
+    "BattleWeatherFight.dc.html"
   ],
   "pages": [],
   "title": "Picomon Stadium Layout"

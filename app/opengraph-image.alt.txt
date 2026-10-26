@@ -1,0 +1,1 @@
+The Picomon Stadium draft screen: a grid of Game Boy Colour style Pokémon sprites to pick from.

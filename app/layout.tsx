@@ -10,7 +10,11 @@ const pressStart = Press_Start_2P({
 
 export const metadata: Metadata = {
   title: "Picomon Stadium",
-  description: "Room join proof of concept",
+  description:
+    "Pokemon Stadium style drafting and battling imagined in the style of a Game Boy Colour.",
+  icons: {
+    icon: "/favicon.png",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

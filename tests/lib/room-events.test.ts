@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { applyEvent, isWaitingOnOpponent, parseRoomEvent, progress, stateKey, type SyncEvent } from "@/lib/room-events";
-import type { DraftPick, PublicPlayer, RoomState, TypeBattleView } from "@/lib/types";
+import type { DraftPick, LobbyView, PublicPlayer, RoomState, TypeBattleView } from "@/lib/types";
 
 const players: PublicPlayer[] = [
   { id: "a", name: "Ash", trainer: null, slot: 1 },
@@ -13,18 +13,37 @@ const lobby: RoomState = {
   phase: "lobby",
   game: 1,
   battleSize: 6, draftType: "standard",
+  lobby: { version: 0, ready: { 1: false, 2: false }, startAt: null, optionsChanged: false, serverNow: 500 },
   typeBattle: null,
   draft: null,
   battle: null,
 };
+/** The lobby at `version` with these READYs (and so on). */
+const inLobby = (version: number, more: Partial<LobbyView> = {}): RoomState => ({
+  ...lobby,
+  lobby: { ...lobby.lobby!, version, ...more },
+});
+const lobbyUpdate = (version: number, more: Partial<Extract<SyncEvent, { kind: "lobby-updated" }>> = {}): SyncEvent => ({
+  kind: "lobby-updated",
+  version,
+  battleSize: 6,
+  draftType: "standard",
+  ready: { 1: false, 2: false },
+  startAt: null,
+  optionsChanged: false,
+  at: 900,
+  ...more,
+});
 const round = (r: number, more: Partial<TypeBattleView> = {}): RoomState => ({
   ...lobby,
+  lobby: null,
   phase: "type-battle",
   typeBattle: { round: r, yourPick: null, opponentPick: null, winner: null, firstDrafter: null, ...more },
 });
 // The host (slot 1) drafts first: snake order is 1 2 2 1 1 2 ...
 const drafting = (picks: DraftPick[] = []): RoomState => ({
   ...lobby,
+  lobby: null,
   phase: "draft",
   draft: { firstDrafter: 1, picks },
 });
@@ -57,7 +76,7 @@ const picked = (pickIndex: number, slot: 1 | 2, pokemonId: string): SyncEvent =>
 
 describe("applyEvent", () => {
   it("asks for a fetch when there's no state yet", () => {
-    expect(applyEvent(null, { kind: "type-battle-started", round: 1 })).toEqual({ refetch: "no-state" });
+    expect(applyEvent(null, { kind: "type-battle-started", round: 1, battleSize: 6, draftType: "standard" })).toEqual({ refetch: "no-state" });
   });
 
   it("player-joined replaces the roster", () => {
@@ -65,9 +84,52 @@ describe("applyEvent", () => {
     expect(applyEvent(alone, { kind: "player-joined", players })).toEqual({ next: lobby });
   });
 
+  describe("lobby", () => {
+    it("lobby-updated applies the next version: options, READY, countdown and the clock", () => {
+      const event = lobbyUpdate(1, { battleSize: 3, draftType: "pokeball", ready: { 1: true, 2: true }, startAt: 2_900 });
+      expect(applyEvent(lobby, event)).toEqual({
+        next: {
+          ...lobby,
+          battleSize: 3,
+          draftType: "pokeball",
+          lobby: { version: 1, ready: { 1: true, 2: true }, startAt: 2_900, optionsChanged: false, serverNow: 900 },
+        },
+      });
+    });
+
+    it("lobby-updated: an old version is stale, the same one an echo or a conflict, a gap is held", () => {
+      expect(applyEvent(inLobby(3), lobbyUpdate(2))).toEqual({ same: true });
+      // The clock reading (`at`) isn't compared.
+      expect(applyEvent(inLobby(3), lobbyUpdate(3, { at: 1 }))).toEqual({ same: true });
+      expect(applyEvent(inLobby(3), lobbyUpdate(3, { ready: { 1: true, 2: false } }))).toEqual({ refetch: "conflict" });
+      expect(applyEvent(inLobby(3), lobbyUpdate(3, { battleSize: 4 }))).toEqual({ refetch: "conflict" });
+      expect(applyEvent(inLobby(3), lobbyUpdate(5))).toEqual({ hold: true });
+    });
+
+    it("lobby-updated after the start is stale", () => {
+      expect(applyEvent(round(1), lobbyUpdate(9))).toEqual({ same: true });
+    });
+
+    it("type-battle-started takes the options from the event and drops the lobby", () => {
+      const event: SyncEvent = { kind: "type-battle-started", round: 1, battleSize: 4, draftType: "unlimited" };
+      expect(applyEvent(inLobby(4, { ready: { 1: true, 2: true }, startAt: 1 }), event)).toEqual({
+        next: { ...round(1), battleSize: 4, draftType: "unlimited" },
+      });
+    });
+
+    it("stateKey tells READY, options and the countdown apart, but not the clock", () => {
+      const key = stateKey(inLobby(1));
+      expect(stateKey(inLobby(1, { serverNow: 12_345 }))).toBe(key);
+      expect(stateKey(inLobby(1, { ready: { 1: true, 2: false } }))).not.toBe(key);
+      expect(stateKey(inLobby(1, { startAt: 5 }))).not.toBe(key);
+      expect(stateKey(inLobby(1, { optionsChanged: true }))).not.toBe(key);
+      expect(stateKey({ ...inLobby(1), draftType: "pokeball" })).not.toBe(key);
+    });
+  });
+
   describe("type battle", () => {
     it("type-battle-started moves the lobby into round 1, once", () => {
-      const event: SyncEvent = { kind: "type-battle-started", round: 1 };
+      const event: SyncEvent = { kind: "type-battle-started", round: 1, battleSize: 6, draftType: "standard" };
       expect(applyEvent(lobby, event)).toEqual({ next: round(1) });
       expect(applyEvent(round(1), event)).toEqual({ same: true });
     });
@@ -114,7 +176,7 @@ describe("applyEvent", () => {
       for (const event of [
         { kind: "own-type-pick", round: 1, type: "fire" },
         { kind: "type-round-started", round: 1 },
-        { kind: "type-battle-started", round: 1 },
+        { kind: "type-battle-started", round: 1, battleSize: 6, draftType: "standard" },
       ] as SyncEvent[]) {
         const result = applyEvent(state, event);
         if ("next" in result) state = result.next;
@@ -157,7 +219,7 @@ describe("applyEvent", () => {
   describe("battle", () => {
     it("every type battle event is stale", () => {
       const events: SyncEvent[] = [
-        { kind: "type-battle-started", round: 1 },
+        { kind: "type-battle-started", round: 1, battleSize: 6, draftType: "standard" },
         resolved(1),
         { kind: "type-round-started", round: 2 },
         { kind: "own-type-pick", round: 1, type: "fire" },
@@ -203,14 +265,19 @@ describe("rematch-started", () => {
   const ended = battling("ended", { winner: 1, reason: "normal" });
   const rematch: SyncEvent = { kind: "rematch-started", game: 2 };
 
-  it("sends an ended battle back to a fresh type battle, keeping the settings", () => {
+  it("sends an ended battle back to a fresh Battle order, keeping the draft", () => {
     expect(applyEvent(ended, rematch)).toEqual({
-      next: { ...ended, game: 2, phase: "type-battle", typeBattle: round(1).typeBattle, draft: null, battle: null },
+      next: { ...ended, game: 2, battle: { stage: "team-order", result: null } },
     });
   });
 
+  it("puts the next game's Battle order ahead of the ended battle", () => {
+    const next = applyEvent(ended, rematch);
+    expect("next" in next && progress(next.next)).toBeGreaterThan(progress(ended));
+  });
+
   it("is a duplicate once applied, and a conflict if a whole game was missed", () => {
-    expect(applyEvent({ ...round(1), game: 2 }, rematch)).toEqual({ same: true });
+    expect(applyEvent({ ...battling("team-order", null), game: 2 }, rematch)).toEqual({ same: true });
     expect(applyEvent(ended, { kind: "rematch-started", game: 3 })).toEqual({ refetch: "conflict" });
     expect(applyEvent(drafting(), rematch)).toEqual({ refetch: "conflict" });
   });
@@ -223,16 +290,33 @@ describe("rematch-started", () => {
 describe("parseRoomEvent", () => {
   it("accepts each event kind and rejects malformed data", () => {
     const events: SyncEvent[] = [
-      { kind: "type-battle-started", round: 1 },
+      { kind: "type-battle-started", round: 1, battleSize: 6, draftType: "standard" },
       resolved(3, null),
       { kind: "type-round-started", round: 2 },
       { kind: "draft-started", firstDrafter: 2 },
       picked(4, 1, "snorlax"),
       battleStarted,
       { kind: "rematch-started", game: 2 },
+      lobbyUpdate(0),
+      lobbyUpdate(7, { battleSize: 4, draftType: "unlimited", ready: { 1: true, 2: true }, startAt: 3_000, optionsChanged: true }),
     ];
     for (const e of events) expect(parseRoomEvent(JSON.parse(JSON.stringify(e)))).toEqual(e);
     expect(parseRoomEvent({})).toBeNull();
+    for (const bad of [
+      { version: -1 },
+      { version: 1.5 },
+      { version: "2" },
+      { battleSize: 5 },
+      { draftType: "Standard" },
+      { ready: { 1: true } },
+      { ready: { 1: "yes", 2: false } },
+      { startAt: 1.5 },
+      { optionsChanged: 1 },
+      { at: undefined },
+    ]) {
+      expect(parseRoomEvent({ ...lobbyUpdate(1), ...bad })).toBeNull();
+    }
+    expect(parseRoomEvent({ kind: "type-battle-started", round: 1 })).toBeNull();
     expect(parseRoomEvent(null)).toBeNull();
     expect(parseRoomEvent({ kind: "draft-picked", pickIndex: -1, slot: 1, pokemonId: "x" })).toBeNull();
     expect(parseRoomEvent({ kind: "type-round-resolved", round: 1, picks: { 1: "fire", 2: "rock" }, winner: 1 })).toBeNull();
@@ -251,6 +335,9 @@ describe("progress and isWaitingOnOpponent", () => {
     const steps = [
       { ...lobby, players: [players[0]] },
       lobby,
+      inLobby(1, { ready: { 1: true, 2: false } }),
+      inLobby(2, { ready: { 1: true, 2: true }, startAt: 3_000 }),
+      inLobby(99_999),
       round(1),
       round(1, { yourPick: "fire" }),
       round(1, { yourPick: "fire", opponentPick: "fire" }),
@@ -271,6 +358,11 @@ describe("progress and isWaitingOnOpponent", () => {
   });
 
   it("waiting: picked a type, the other player's draft turn, or the winner choosing order", () => {
+    // In the lobby: you're READY and the opponent isn't.
+    expect(isWaitingOnOpponent(lobby)).toBe(false);
+    expect(isWaitingOnOpponent(inLobby(1, { ready: { 1: true, 2: false } }))).toBe(true);
+    expect(isWaitingOnOpponent(inLobby(1, { ready: { 1: false, 2: true } }))).toBe(false);
+    expect(isWaitingOnOpponent(inLobby(2, { ready: { 1: true, 2: true } }))).toBe(false);
     expect(isWaitingOnOpponent(round(1))).toBe(false);
     expect(isWaitingOnOpponent(round(1, { yourPick: "fire" }))).toBe(true);
     expect(isWaitingOnOpponent(round(1, { yourPick: "fire", opponentPick: "water", winner: 2 }))).toBe(true);

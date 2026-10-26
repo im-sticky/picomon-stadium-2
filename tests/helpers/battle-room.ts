@@ -1,7 +1,8 @@
 import type { Db } from '@/db/client';
 import { draftPicks } from '@/db/schema';
 import { draftTurn, TOTAL_PICKS } from '@/lib/draft';
-import { chooseDraftOrder, createRoom, joinRoom, pickType, startTypeBattle } from '@/lib/rooms';
+import { chooseDraftOrder, createRoom, joinRoom, pickType } from '@/lib/rooms';
+import { readyAndStart } from '@/tests/helpers/lobby';
 import type { BattleSize } from '@/lib/types';
 
 export const T0 = 1_000_000;
@@ -29,7 +30,7 @@ export async function draftedRoom(
   const joined = await joinRoom(db, host.code, 'Misty', T0, null);
   if (joined.kind !== 'joined') throw new Error(joined.kind);
   const room: TestRoom = { code: host.code, 1: host.secret, 2: joined.secret };
-  await startTypeBattle(db, room.code, room[1], T0);
+  await readyAndStart(db, room.code, room, T0);
   await pickType(db, room.code, room[1], 'fire', T0);
   await pickType(db, room.code, room[2], 'grass', T0);
   await chooseDraftOrder(db, room.code, room[1], 'first', T0);

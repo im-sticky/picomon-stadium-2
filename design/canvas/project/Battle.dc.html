@@ -35,6 +35,13 @@ a{color:inherit;text-decoration:none}
 .hpfill{height:100%;transition:width .8s linear}
 .balls{display:flex;gap:12px;padding:0 12px 9px;border-bottom:3px solid #181818}
 .p2ball{filter:hue-rotate(235deg)}
+/* A fainted Pokémon's ball: the same sprite, darkened */
+.p2ball.out{filter:hue-rotate(235deg) brightness(.3)}
+/* The opponent's ball row slides in from the left edge, and back out once the new Pokémon is in (6 pixel steps) */
+.balls.in{animation:ballsIn .3s steps(6) both}
+.balls.leave{animation:ballsOut .3s steps(6) both}
+@keyframes ballsIn{from{transform:translateX(-480px)}}
+@keyframes ballsOut{to{transform:translateX(-480px)}}
 .ph{display:flex;align-items:center;justify-content:center;box-sizing:border-box;border:3px dashed #A8A8A8;color:#A8A8A8;font-size:16px}
 .item{display:flex;align-items:center;gap:12px;font-size:24px;line-height:48px;text-align:left}
 .item:hover .cur,.item:focus-visible .cur,.item.on .cur{visibility:visible}
@@ -61,11 +68,6 @@ a{color:inherit;text-decoration:none}
   <sc-if value="{{trainer}}" hint-placeholder-val="{{ false }}">
     <!-- The trainer your opponent picked on Host or join, in the opponent's Pokémon box (3× the 112px PNG) -->
     <div class="abs mon" style="right: 132px; top: 12px"><img class="pix" src="{{oppTrainer}}" alt="{{oppName}}" style="width: 336px; height: 336px"></div>
-    <div class="abs balls" aria-label="{{oppName}}'s team" style="left: 72px; top: 96px; border-left: 3px solid #181818">
-      <sc-for list="{{teamBalls}}" as="b" hint-placeholder-count="6">
-        <img class="pix p2ball" src="/_blob/42adad1d7cf5061d3889e683f8adb86c" alt="" style="width: 32px; height: 32px">
-      </sc-for>
-    </div>
     <div class="abs balls" aria-label="Your team" style="right: 72px; top: 456px; border-right: 3px solid #181818">
       <sc-for list="{{teamBalls}}" as="b" hint-placeholder-count="6">
         <img class="pix" src="/_blob/42adad1d7cf5061d3889e683f8adb86c" alt="" style="width: 32px; height: 32px">
@@ -73,8 +75,18 @@ a{color:inherit;text-decoration:none}
     </div>
   </sc-if>
 
+  <!-- The opponent's balls: at the intro, and again in the info box's place when their Pokémon faints or they switch (fainted ones darkened) -->
+  <sc-if value="{{showOppBalls}}" hint-placeholder-val="{{ false }}">
+    <div class="{{ballsCls}}" role="img" aria-label="{{oppBallsLabel}}" style="left: 72px; top: 96px; border-left: 3px solid #181818">
+      <sc-for list="{{oppBalls}}" as="b" hint-placeholder-count="6">
+        <img class="{{b.cls}}" src="/_blob/42adad1d7cf5061d3889e683f8adb86c" alt="" style="width: 32px; height: 32px">
+      </sc-for>
+    </div>
+  </sc-if>
+
   <!-- Opponent: name, status + level, HP bar (no numbers), sprite top right -->
-  <sc-if value="{{showOpp}}" hint-placeholder-val="{{ true }}">
+  <!-- The info box steps aside while the ball row is showing -->
+  <sc-if value="{{showOppInfo}}" hint-placeholder-val="{{ true }}">
     <section class="abs" aria-label="{{opp.name}}" style="left: 72px; top: 48px; width: 384px">
       <p class="nm">{{opp.name}}</p>
       <div class="lvrow">
@@ -93,6 +105,8 @@ a{color:inherit;text-decoration:none}
         </sc-for>
       </div>
     </section>
+  </sc-if>
+  <sc-if value="{{showOpp}}" hint-placeholder-val="{{ true }}">
     <!-- Front battle sprite (PokemonFront): one frame of the strip at a time, bottom-centred in the box -->
     <div class="abs mon" style="right: 132px; top: 12px"><span class="front" role="img" aria-label="{{opp.name}}" style="background-image: url({{opp.front}}); background-position: 0 {{opp.framePos}}"></span></div>
   </sc-if>
@@ -101,7 +115,8 @@ a{color:inherit;text-decoration:none}
   <sc-if value="{{showMe}}" hint-placeholder-val="{{ true }}">
     <!-- The back pic's bottom sits on the top of the bottom boxes -->
     <div class="abs mon" style="left: 132px; top: 276px"><img class="pix" src="{{me.back}}" alt="{{me.name}}" style="width: 288px; height: 288px"></div>
-    <section class="abs" aria-label="{{me.name}}" style="right: 72px; top: 420px; width: 384px">
+    <!-- Raised to make room for the type badges; still clears the bottom boxes -->
+    <section class="abs" aria-label="{{me.name}}" style="right: 72px; top: 396px; width: 384px">
       <p class="nm">{{me.name}}</p>
       <div class="lvrow">
         <span class="sslot"><sc-if value="{{me.hasStatus}}" hint-placeholder-val="{{ false }}"><span class="stag" style="background: {{me.statusColor}}">{{me.status}}</span></sc-if></span>
@@ -114,6 +129,12 @@ a{color:inherit;text-decoration:none}
         </div>
       </div>
       <p style="font-size: 24px; line-height: 48px; text-align: right">{{me.hp}}/{{me.max}}</p>
+      <!-- Types under the HP numbers; the numbers' 48px line leaves the gap -->
+      <div aria-label="Types" style="display: flex; gap: 12px; justify-content: flex-end">
+        <sc-for list="{{me.types}}" as="t" hint-placeholder-count="2">
+          <span class="tag" style="background: {{t.color}}">{{t.name}}</span>
+        </sc-for>
+      </div>
     </section>
   </sc-if>
 
@@ -146,6 +167,10 @@ a{color:inherit;text-decoration:none}
           <p style="font-size: 24px; line-height: 48px">What will</p>
           <p style="font-size: 24px; line-height: 48px">{{me.name}} do?</p>
         </div>
+        <!-- Active weather, beside the timer: the 16px icon at 3× -->
+        <sc-if value="{{hasWeather}}" hint-placeholder-val="{{ false }}">
+          <img class="pix" src="{{weather.src}}" alt="{{weather.label}}" title="{{weather.label}}" style="width: 48px; height: 48px; flex: none">
+        </sc-if>
         <p role="timer" aria-label="Time left {{timer}}" style="flex: none; font-size: 32px; line-height: 48px; white-space: nowrap; color: {{timerColor}}">{{timer}}</p>
       </div>
     </sc-if>
@@ -160,8 +185,16 @@ a{color:inherit;text-decoration:none}
             </button>
           </sc-for>
         </div>
+        <!-- Active weather, centred between the moves and the info column -->
+        <div style="flex: 1; display: flex; justify-content: center">
+          <sc-if value="{{hasWeather}}" hint-placeholder-val="{{ false }}">
+            <img class="pix" src="{{weather.src}}" alt="{{weather.label}}" title="{{weather.label}}" style="width: 48px; height: 48px">
+          </sc-if>
+        </div>
+        <!-- The info column keeps its width when nothing is hovered, so the weather icon doesn't move -->
+        <div aria-live="polite" style="width: 228px; flex: none">
         <sc-if value="{{showInfo}}" hint-placeholder-val="{{ false }}">
-          <div aria-live="polite" style="margin-left: auto; width: 228px">
+          <div>
             <div style="display: flex; align-items: center; gap: 12px; height: 48px">
               <img class="pix" src="{{info.catSrc}}" alt="{{info.cat}}" style="width: 64px; height: 32px">
               <span class="tag" style="background: {{info.typeColor}}">{{info.type}}</span>
@@ -170,6 +203,7 @@ a{color:inherit;text-decoration:none}
             <p style="font-size: 24px; line-height: 48px">PP {{info.left}}/{{info.pp}}</p>
           </div>
         </sc-if>
+        </div>
       </div>
     </sc-if>
     <!-- One options box on the right: FIGHT / POKéMON in the menu, BACK in the move list -->
@@ -196,7 +230,7 @@ a{color:inherit;text-decoration:none}
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"timeLeft":{"editor":"int","min":0,"max":75,"default":75},"view":{"editor":"enum","options":["","menu","fight","ability","abilityMe","turn"],"default":""},"myHp":{"editor":"int","min":0,"max":155,"default":155},"oppHp":{"editor":"int","min":0,"max":170,"default":170},"myStatus":{"editor":"enum","options":["","SLP","FRZ","BRN","PSN","PAR"],"default":""},"oppStatus":{"editor":"enum","options":["","SLP","FRZ","BRN","PSN","PAR"],"default":""},"$preview":{"width":1200,"height":900}}'>
+<script type="text/x-dc" data-dc-script data-props='{"timeLeft":{"editor":"int","min":0,"max":75,"default":75},"view":{"editor":"enum","options":["","menu","fight","ability","abilityMe","turn","oppFainted","oppSwitch"],"default":""},"myHp":{"editor":"int","min":0,"max":155,"default":155},"oppHp":{"editor":"int","min":0,"max":170,"default":170},"myStatus":{"editor":"enum","options":["","SLP","FRZ","BRN","PSN","PAR"],"default":""},"oppStatus":{"editor":"enum","options":["","SLP","FRZ","BRN","PSN","PAR"],"default":""},"weather":{"editor":"enum","options":["","rain","sun","sandstorm","hail"],"default":""},"$preview":{"width":1200,"height":900}}'>
 class Component extends DCLogic {
   constructor(props) {
     super(props);
@@ -205,7 +239,11 @@ class Component extends DCLogic {
       myHp: num(props.myHp, 155), oppHp: num(props.oppHp, 170),
       myStatus: props.myStatus || '', oppStatus: props.oppStatus || '',
       pp: [10, 10, 15, 10], hover: null, abil: null, oppFrame: 0,
-      trainer: false, showOpp: true, showMe: true, mode: 'menu', msg: ['', '']
+      trainer: false, showOpp: true, showMe: true, mode: 'menu', msg: ['', ''],
+      // How many of the opponent's Pokémon have fainted, and whether their balls are showing
+      oppOut: 0, oppBalls: false,
+      // Which of the opponent's Pokémon is in (an index into opps()), and the ball row's animation: 'in' or 'leave'
+      oppMon: 0, ballsAnim: 'in'
     };
     // Each board starts at one moment of the battle; the plain board plays the intro
     const VIEWS = {
@@ -215,13 +253,25 @@ class Component extends DCLogic {
       ability: { mode: 'msg', abil: 'opp', msg: ['Go! VENUSAUR!', ''] },
       // Your own Pokémon's ability, mid-battle
       abilityMe: { mode: 'msg', abil: 'me', msg: ['VENUSAUR used', 'ENERGY BALL!'] },
-      turn: { mode: 'msg', msg: ['VENUSAUR used', 'SLUDGE BOMB!'] }
+      turn: { mode: 'msg', msg: ['VENUSAUR used', 'SLUDGE BOMB!'] },
+      // The opponent's Pokémon just fainted: its sprite and info box are gone, their balls show what's left
+      oppFainted: { mode: 'msg', oppHp: 0, showOpp: false, oppBalls: true, oppOut: 1, msg: ['GYARADOS fainted!', ''] },
+      // The opponent switches out: plays on its own once the board mounts
+      oppSwitch: { mode: 'msg', msg: ['Waiting for SILVER...', ''] }
     };
     base.left = Math.min(75, Math.max(0, parseInt(props.timeLeft, 10) >= 0 ? parseInt(props.timeLeft, 10) : 75));
     this.state = Object.assign(base, VIEWS[props.view || ''] || {});
   }
   componentDidMount() {
     this.startTimer();
+    if (this.props.view === 'oppSwitch') {
+      // Recall, the ball row slides in, the new Pokémon comes out, the row slides away
+      return this.run([
+        { wait: 1200 },
+        { set: { showOpp: false, msg: ['SILVER withdrew', 'GYARADOS!'] }, wait: 900 },
+        { set: { oppBalls: true, ballsAnim: 'in' }, wait: 1200 }
+      ].concat(this.sendOut(1)));
+    }
     if (this.props.view) return;
     this.run([
       { wait: 2200 },
@@ -256,6 +306,23 @@ class Component extends DCLogic {
       this.ft = setTimeout(() => step(i + 1), ANIM[i][1] * FRAME_MS);
     };
     step(0);
+  }
+  // The opponent's Pokémon, in battle order (sample opponent: Silver)
+  opps() {
+    return [
+      { name: 'GYARADOS', max: 170, ability: 'Intimidate', front: '/_blob/a5445b854864987a5abeb6793b815d30', types: [{ name: 'WATER', color: '#539ae2' }, { name: 'FLYING', color: '#7da6de' }] },
+      { name: 'ARCANINE', max: 165, ability: 'Flash Fire', front: '/_blob/8ffdcf5d5b34a71c755ec4d7c445c832', types: [{ name: 'FIRE', color: '#ea7a3c' }] }
+    ];
+  }
+  // With the ball row showing, the next Pokémon comes out, then the row slides away and the info box returns
+  sendOut(i) {
+    const next = this.opps()[i];
+    return [
+      { set: { oppMon: i, oppHp: next.max, oppStatus: '', showOpp: true, msg: ['SILVER sent out', next.name + '!'] }, fn: () => this.playFront(), wait: 1600 },
+      { set: { ballsAnim: 'leave' }, wait: 300 },
+      { set: { oppBalls: false }, wait: 500 },
+      { set: { mode: 'menu', left: 75 } }
+    ];
   }
   // Prototype only: plays a list of steps on timers. In the app the server's battle
   // log drives these messages and HP changes.
@@ -297,13 +364,15 @@ class Component extends DCLogic {
       statusColor: STATUS[status] || 'transparent'
     });
     const me = side('VENUSAUR', '/_blob/306822b5b874f91ba29da9143239f925', s.myHp, 155, s.myStatus, 'Overgrow');
-    const opp = side('GYARADOS', '/_blob/db7415dad60d2c609f07bc348686093b', s.oppHp, 170, s.oppStatus, 'Intimidate');
-    // Battle sprites: the opponent's front strip (4 frames) and your back pic
-    opp.front = '/_blob/a5445b854864987a5abeb6793b815d30';
+    const O = this.opps()[s.oppMon];
+    const opp = side(O.name, '/_blob/db7415dad60d2c609f07bc348686093b', s.oppHp, O.max, s.oppStatus, O.ability);
+    // Battle sprites: the opponent's front strip and your back pic
+    opp.front = O.front;
     opp.framePos = -(s.oppFrame * 336) + 'px';
     me.back = '/_blob/139a7a8fd91133ddb653d5268489e64d';
-    // The opponent's types show under their HP bar
-    opp.types = [{ name: 'WATER', color: '#539ae2' }, { name: 'FLYING', color: '#7da6de' }];
+    // Both sides' types show under their HP bars
+    opp.types = O.types;
+    me.types = [{ name: 'GRASS', color: '#71c558' }, { name: 'POISON', color: '#b468b7' }];
 
     // Battle size from Home (prototype only, via localStorage)
     let size = null;
@@ -322,14 +391,19 @@ class Component extends DCLogic {
       let oppHp = s.oppHp;
       let oppStatus = s.oppStatus;
       if (mv.dmg) {
-        oppHp = Math.max(0, oppHp - Math.round(170 * mv.dmg));
+        oppHp = Math.max(0, oppHp - Math.round(O.max * mv.dmg));
         steps.push({ set: { oppHp }, wait: 1400 });
       } else {
         if (mv.status) oppStatus = mv.status;
         steps.push({ set: { oppStatus, msg: [opp.name, mv.msg] }, wait: 1800 });
       }
       if (oppHp === 0) {
-        steps.push({ set: { msg: [opp.name + ' fainted!', ''] }, wait: 2000 });
+        // The sprite and info box go, then the opponent's balls show how many are left
+        steps.push({ set: { showOpp: false, msg: [opp.name + ' fainted!', ''] }, wait: 900 });
+        steps.push({ set: { oppBalls: true, ballsAnim: 'in', oppOut: Math.min(count, s.oppOut + 1) }, wait: 1200 });
+        // The next one comes out the same way as a switch; with none left the row stays up
+        const nextMon = s.oppMon + 1;
+        return this.run(nextMon < this.opps().length ? steps.concat(this.sendOut(nextMon)) : steps);
       } else if (oppStatus === 'SLP') {
         steps.push({ set: { msg: [opp.name + ' is', 'fast asleep.'] }, wait: 1800 });
       } else {
@@ -344,7 +418,17 @@ class Component extends DCLogic {
     };
 
     const hov = s.hover != null ? MOVES[s.hover] : null;
+    // The active weather's icon (public/sprites/misc/weather-*.png); none when clear
+    const WEATHER = {
+      rain: { src: '/_blob/da05cc79a9860f8814f8c8e34af85755', label: 'Rain' },
+      sun: { src: '/_blob/542e368e5e2c5eb2f69d5f60f27e9fee', label: 'Harsh sunlight' },
+      sandstorm: { src: '/_blob/c86c944ab0248af4df687ac181c3dbaa', label: 'Sandstorm' },
+      hail: { src: '/_blob/006ac6344ed68ab5a7838c4d69b9c304', label: 'Hail' }
+    };
+    const weather = WEATHER[this.props.weather] || null;
     return {
+      hasWeather: !!weather,
+      weather: weather || {},
       timer: Math.floor(this.state.left / 60) + ':' + String(this.state.left % 60).padStart(2, '0'),
       // Red for the last 15 seconds, like the Battle order timer
       timerColor: this.state.left <= 15 ? '#C03028' : '#181818',
@@ -354,6 +438,13 @@ class Component extends DCLogic {
       me, opp,
       trainer: s.trainer,
       teamBalls: Array.from({ length: count }, (_, k) => k),
+      showOppBalls: s.trainer || s.oppBalls,
+      // No slide at the intro; slides in and out mid-battle
+      ballsCls: s.trainer ? 'abs balls' : 'abs balls ' + s.ballsAnim,
+      showOppInfo: s.showOpp && !s.oppBalls,
+      // Fainted Pokémon come first, in battle order
+      oppBalls: Array.from({ length: count }, (_, k) => ({ cls: k < s.oppOut ? 'pix p2ball out' : 'pix p2ball' })),
+      oppBallsLabel: NAMES[2] + "'s team: " + (count - s.oppOut) + ' of ' + count + ' left',
       showOpp: s.showOpp,
       showMe: s.showMe,
       abilOpp: s.abil === 'opp',

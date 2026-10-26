@@ -32,6 +32,29 @@ export const DRAFT_TYPE_LABELS: Record<DraftType, string> = {
   pokeball: "Poké Ball Draft",
 };
 
+/** The waiting room's DRAFT TYPE radios: the title says "Draft", so the labels don't. */
+export const DRAFT_TYPE_OPTION_LABELS: Record<DraftType, string> = {
+  standard: "Standard",
+  unlimited: "Unlimited",
+  pokeball: "Poké Ball",
+};
+
+/** How long after both players are READY the type battle starts. */
+export const START_COUNTDOWN_MS = 2000;
+
+/** The waiting room's READY state, the same for both players. */
+export type LobbyView = {
+  /** lobbyVersion: grows with every lobby change. */
+  version: number;
+  ready: { 1: boolean; 2: boolean };
+  /** Server time the type battle starts, once both are ready; else null. */
+  startAt: number | null;
+  /** The host's last option change cleared someone's READY. */
+  optionsChanged: boolean;
+  /** Server Date.now() when this was read (GET) or published (event): for the clock offset. Not compared. */
+  serverNow: number;
+};
+
 export const TYPE_CHOICES = ["grass", "water", "fire"] as const;
 export type TypeChoice = (typeof TYPE_CHOICES)[number];
 
@@ -65,6 +88,8 @@ export type RoomState = {
   game: number;
   battleSize: BattleSize;
   draftType: DraftType;
+  /** Set only in the lobby phase. */
+  lobby: LobbyView | null;
   /** Set only in the type-battle phase. */
   typeBattle: TypeBattleView | null;
   /** Set in the draft and battle phases: the Battle order screen shows both drafted teams. */

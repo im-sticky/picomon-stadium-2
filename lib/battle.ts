@@ -354,6 +354,35 @@ export type StartBattleResult =
   | { kind: 'not-drafting' }
   | { kind: 'draft-incomplete' };
 
+/**
+ * Inserts a new battle from the room's draft picks, at the Battle order screen (step
+ * 0). The primary key makes a racing second insert fail. Returns its order deadline.
+ */
+async function insertBattle(
+  tx: Pick<Db, 'insert' | 'select'>,
+  code: string,
+  size: BattleSize,
+  now: number,
+  seed: string | undefined,
+): Promise<number> {
+  const picks = await listDraftPicks(tx, code);
+  const teamOf = (slot: Slot) => picks.filter((p) => p.slot === slot).map((p) => p.pokemonId);
+  const engine = createBattle({ size, seed, teams: { 1: teamOf(1), 2: teamOf(2) } });
+  const deadline = now + TIMER_MS;
+  await tx.insert(battles).values({
+    roomCode: code,
+    state: serialize(engine),
+    version: 1,
+    stage: 'team-order',
+    step: 0,
+    stepStarts: '[0]',
+    deadline,
+    createdAt: now,
+    updatedAt: now,
+  });
+  return deadline;
+}
+
 /** The host starts the battle once the draft is complete: the Battle order screen, step 0. */
 export async function startBattle(
   db: Db,
@@ -376,21 +405,7 @@ export async function startBattle(
         if (picks.length < TOTAL_PICKS) return { kind: 'draft-incomplete' };
 
         const size = room.battleSize as BattleSize;
-        const teamOf = (slot: Slot) => picks.filter((p) => p.slot === slot).map((p) => p.pokemonId);
-        const engine = createBattle({ size, seed: opts.seed, teams: { 1: teamOf(1), 2: teamOf(2) } });
-        const deadline = now + TIMER_MS;
-        // The primary key makes a racing second start fail here.
-        await tx.insert(battles).values({
-          roomCode: code,
-          state: serialize(engine),
-          version: 1,
-          stage: 'team-order',
-          step: 0,
-          stepStarts: '[0]',
-          deadline,
-          createdAt: now,
-          updatedAt: now,
-        });
+        const deadline = await insertBattle(tx, code, size, now, opts.seed);
         await tx.update(rooms).set({ phase: 'battle' }).where(eq(rooms.code, code));
         return { kind: 'started', event: { kind: 'battle-started', battleSize: size, deadline, at: now } };
       }),
@@ -399,6 +414,58 @@ export async function startBattle(
     if (isConstraintError(err)) return { kind: 'already-started' };
     throw err;
   }
+}
+
+export type RematchResult =
+  | { kind: 'requested'; slot: Slot }
+  | { kind: 'already-requested' }
+  | { kind: 'restarted'; game: number }
+  | { kind: 'closed' }
+  | { kind: 'not-ended' }
+  | { kind: 'not-found' };
+
+/**
+ * REMATCH after the battle. The first player to ask is recorded; when the other asks
+ * too, a new game starts at the Battle order screen with the same drafted teams: the
+ * battle is replaced by a fresh one (no log, result or orders), and the draft picks,
+ * battle size and draft type are kept. Asking after the end screen's time is up
+ * closes the room instead, as the timeout would.
+ */
+export async function requestRematch(
+  db: Db,
+  code: string,
+  secret: string | null,
+  now: number,
+  opts: { seed?: string } = {},
+): Promise<RematchResult> {
+  if (!secret) return { kind: 'not-found' };
+  return withBusyRetry(() =>
+    db.transaction(async (tx): Promise<RematchResult> => {
+      const room = await findLiveRoom(tx, code, now);
+      const me = room && (await findMember(tx, code, secret));
+      if (!room || !me) return { kind: 'not-found' };
+      if (room.phase !== 'battle') return { kind: 'not-ended' };
+      const [battle] = await tx
+        .select({ stage: battles.stage, deadline: battles.deadline, rematchBy: battles.rematchBy })
+        .from(battles)
+        .where(eq(battles.roomCode, code));
+      if (battle?.stage !== 'ended') return { kind: 'not-ended' };
+      if (battle.deadline !== null && now >= battle.deadline + GRACE_MS) {
+        return (await expireRoom(tx, code, now)) ? { kind: 'closed' } : { kind: 'not-found' };
+      }
+      if (battle.rematchBy === me.slot) return { kind: 'already-requested' };
+      if (battle.rematchBy === null) {
+        await tx.update(battles).set({ rematchBy: me.slot }).where(eq(battles.roomCode, code));
+        return { kind: 'requested', slot: me.slot };
+      }
+      // The other player asked first: the next game, from the same draft.
+      await tx.delete(battles).where(eq(battles.roomCode, code));
+      await insertBattle(tx, code, room.battleSize as BattleSize, now, opts.seed);
+      const game = room.game + 1;
+      await tx.update(rooms).set({ game }).where(eq(rooms.code, code));
+      return { kind: 'restarted', game };
+    }),
+  );
 }
 
 /** The end screen's time (plus the grace) is up: nobody chose QUIT or REMATCH. */

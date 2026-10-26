@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { createClient } from '@libsql/client';
+import { createClient, type Client } from '@libsql/client';
 import { drizzle } from 'drizzle-orm/libsql';
 import { migrate } from 'drizzle-orm/libsql/migrator';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -16,8 +16,13 @@ import {
   joinRoom,
   pickType,
   playTypeBattleAgain,
+  setReady,
+  setRoomOptions,
+  START_TOLERANCE_MS,
   startTypeBattle,
 } from '@/lib/rooms';
+import { START_COUNTDOWN_MS } from '@/lib/types';
+import { readyAndStart } from '@/tests/helpers/lobby';
 
 const T0 = 1_000_000;
 
@@ -30,7 +35,11 @@ async function fullRoom(db: Db) {
 
 async function startedRoom(db: Db) {
   const room = await fullRoom(db);
-  expect(await startTypeBattle(db, room.code, room.host, T0)).toEqual({ kind: 'started' });
+  expect(await readyAndStart(db, room.code, { 1: room.host, 2: room.guest }, T0)).toEqual({
+    kind: 'started',
+    battleSize: 6,
+    draftType: 'standard',
+  });
   return room;
 }
 
@@ -38,18 +47,34 @@ const view = async (db: Db, code: string, secret: string) =>
   (await getRoomState(db, code, secret, T0))!.typeBattle;
 
 describe('type battle', () => {
-  it('only the host can start, and only with both players in', async () => {
+  it('starts only with both players in and ready, once the countdown is over', async () => {
     const db = await createTestDb();
     const alone = await createRoom(db, 'Ash', T0);
     expect(await startTypeBattle(db, alone.code, alone.secret, T0)).toEqual({ kind: 'not-full' });
 
     const room = await fullRoom(db);
-    expect(await startTypeBattle(db, room.code, room.guest, T0)).toEqual({ kind: 'not-host' });
+    expect(await startTypeBattle(db, room.code, room.host, T0)).toEqual({ kind: 'not-ready' });
+    await setReady(db, room.code, room.host, true, T0);
+    expect(await startTypeBattle(db, room.code, room.host, T0)).toEqual({ kind: 'not-ready' });
+    await setReady(db, room.code, room.guest, true, T0);
+    const startAt = T0 + START_COUNTDOWN_MS;
+    expect(await startTypeBattle(db, room.code, room.host, T0 + 1000)).toEqual({ kind: 'too-early', startAt });
+    // Within the tolerance counts as due.
+    expect(await startTypeBattle(db, room.code, room.host, startAt - START_TOLERANCE_MS - 1)).toEqual({
+      kind: 'too-early',
+      startAt,
+    });
     expect((await getRoomState(db, room.code, room.host, T0))!.phase).toBe('lobby');
 
-    expect(await startTypeBattle(db, room.code, room.host, T0)).toEqual({ kind: 'started' });
-    expect(await startTypeBattle(db, room.code, room.host, T0)).toEqual({ kind: 'already-started' });
+    // Either player's client may start it.
+    expect(await startTypeBattle(db, room.code, room.guest, startAt - START_TOLERANCE_MS)).toEqual({
+      kind: 'started',
+      battleSize: 6,
+      draftType: 'standard',
+    });
+    expect(await startTypeBattle(db, room.code, room.host, startAt)).toEqual({ kind: 'already-started' });
     const state = (await getRoomState(db, room.code, room.guest, T0))!;
+    expect(state.lobby).toBeNull();
     expect(state.phase).toBe('type-battle');
     expect(state.typeBattle).toEqual({
       round: 1,
@@ -163,6 +188,30 @@ describe('type battle', () => {
     }
   });
 
+  it('an option change or CANCEL READY during the countdown stops the start', async () => {
+    const db = await createTestDb();
+    const room = await fullRoom(db);
+    const due = T0 + START_COUNTDOWN_MS;
+    await setReady(db, room.code, room.host, true, T0);
+    await setReady(db, room.code, room.guest, true, T0);
+    await setRoomOptions(db, room.code, room.host, { battleSize: 3, draftType: 'standard' }, T0 + 500);
+    expect(await startTypeBattle(db, room.code, room.guest, due)).toEqual({ kind: 'not-ready' });
+
+    await setReady(db, room.code, room.host, true, T0);
+    await setReady(db, room.code, room.guest, true, T0);
+    await setReady(db, room.code, room.guest, false, T0 + 500);
+    expect(await startTypeBattle(db, room.code, room.host, due)).toEqual({ kind: 'not-ready' });
+    expect((await getRoomState(db, room.code, room.host, due))!.phase).toBe('lobby');
+
+    // Once started, the lobby can't change.
+    await setReady(db, room.code, room.guest, true, T0);
+    expect((await startTypeBattle(db, room.code, room.host, due)).kind).toBe('started');
+    expect(await setReady(db, room.code, room.guest, false, due)).toEqual({ kind: 'already-started' });
+    expect(await setRoomOptions(db, room.code, room.host, { battleSize: 6, draftType: 'standard' }, due)).toEqual({
+      kind: 'already-started',
+    });
+  });
+
   it('a stranger cannot act on the room', async () => {
     const db = await createTestDb();
     const room = await startedRoom(db);
@@ -184,13 +233,23 @@ describe('type battle', () => {
     async function withTwoClients(fn: (a: Db, b: Db) => Promise<void>) {
       const dir = mkdtempSync(path.join(tmpdir(), 'type-battle-test-'));
       const url = `file:${path.join(dir, 'test.db')}`;
-      const open = (): Db => drizzle(createClient({ url }), { schema });
+      const clients: Client[] = [];
+      const open = (): Db => {
+        const client = createClient({ url });
+        clients.push(client);
+        return drizzle(client, { schema });
+      };
       try {
         const a = open();
         await migrate(a, { migrationsFolder: 'drizzle' });
         await fn(a, open());
       } finally {
-        rmSync(dir, { recursive: true, force: true });
+        for (const client of clients) client.close();
+        // Best effort: on Windows libsql holds test.db open until the client is
+        // garbage-collected, even after close(), so the folder can't be removed yet.
+        try {
+          rmSync(dir, { recursive: true, force: true });
+        } catch {}
       }
     }
 

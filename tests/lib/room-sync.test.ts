@@ -320,6 +320,32 @@ describe("startRoomSync events and background checks", () => {
     expect(console.error).toHaveBeenCalledWith("room-sync: discrepancy", expect.anything());
   });
 
+  it("treats a lobby snapshot from before a READY as behind, not a correction", async () => {
+    const lobby = (version: number, ready: { 1: boolean; 2: boolean }): RoomState => ({
+      ...state2,
+      battleSize: 6,
+      draftType: "standard",
+      lobby: { version, ready, startAt: null, optionsChanged: false, serverNow: 1 },
+    });
+    const s = await loaded(lobby(0, { 1: false, 2: false }), Promise.resolve(lobby(0, { 1: false, 2: false })));
+    s.sync.apply({
+      kind: "lobby-updated",
+      version: 1,
+      battleSize: 6,
+      draftType: "standard",
+      ready: { 1: true, 2: false },
+      startAt: null,
+      optionsChanged: false,
+      at: 2,
+    });
+    const readied = lobby(1, { 1: true, 2: false });
+    expect(s.deps.onState).toHaveBeenLastCalledWith({ ...readied, lobby: { ...readied.lobby!, serverNow: 2 } });
+    await vi.advanceTimersByTimeAsync(VERIFY_DEBOUNCE_MS);
+    expect(s.deps.fetchState).toHaveBeenCalledTimes(2);
+    expect(s.deps.onState).toHaveBeenCalledTimes(1);
+    expect(console.error).not.toHaveBeenCalled();
+  });
+
   it("replaces a state the server disagrees with", async () => {
     const s = await loaded(draft(), Promise.resolve(draft("gengar")));
     s.cbs.event!(pick(0, "lugia"));

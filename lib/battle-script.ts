@@ -28,6 +28,12 @@ export type Battler = {
 
 export type AbilityBox = { side: Side; name: string; ability: string };
 
+/** The weather on the field, from `-weather` lines. */
+export type Weather = "rain" | "sun" | "sandstorm" | "hail";
+
+/** The opponent's ball row mid-battle, in their info box's place: sliding in, or sliding back out. */
+export type BallRow = "in" | "leave";
+
 export type Scene = {
   /** The intro: the opponent's trainer and both teams' balls, before the first send-out. */
   intro: boolean;
@@ -36,6 +42,12 @@ export type Scene = {
   entrances: Record<Side, number>;
   message: Message;
   ability: AbilityBox | null;
+  /** The opponent's ball row after a faint or a switch (the intro's row goes with `intro`). */
+  oppBalls: BallRow | null;
+  /** How many of the opponent's Pokémon have fainted: their balls show darkened. */
+  oppFainted: number;
+  /** The active weather, or null when it's clear. */
+  weather: Weather | null;
 };
 
 /** One moment of the playback. Effects apply together, then it holds for `hold` ms. */
@@ -50,6 +62,12 @@ export type Beat = {
   faint?: { side: Side; name: string };
   /** `side`'s Pokémon becomes a copy of the Pokémon on side `into`. */
   transform?: { side: Side; name: string; into: Side };
+  /** `side`'s Pokémon goes back to its ball: its sprite and info leave the field. */
+  withdraw?: Side;
+  /** The opponent's ball row slides in, slides out, or is gone (`"off"`). */
+  oppBalls?: BallRow | "off";
+  /** The weather starts, continues (upkeep) or clears (`"none"`). */
+  weather?: Weather | "none";
 };
 
 export type ScriptContext = {
@@ -63,6 +81,12 @@ export type ScriptContext = {
    */
   exact: boolean;
   maxHpOf?: (name: string) => number | undefined;
+  /**
+   * Who is on the field when the step starts (the scene after everything already
+   * queued). The protocol has no withdraw line: an opponent's `|switch|` while its
+   * Pokémon is still up is a switch, one after a faint is the replacement.
+   */
+  field?: Scene["active"];
 };
 
 export const HOLD = {
@@ -74,6 +98,17 @@ export const HOLD = {
   ability: 2000,
   abilityText: 2400,
   faint: 1800,
+  /** The opponent's: then their ball row slides in. */
+  oppFaint: 900,
+  withdraw: 900,
+  /** The ball row slides in (0.3s), then stays up while the opponent picks. */
+  ballsIn: 1200,
+  /** "SILVER sent out Y!" with the row still up. */
+  ballsSendOut: 1600,
+  /** The row slides out (0.3s)... */
+  ballsOut: 300,
+  /** ...then the info box comes back. */
+  ballsGone: 500,
 } as const;
 
 export const EMPTY: Message = ["", ""];
@@ -84,6 +119,9 @@ export const initialScene = (): Scene => ({
   entrances: { me: 0, opp: 0 },
   message: EMPTY,
   ability: null,
+  oppBalls: null,
+  oppFainted: 0,
+  weather: null,
 });
 
 const STATUSES = ["par", "brn", "slp", "frz", "psn", "tox"] as const;
@@ -191,6 +229,13 @@ export function stepBeats(lines: readonly string[], ctx: ScriptContext): Beat[] 
     return { ...c, hp, maxhp: max };
   };
 
+  // Who is on the field as the lines go: each switch and faint changes it for the next line.
+  const field: Partial<Record<Side, { name: string; fainted: boolean }>> = {};
+  for (const side of ["me", "opp"] as const) {
+    const mon = ctx.field?.[side];
+    if (mon) field[side] = { name: mon.name, fainted: mon.fainted };
+  }
+
   let previous: { type: string; args: string[] } | null = null;
 
   for (const line of ordered) {
@@ -235,8 +280,20 @@ export function stepBeats(lines: readonly string[], ctx: ScriptContext): Beat[] 
             : side === "opp"
               ? msg(`${player(opponent)} sent out`, `${name}!`)
               : msg(`Go! ${name}!`);
+        const before = field[side];
+        field[side] = { name: who.name, fainted: c.fainted };
         if (type === "replace") beats.push({ hold: 0, switchIn: { side, battler } });
-        else say(message, side === "opp" ? HOLD.oppSendOut : HOLD.mySendOut, { switchIn: { side, battler } });
+        else if (type === "switch" && side === "opp" && before) {
+          // Mid-battle the opponent's balls show what's left: after a faint the row is
+          // already up; on a switch their Pokémon goes back first, then the row slides in.
+          if (!before.fainted) {
+            say(msg(`${player(opponent)} withdrew`, `${up(before.name)}!`), HOLD.withdraw, { withdraw: "opp" });
+            beats.push({ hold: HOLD.ballsIn, oppBalls: "in" });
+          }
+          say(message, HOLD.ballsSendOut, { switchIn: { side, battler } });
+          beats.push({ hold: HOLD.ballsOut, oppBalls: "leave" });
+          beats.push({ hold: HOLD.ballsGone, oppBalls: "off" });
+        } else say(message, side === "opp" ? HOLD.oppSendOut : HOLD.mySendOut, { switchIn: { side, battler } });
         break;
       }
 
@@ -279,9 +336,21 @@ export function stepBeats(lines: readonly string[], ctx: ScriptContext): Beat[] 
         say(msg("The team's status", "was healed!"));
         break;
 
-      case "faint":
-        if (who) say(msg(`${name} fainted!`), HOLD.faint, { faint: { side: sideOf(who.slot), name: who.name } });
+      case "faint": {
+        if (!who) break;
+        const side = sideOf(who.slot);
+        const mon = field[side];
+        if (mon && mon.name === who.name) mon.fainted = true;
+        if (side === "me") {
+          say(msg(`${name} fainted!`), HOLD.faint, { faint: { side, name: who.name } });
+          break;
+        }
+        // The opponent's sprite and info go, then their balls show how many are left. The
+        // row stays up for the replacement's send-out (the next step), or to the end.
+        say(msg(`${name} fainted!`), HOLD.oppFaint, { faint: { side, name: who.name } });
+        beats.push({ hold: HOLD.ballsIn, oppBalls: "in" });
         break;
+      }
 
       case "-ability": {
         if (!who) break;
@@ -372,7 +441,8 @@ export function stepBeats(lines: readonly string[], ctx: ScriptContext): Beat[] 
 
       case "-weather": {
         const text = weatherText(args[1] ?? "", "upkeep" in tags);
-        if (text) say(text);
+        const weather = args[1] === "none" ? "none" : WEATHERS[args[1] ?? ""];
+        if (text) say(text, HOLD.message, weather ? { weather } : {});
         break;
       }
 
@@ -605,6 +675,9 @@ function cantText(name: string, reason: string, move: string | undefined): Messa
   }
 }
 
+/** Showdown's weather ids, as the scene's weather. */
+const WEATHERS: Record<string, Weather> = { RainDance: "rain", SunnyDay: "sun", Sandstorm: "sandstorm", Hail: "hail" };
+
 function weatherText(weather: string, upkeep: boolean): Message | null {
   const table: Record<string, [Message, Message]> = {
     RainDance: [msg("It started", "to rain!"), msg("Rain continues", "to fall.")],
@@ -761,6 +834,10 @@ export function applyBeat(scene: Scene, beat: Beat): Scene {
   const active = { ...scene.active };
   const entrances = { ...scene.entrances };
   let intro = beat.intro ?? scene.intro;
+  let oppFainted = scene.oppFainted;
+  const weather = beat.weather === undefined ? scene.weather : beat.weather === "none" ? null : beat.weather;
+  const oppBalls = beat.oppBalls === undefined ? scene.oppBalls : beat.oppBalls === "off" ? null : beat.oppBalls;
+  if (beat.withdraw) active[beat.withdraw] = null;
   if (beat.switchIn) {
     active[beat.switchIn.side] = beat.switchIn.battler;
     entrances[beat.switchIn.side] += 1;
@@ -784,7 +861,10 @@ export function applyBeat(scene: Scene, beat: Beat): Scene {
   }
   if (beat.faint) {
     const mon = active[beat.faint.side];
-    if (mon && mon.name === beat.faint.name) active[beat.faint.side] = { ...mon, hp: 0, fainted: true, status: null };
+    if (mon && mon.name === beat.faint.name) {
+      if (beat.faint.side === "opp" && !mon.fainted) oppFainted += 1;
+      active[beat.faint.side] = { ...mon, hp: 0, fainted: true, status: null };
+    }
   }
   if (beat.transform) {
     const mon = active[beat.transform.side];
@@ -799,6 +879,9 @@ export function applyBeat(scene: Scene, beat: Beat): Scene {
     entrances,
     message: beat.message ?? scene.message,
     ability: beat.ability ?? null,
+    oppBalls,
+    oppFainted,
+    weather,
   };
 }
 

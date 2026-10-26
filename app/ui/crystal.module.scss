@@ -147,14 +147,23 @@
     gap: 8px;
     font-size: 16px;
     line-height: 24px;
+    white-space: nowrap;
     cursor: pointer;
   }
 
-  /* Stacked: one 32px row per option, 8px apart (the draft type). */
+  /* `titled`: the group's name as a section label, 12px above the radios. */
+  &__title {
+    margin-bottom: 12px;
+    font-size: 16px;
+    line-height: 32px;
+    color: var(--text-2);
+  }
+
+  /* Stacked: one 32px row per option, touching (the waiting room's option lists). */
   &--vertical {
     flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
+    gap: 0;
     height: auto;
   }
 

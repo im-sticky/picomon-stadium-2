@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/db/client';
 import { notifyRoomEvent } from '@/lib/ably-server';
+import { requestRematch } from '@/lib/battle';
 import type { BattleEvent } from '@/lib/battle-types';
 import { normalizeCode } from '@/lib/codes';
 import type { RoomClosedEvent, RoomEvent } from '@/lib/room-events';
-import { requestRematch } from '@/lib/rooms';
 import { readSessionSecret } from '@/lib/session';
 
 /**
  * REMATCH after the battle. The first ask is shown to the other player; the second
- * starts a new game at the type battle, keeping the battle size and draft type.
+ * starts a new game at the Battle order screen with the same drafted teams.
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ code: string }> }) {
   const code = normalizeCode((await params).code);

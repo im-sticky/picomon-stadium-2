@@ -73,15 +73,24 @@ describe("HomeForm", () => {
     await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/room/K7PQ"));
   });
 
-  it("hosts with the chosen battle size, 6V6 by default", async () => {
+  it("hosts with only the trainer: the room's options are set in the waiting room", async () => {
     const fetchFn = mockFetch(201, { code: "K7PQ" });
     render(<HomeForm />);
-    expect(screen.getByRole("radio", { name: "6V6" })).toBeChecked();
-    await userEvent.click(screen.getByRole("radio", { name: "4V4" }));
     await userEvent.click(screen.getByRole("button", { name: "HOST" }));
     await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/room/K7PQ"));
     const [, init] = fetchFn.mock.calls[0] as unknown as [string, RequestInit];
-    expect(JSON.parse(init.body as string)).toEqual({ trainer: "lt_surge", battleSize: 4, draftType: "standard" });
+    expect(JSON.parse(init.body as string)).toEqual({ trainer: "lt_surge" });
+  });
+
+  it("has no radios, RULES or CHANGE; the trainer sprite links to Choose a Trainer", () => {
+    render(<HomeForm />);
+    expect(screen.queryAllByRole("radio")).toEqual([]);
+    expect(screen.queryByRole("link", { name: "RULES" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "CHANGE" })).toBeNull();
+    const pick = screen.getByRole("link", { name: "Change trainer (Lt Surge)" });
+    expect(pick).toHaveAttribute("href", "/trainers");
+    // The link names the trainer, so the sprite itself is decorative.
+    expect(pick.querySelector("img")).toHaveAttribute("alt", "");
   });
 
   it('shows "Room not found." from a 404', async () => {
