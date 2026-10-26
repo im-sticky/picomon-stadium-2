@@ -74,6 +74,22 @@
       "x": 5120,
       "y": 7300
     },
+    "BattleEnd.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "4n · End of battle",
+      "w": 1200,
+      "x": 0,
+      "y": 8400
+    },
+    "BattleEndRematch.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "4o · Rematch requested",
+      "w": 1200,
+      "x": 1280,
+      "y": 8400
+    },
     "BattleTurn.dc.html": {
       "h": 900,
       "is_interactive": true,
@@ -330,7 +346,9 @@
     "BattleOppFainted.dc.html",
     "BattleOppSwitch.dc.html",
     "BattleWeather.dc.html",
-    "BattleWeatherFight.dc.html"
+    "BattleWeatherFight.dc.html",
+    "BattleEnd.dc.html",
+    "BattleEndRematch.dc.html"
   ],
   "pages": [],
   "title": "Picomon Stadium Layout"

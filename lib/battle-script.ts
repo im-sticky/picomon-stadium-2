@@ -46,6 +46,8 @@ export type Scene = {
   oppBalls: BallRow | null;
   /** How many of the opponent's Pokémon have fainted: their balls show darkened. */
   oppFainted: number;
+  /** How many of your Pokémon have fainted: your balls show darkened on the end screen. */
+  myFainted: number;
   /** The active weather, or null when it's clear. */
   weather: Weather | null;
 };
@@ -121,6 +123,7 @@ export const initialScene = (): Scene => ({
   ability: null,
   oppBalls: null,
   oppFainted: 0,
+  myFainted: 0,
   weather: null,
 });
 
@@ -835,6 +838,7 @@ export function applyBeat(scene: Scene, beat: Beat): Scene {
   const entrances = { ...scene.entrances };
   let intro = beat.intro ?? scene.intro;
   let oppFainted = scene.oppFainted;
+  let myFainted = scene.myFainted;
   const weather = beat.weather === undefined ? scene.weather : beat.weather === "none" ? null : beat.weather;
   const oppBalls = beat.oppBalls === undefined ? scene.oppBalls : beat.oppBalls === "off" ? null : beat.oppBalls;
   if (beat.withdraw) active[beat.withdraw] = null;
@@ -863,6 +867,7 @@ export function applyBeat(scene: Scene, beat: Beat): Scene {
     const mon = active[beat.faint.side];
     if (mon && mon.name === beat.faint.name) {
       if (beat.faint.side === "opp" && !mon.fainted) oppFainted += 1;
+      if (beat.faint.side === "me" && !mon.fainted) myFainted += 1;
       active[beat.faint.side] = { ...mon, hp: 0, fainted: true, status: null };
     }
   }
@@ -881,6 +886,7 @@ export function applyBeat(scene: Scene, beat: Beat): Scene {
     ability: beat.ability ?? null,
     oppBalls,
     oppFainted,
+    myFainted,
     weather,
   };
 }

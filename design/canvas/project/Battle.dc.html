@@ -36,6 +36,7 @@ a{color:inherit;text-decoration:none}
 .balls{display:flex;gap:12px;padding:0 12px 9px;border-bottom:3px solid #181818}
 .p2ball{filter:hue-rotate(235deg)}
 /* A fainted Pokémon's ball: the same sprite, darkened */
+.pix.out{filter:brightness(.3)}
 .p2ball.out{filter:hue-rotate(235deg) brightness(.3)}
 /* The opponent's ball row slides in from the left edge, and back out once the new Pokémon is in (6 pixel steps) */
 .balls.in{animation:ballsIn .3s steps(6) both}
@@ -57,20 +58,34 @@ a{color:inherit;text-decoration:none}
 .abil p:last-child{text-align:right}
 @keyframes abilR{from{transform:translateX(100%)}}
 @keyframes abilL{from{transform:translateX(-100%)}}
+/* End screen buttons (REMATCH, QUIT), as the app: 240px minimum, 42px each side, the ▶ cursor 12px in */
+.btn{position:relative;display:flex;align-items:center;justify-content:center;min-width:240px;box-sizing:border-box;padding:36px 42px;font-size:24px;border:6px solid #181818}
+.btn .cur{position:absolute;left:12px;top:50%;margin-top:-12px}
+.btn:hover .cur,.btn:focus-visible .cur{visibility:visible}
+.btn:focus-visible{outline:none;background-color:#E8E8E8}
+.btn.primary{background-color:#181818;color:#F8F8F8;--l:#F8F8F8;--e:#181818}
+.btn.primary path{fill:#F8F8F8}
+.btn:disabled{opacity:.5}
+.btn:disabled .cur{visibility:hidden}
 /* Pixel corners: two 3px steps off the outer edge, a 3px square rounding the thick line's inner edge, one step off the thin line */
-.frame{--l:#181818;--e:var(--l);background-image:linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e));background-position:left 6px top 3px,left 6px bottom 3px,left 3px top 6px,right 3px top 6px,left top,right top,left bottom,right bottom;background-size:calc(100% - 12px) 3px,calc(100% - 12px) 3px,3px calc(100% - 12px),3px calc(100% - 12px),3px 3px,3px 3px,3px 3px,3px 3px;background-repeat:no-repeat}
-.frame{clip-path:polygon(6px 0,calc(100% - 6px) 0,calc(100% - 6px) 3px,calc(100% - 3px) 3px,calc(100% - 3px) 6px,100% 6px,100% calc(100% - 6px),calc(100% - 3px) calc(100% - 6px),calc(100% - 3px) calc(100% - 3px),calc(100% - 6px) calc(100% - 3px),calc(100% - 6px) 100%,6px 100%,6px calc(100% - 3px),3px calc(100% - 3px),3px calc(100% - 6px),0 calc(100% - 6px),0 6px,3px 6px,3px 3px,6px 3px)}
+.frame,.btn{--l:#181818;--e:var(--l);background-image:linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--l),var(--l)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e)),linear-gradient(var(--e),var(--e));background-position:left 6px top 3px,left 6px bottom 3px,left 3px top 6px,right 3px top 6px,left top,right top,left bottom,right bottom;background-size:calc(100% - 12px) 3px,calc(100% - 12px) 3px,3px calc(100% - 12px),3px calc(100% - 12px),3px 3px,3px 3px,3px 3px,3px 3px;background-repeat:no-repeat}
+.frame,.btn{clip-path:polygon(6px 0,calc(100% - 6px) 0,calc(100% - 6px) 3px,calc(100% - 3px) 3px,calc(100% - 3px) 6px,100% 6px,100% calc(100% - 6px),calc(100% - 3px) calc(100% - 6px),calc(100% - 3px) calc(100% - 3px),calc(100% - 6px) calc(100% - 3px),calc(100% - 6px) 100%,6px 100%,6px calc(100% - 3px),3px calc(100% - 3px),3px calc(100% - 6px),0 calc(100% - 6px),0 6px,3px 6px,3px 3px,6px 3px)}
 </style>
 </helmet>
 <div class="gb" style="position: relative; width: 1200px; height: 900px; overflow: hidden">
 
-  <!-- Intro: the opponent's trainer and both teams as rows of balls -->
+  <!-- Intro and end screen: the opponent's trainer and both teams as rows of balls (at the end, fainted ones darkened) -->
   <sc-if value="{{trainer}}" hint-placeholder-val="{{ false }}">
     <!-- The trainer your opponent picked on Host or join, in the opponent's Pokémon box (3× the 112px PNG) -->
     <div class="abs mon" style="right: 132px; top: 12px"><img class="pix" src="{{oppTrainer}}" alt="{{oppName}}" style="width: 336px; height: 336px"></div>
-    <div class="abs balls" aria-label="Your team" style="right: 72px; top: 456px; border-right: 3px solid #181818">
-      <sc-for list="{{teamBalls}}" as="b" hint-placeholder-count="6">
-        <img class="pix" src="/_blob/42adad1d7cf5061d3889e683f8adb86c" alt="" style="width: 32px; height: 32px">
+    <div class="abs balls" role="img" aria-label="{{myBallsLabel}}" style="right: 72px; top: 456px; border-right: 3px solid #181818">
+      <sc-for list="{{myBalls}}" as="b" hint-placeholder-count="6">
+        <sc-if value="{{b.ball}}" hint-placeholder-val="{{ true }}">
+          <img class="{{b.cls}}" src="/_blob/42adad1d7cf5061d3889e683f8adb86c" alt="" style="width: 32px; height: 32px">
+        </sc-if>
+        <sc-if value="{{b.empty}}" hint-placeholder-val="{{ false }}">
+          <svg class="pix" width="32" height="32" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><path d="M5 1h6v1h-6z M3 2h2v1h-2z M11 2h2v1h-2z M2 3h1v2h-1z M13 3h1v2h-1z M1 5h1v6h-1z M14 5h1v6h-1z M2 11h1v2h-1z M13 11h1v2h-1z M3 13h2v1h-2z M11 13h2v1h-2z M5 14h6v1h-6z" fill="#A8A8A8"></path></svg>
+        </sc-if>
       </sc-for>
     </div>
   </sc-if>
@@ -79,7 +94,12 @@ a{color:inherit;text-decoration:none}
   <sc-if value="{{showOppBalls}}" hint-placeholder-val="{{ false }}">
     <div class="{{ballsCls}}" role="img" aria-label="{{oppBallsLabel}}" style="left: 72px; top: 96px; border-left: 3px solid #181818">
       <sc-for list="{{oppBalls}}" as="b" hint-placeholder-count="6">
-        <img class="{{b.cls}}" src="/_blob/42adad1d7cf5061d3889e683f8adb86c" alt="" style="width: 32px; height: 32px">
+        <sc-if value="{{b.ball}}" hint-placeholder-val="{{ true }}">
+          <img class="{{b.cls}}" src="/_blob/42adad1d7cf5061d3889e683f8adb86c" alt="" style="width: 32px; height: 32px">
+        </sc-if>
+        <sc-if value="{{b.empty}}" hint-placeholder-val="{{ false }}">
+          <svg class="pix" width="32" height="32" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><path d="M5 1h6v1h-6z M3 2h2v1h-2z M11 2h2v1h-2z M2 3h1v2h-1z M13 3h1v2h-1z M1 5h1v6h-1z M14 5h1v6h-1z M2 11h1v2h-1z M13 11h1v2h-1z M3 13h2v1h-2z M11 13h2v1h-2z M5 14h6v1h-6z" fill="#A8A8A8"></path></svg>
+        </sc-if>
       </sc-for>
     </div>
   </sc-if>
@@ -206,6 +226,31 @@ a{color:inherit;text-decoration:none}
         </div>
       </div>
     </sc-if>
+    <!-- The end screen (as the app): the result, the end screen's 80 s countdown, then REMATCH and QUIT.
+         The right padding drops to 12px so a two-line message fits beside them. -->
+    <sc-if value="{{isEnd}}" hint-placeholder-val="{{ false }}">
+      <div class="frame" style="flex: 1; padding: 30px 12px 30px 42px; display: flex; align-items: center; gap: 24px">
+        <div role="status" style="flex: 1; min-width: 0">
+          <p style="font-size: 24px; line-height: 48px">{{msg1}}</p>
+          <p style="font-size: 24px; line-height: 48px">{{msg2}}</p>
+        </div>
+        <p role="timer" aria-label="Time left {{timer}}" style="flex: none; font-size: 32px; line-height: 48px; white-space: nowrap; color: {{timerColor}}">{{timer}}</p>
+        <!-- Once you've asked for a rematch, both choices wait on the opponent -->
+        <div role="group" aria-label="After the battle" style="display: flex; flex: none; gap: 12px">
+          <button type="button" class="btn primary" disabled="{{choosing}}" onClick="{{rematch}}">
+            <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
+            REMATCH
+          </button>
+          <button type="button" class="btn" disabled="{{choosing}}" onClick="{{quit}}">
+            <svg class="cur" width="24" height="24" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path d="M1 0h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1z" fill="#181818"></path></svg>
+            QUIT
+          </button>
+        </div>
+      </div>
+      <!-- Both asked for a rematch: the next game starts at the Battle order; QUIT goes back to Host or join -->
+      <a href="TeamOrder.dc.html" ref="{{setGoRematch}}" hidden aria-hidden="true" tabindex="-1"></a>
+      <a href="Home.dc.html" ref="{{setGoHome}}" hidden aria-hidden="true" tabindex="-1"></a>
+    </sc-if>
     <!-- One options box on the right: FIGHT / POKéMON in the menu, BACK in the move list -->
     <sc-if value="{{hasOptions}}" hint-placeholder-val="{{ true }}">
       <div class="frame" role="menu" style="width: 264px; padding: 24px; display: flex; flex-direction: column; justify-content: center; gap: 12px">
@@ -230,7 +275,7 @@ a{color:inherit;text-decoration:none}
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"timeLeft":{"editor":"int","min":0,"max":75,"default":75},"view":{"editor":"enum","options":["","menu","fight","ability","abilityMe","turn","oppFainted","oppSwitch"],"default":""},"myHp":{"editor":"int","min":0,"max":155,"default":155},"oppHp":{"editor":"int","min":0,"max":170,"default":170},"myStatus":{"editor":"enum","options":["","SLP","FRZ","BRN","PSN","PAR"],"default":""},"oppStatus":{"editor":"enum","options":["","SLP","FRZ","BRN","PSN","PAR"],"default":""},"weather":{"editor":"enum","options":["","rain","sun","sandstorm","hail"],"default":""},"$preview":{"width":1200,"height":900}}'>
+<script type="text/x-dc" data-dc-script data-props='{"timeLeft":{"editor":"int","min":0,"max":75,"default":75},"view":{"editor":"enum","options":["","menu","fight","ability","abilityMe","turn","oppFainted","oppSwitch","end","endRematch"],"default":""},"myHp":{"editor":"int","min":0,"max":155,"default":155},"oppHp":{"editor":"int","min":0,"max":170,"default":170},"myStatus":{"editor":"enum","options":["","SLP","FRZ","BRN","PSN","PAR"],"default":""},"oppStatus":{"editor":"enum","options":["","SLP","FRZ","BRN","PSN","PAR"],"default":""},"weather":{"editor":"enum","options":["","rain","sun","sandstorm","hail"],"default":""},"$preview":{"width":1200,"height":900}}'>
 class Component extends DCLogic {
   constructor(props) {
     super(props);
@@ -243,7 +288,11 @@ class Component extends DCLogic {
       // How many of the opponent's Pokémon have fainted, and whether their balls are showing
       oppOut: 0, oppBalls: false,
       // Which of the opponent's Pokémon is in (an index into opps()), and the ball row's animation: 'in' or 'leave'
-      oppMon: 0, ballsAnim: 'in'
+      oppMon: 0, ballsAnim: 'in',
+      // After the battle: who asked for a rematch ('me' or 'opp'), and whether you pressed QUIT
+      rematchBy: null, quitting: false,
+      // How many of your Pokémon have fainted (your ball row on the end screen)
+      myOut: 0
     };
     // Each board starts at one moment of the battle; the plain board plays the intro
     const VIEWS = {
@@ -257,7 +306,13 @@ class Component extends DCLogic {
       // The opponent's Pokémon just fainted: its sprite and info box are gone, their balls show what's left
       oppFainted: { mode: 'msg', oppHp: 0, showOpp: false, oppBalls: true, oppOut: 1, msg: ['GYARADOS fainted!', ''] },
       // The opponent switches out: plays on its own once the board mounts
-      oppSwitch: { mode: 'msg', msg: ['Waiting for SILVER...', ''] }
+      oppSwitch: { mode: 'msg', msg: ['Waiting for SILVER...', ''] },
+      // You won: as at the intro, SILVER (their trainer sprite) and both ball rows; all of SILVER's
+      // balls are dark, and 2 of yours (fainted ones darkened).
+      // The end screen counts down from 1:20; at 0:00 the room closes
+      end: { mode: 'end', trainer: true, showOpp: false, showMe: false, oppHp: 0, oppOut: 6, myOut: 2, left: 80, msg: ['GOLD won', 'the battle!'] },
+      // SILVER has already asked for a rematch
+      endRematch: { mode: 'end', trainer: true, showOpp: false, showMe: false, oppHp: 0, oppOut: 6, myOut: 2, left: 64, rematchBy: 'opp', msg: ['GOLD won', 'the battle!'] }
     };
     base.left = Math.min(75, Math.max(0, parseInt(props.timeLeft, 10) >= 0 ? parseInt(props.timeLeft, 10) : 75));
     this.state = Object.assign(base, VIEWS[props.view || ''] || {});
@@ -283,7 +338,22 @@ class Component extends DCLogic {
       { set: { mode: 'menu' } }
     ]);
   }
+  // REMATCH: you wait for the opponent; once both have asked, the next game starts.
+  // Prototype only: SILVER agrees 2 seconds later (at once if they asked first)
+  rematch() {
+    const s = this.state;
+    if (s.rematchBy === 'me' || s.quitting) return;
+    const both = s.rematchBy === 'opp';
+    this.setState({ rematchBy: 'me' });
+    this.rt = setTimeout(() => { if (this.goRematch) this.goRematch.click(); }, both ? 600 : 2000);
+  }
+  quit() {
+    if (this.state.quitting) return;
+    this.setState({ quitting: true });
+    if (this.goHome) this.goHome.click();
+  }
   componentWillUnmount() {
+    clearTimeout(this.rt);
     clearTimeout(this.t);
     clearTimeout(this.ft);
     clearInterval(this.tick);
@@ -443,8 +513,11 @@ class Component extends DCLogic {
       ballsCls: s.trainer ? 'abs balls' : 'abs balls ' + s.ballsAnim,
       showOppInfo: s.showOpp && !s.oppBalls,
       // Fainted Pokémon come first, in battle order
-      oppBalls: Array.from({ length: count }, (_, k) => ({ cls: k < s.oppOut ? 'pix p2ball out' : 'pix p2ball' })),
-      oppBallsLabel: NAMES[2] + "'s team: " + (count - s.oppOut) + ' of ' + count + ' left',
+      oppBalls: Array.from({ length: 6 }, (_, k) => ({ ball: k < count, empty: k >= count, cls: k < s.oppOut ? 'pix p2ball out' : 'pix p2ball' })),
+      // Both rows always have 6 places: below 6V6 the places past the battle size are empty grey circles
+      myBalls: Array.from({ length: 6 }, (_, k) => ({ ball: k < count, empty: k >= count, cls: k < s.myOut ? 'pix out' : 'pix' })),
+      myBallsLabel: 'Your team: ' + Math.max(0, count - s.myOut) + ' of ' + count + ' left',
+      oppBallsLabel: NAMES[2] + "'s team: " + Math.max(0, count - s.oppOut) + ' of ' + count + ' left',
       showOpp: s.showOpp,
       showMe: s.showMe,
       abilOpp: s.abil === 'opp',
@@ -453,8 +526,15 @@ class Component extends DCLogic {
       isMenu: s.mode === 'menu',
       isFight: s.mode === 'fight',
       hasOptions: s.mode === 'menu' || s.mode === 'fight',
-      msg1: s.msg[0],
-      msg2: s.msg[1],
+      isEnd: s.mode === 'end',
+      choosing: s.quitting || s.rematchBy === 'me',
+      rematch: () => this.rematch(),
+      quit: () => this.quit(),
+      setGoRematch: (el) => { this.goRematch = el; },
+      setGoHome: (el) => { this.goHome = el; },
+      // The end screen's message follows the rematch: yours waits on them, theirs is announced
+      msg1: s.mode === 'end' && s.rematchBy === 'me' ? 'Waiting for' : s.mode === 'end' && s.rematchBy === 'opp' ? 'Rematch' : s.msg[0],
+      msg2: s.mode === 'end' && s.rematchBy === 'me' ? NAMES[2] + '...' : s.mode === 'end' && s.rematchBy === 'opp' ? 'requested!' : s.msg[1],
       openFight: () => this.setState({ mode: 'fight', hover: null }),
       closeFight: () => this.setState({ mode: 'menu', hover: null }),
       unhover: () => this.setState({ hover: null }),

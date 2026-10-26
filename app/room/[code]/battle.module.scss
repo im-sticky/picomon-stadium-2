@@ -75,6 +75,12 @@
     }
   }
 
+  /* A place past the battle size: an empty grey circle. */
+  &__emptyBall {
+    display: block;
+    fill: var(--placeholder);
+  }
+
   /* Name, status slot + L50, the 384px HP bar; then types (opponent) or HP numbers and types (you). */
   &__info {
     position: absolute;
