@@ -6,7 +6,7 @@ export default {
   ability: "Reckless",
   set: {
     moves: ["High Jump Kick", "Knock Off", "Stone Edge", "Mach Punch"],
-    item: "Life Orb",
+    item: "Black Belt",
     nature: "Jolly",
     evs: { hp: 4, atk: 252, spe: 252 },
   },

@@ -6,7 +6,7 @@ export default {
   ability: "Shadow Tag",
   set: {
     moves: ["Counter", "Mirror Coat", "Encore", "Destiny Bond"],
-    item: "Leftovers",
+    item: "Sitrus Berry",
     nature: "Bold",
     evs: { hp: 252, def: 252, spd: 4 },
   },

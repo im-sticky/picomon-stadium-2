@@ -8,7 +8,7 @@ export default {
   types: ["Water", "Fire"],
   set: {
     moves: ["Octazooka", "Fire Blast", "Energy Ball", "Ice Beam"],
-    item: "Life Orb",
+    item: "Razor Claw",
     nature: "Modest",
     evs: { hp: 252, spa: 252, spd: 4 },
   },

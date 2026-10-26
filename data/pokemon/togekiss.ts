@@ -7,7 +7,7 @@ export default {
   ability: "Serene Grace",
   set: {
     moves: ["Air Slash", "Dazzling Gleam", "Roost", "Thunder Wave"],
-    item: "Leftovers",
+    item: "Sharp Beak",
     nature: "Timid",
     evs: { hp: 4, spa: 252, spe: 252 },
   },

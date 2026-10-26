@@ -7,7 +7,7 @@ export default {
   ability: "Adaptability",
   set: {
     moves: ["Nasty Plot", "Tri Attack", "Shadow Ball", "Ice Beam"],
-    item: "Life Orb",
+    item: "Silk Scarf",
     nature: "Timid",
     evs: { hp: 4, spa: 252, spe: 252 },
   },

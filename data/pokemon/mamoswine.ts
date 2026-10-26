@@ -7,7 +7,7 @@ export default {
   ability: "Thick Fat",
   set: {
     moves: ["Earthquake", "Icicle Crash", "Ice Shard", "Knock Off"],
-    item: "Life Orb",
+    item: "Soft Sand",
     nature: "Adamant",
     evs: { hp: 4, atk: 252, spe: 252 },
   },

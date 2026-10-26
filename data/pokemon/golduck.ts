@@ -8,7 +8,7 @@ export default {
   types: ["Water", "Psychic"],
   set: {
     moves: ["Calm Mind", "Scald", "Psyshock", "Ice Beam"],
-    item: "Life Orb",
+    item: "Shell Bell",
     nature: "Timid",
     evs: { hp: 4, spa: 252, spe: 252 },
   },

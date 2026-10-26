@@ -7,7 +7,7 @@ export default {
   ability: "Flash Fire",
   set: {
     moves: ["Nasty Plot", "Fire Blast", "Dark Pulse", "Sludge Bomb"],
-    item: "Life Orb",
+    item: "Charcoal",
     nature: "Timid",
     evs: { hp: 4, spa: 252, spe: 252 },
   },

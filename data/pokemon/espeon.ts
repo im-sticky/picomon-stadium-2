@@ -7,7 +7,7 @@ export default {
   ability: "Magic Bounce",
   set: {
     moves: ["Calm Mind", "Psyshock", "Dazzling Gleam", "Morning Sun"],
-    item: "Leftovers",
+    item: "Twisted Spoon",
     nature: "Timid",
     evs: { hp: 4, spa: 252, spe: 252 },
   },

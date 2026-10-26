@@ -6,7 +6,7 @@ export default {
   ability: "Intimidate",
   set: {
     moves: ["Close Combat", "Sucker Punch", "Rapid Spin", "Mach Punch"],
-    item: "Leftovers",
+    item: "Assault Vest",
     nature: "Adamant",
     evs: { hp: 252, atk: 252, spd: 4 },
   },

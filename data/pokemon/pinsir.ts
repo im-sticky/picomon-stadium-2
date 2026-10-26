@@ -7,7 +7,7 @@ export default {
   ability: "Moxie",
   set: {
     moves: ["Swords Dance", "X-Scissor", "Close Combat", "Stone Edge"],
-    item: "Life Orb",
+    item: "Expert Belt",
     nature: "Jolly",
     evs: { hp: 4, atk: 252, spe: 252 },
   },

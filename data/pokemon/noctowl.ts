@@ -8,7 +8,7 @@ export default {
   baseStats: { hp: 100, atk: 50, def: 50, spa: 96, spd: 96, spe: 70 },
   set: {
     moves: ["Shadow Ball", "Air Slash", "Hypnosis", "Roost"],
-    item: "Life Orb",
+    item: "Zoom Lens",
     nature: "Modest",
     evs: { hp: 252, spa: 252, spd: 4 },
   },

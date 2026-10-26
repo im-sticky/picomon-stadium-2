@@ -8,7 +8,7 @@ export default {
   baseStats: { hp: 60, atk: 45, def: 50, spa: 110, spd: 110, spe: 80 },
   set: {
     moves: ["Quiver Dance", "Bug Buzz", "Psychic", "Sleep Powder"],
-    item: "Leftovers",
+    item: "Silver Powder",
     nature: "Timid",
     evs: { hp: 4, spa: 252, spe: 252 },
   },

@@ -7,7 +7,7 @@ export default {
   ability: "Intimidate",
   set: {
     moves: ["Flare Blitz", "Extreme Speed", "Wild Charge", "Morning Sun"],
-    item: "Leftovers",
+    item: "Shuca Berry",
     nature: "Adamant",
     evs: { hp: 4, atk: 252, spe: 252 },
   },
