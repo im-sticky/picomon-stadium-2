@@ -395,6 +395,15 @@ is absolutely placed on the 1200×900 board.
   - Both teams show as rows of 32px balls on a 3px ink line with an end stroke: the
     opponent's top left (blue-tinted, line open to the right), yours on the right
     above where your info will go. One ball per Pokémon in the battle (3, 4 or 6).
+  - The opponent's row reappears mid-battle (4j, 4k) in place of their info box
+    whenever their Pokémon faints or they switch: it slides in from the left edge
+    (0.3s, 6 steps), fainted balls first and darkened (`brightness(.3)`), stays
+    while they pick a replacement, and slides back out once the new Pokémon is in.
+    Faint: "X fainted!" (900 ms), row in (1200 ms). Switch: "SILVER withdrew X!"
+    (900 ms), row in (1200 ms). Then "SILVER sent out Y!" with the row up
+    (1600 ms), the row slides out (300 ms) and the info box returns (500 ms). After
+    their last Pokémon faints the row stays up. Its label reads "SILVER's team: 5
+    of 6 left".
   - Messages, one at a time in the full-width box: "SILVER wants to battle!" (each
     player sees the other's name), "SILVER sent out GYARADOS!", "Go! VENUSAUR!".
     Then any on-entry abilities (below), then the menu.
@@ -403,8 +412,9 @@ is absolutely placed on the 1200×900 board.
   148×28 badges, 12px apart; GYARADOS shows WATER and FLYING). No HP numbers for
   the opponent.
 - You: sprite bottom left (192px); info on the right with name, status slot +
-  `L50`, HP bar (384px) and your HP numbers below the bar, right-aligned
-  ("97/155", 24px).
+  `L50`, HP bar (384px), your HP numbers below the bar, right-aligned
+  ("97/155", 24px on a 48px line), then your type badges, right-aligned, with no
+  extra gap.
 - No experience bar and no gender icon.
 - Sprites: the opponent uses `PokemonFront` (`app/ui/pokemon-front.tsx`) and you use
   `PokemonBack` (`app/ui/pokemon-back.tsx`), with the sprites from
@@ -414,7 +424,8 @@ is absolutely placed on the 1200×900 board.
     components' native 112px box; scale the box to match in the app.
   - Opponent's box: right 132, top 12. Yours: left 132, with the back pic's bottom
     on the top edge of the bottom boxes (612px).
-  - Your info block sits at right 72, top 420, clear of the opponent's sprite.
+  - Your info block sits at right 72, top 396, types under the HP numbers, clear of
+    the opponent's sprite and the bottom boxes.
   - The front sprite plays its `anim` once when the Pokémon is sent out, then rests
     on frame 0 (no idle loop), as `PokemonFront` does by default.
   - Transform or Imposter: the Pokémon's sprite becomes the one it copied, washed a
