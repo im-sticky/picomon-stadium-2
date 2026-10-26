@@ -503,9 +503,9 @@ is absolutely placed on the 1200×900 board.
     join). The room code then no longer works.
   - REMATCH: once one player presses it, both of their buttons grey out and their
     message reads "Waiting for / <OPP>...". The other player's message reads
-    "Rematch / requested!". When they press REMATCH too, both go back to the type
-    battle for a new game, with the same battle size and draft type, and the type
-    battle, draft and battle start over. They can still QUIT instead.
+    "Rematch / requested!". When they press REMATCH too, both go back to the Battle
+    order (3a/3b) for a new game with the same drafted Pokémon and battle size: each
+    picks a fresh order, and the battle starts over. They can still QUIT instead.
   - If the countdown runs out first, the room closes and both go back to Home.
 
 ### Your Pokémon (`Party.dc.html`)

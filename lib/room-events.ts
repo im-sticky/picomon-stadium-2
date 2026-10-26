@@ -13,7 +13,7 @@ export type RoomEvent =
   | { kind: "draft-started"; firstDrafter: Slot }
   | { kind: "draft-picked"; pickIndex: number; slot: Slot; pokemonId: string }
   | { kind: "battle-started"; battleSize: BattleSize; deadline: number; at: number }
-  /** Both players chose REMATCH: game `game` starts at the type battle. */
+  /** Both players chose REMATCH: game `game` starts at the Battle order, with the same draft. */
   | { kind: "rematch-started"; game: number };
 
 /**
@@ -107,9 +107,8 @@ export function applyEvent(state: RoomState | null, event: SyncEvent): ApplyResu
     if (event.game <= state.game) return SAME;
     // A whole game missed: only the server knows where it's at.
     if (event.game > state.game + 1 || phase !== "battle") return CONFLICT;
-    return {
-      next: { ...state, game: event.game, phase: "type-battle", typeBattle: newRound(1), draft: null, battle: null },
-    };
+    // Same draft, fresh battle: back to the Battle order.
+    return { next: { ...state, game: event.game, battle: { stage: "team-order", result: null } } };
   }
 
   switch (event.kind) {

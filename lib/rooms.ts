@@ -6,7 +6,7 @@ import { draftPickError, TOTAL_PICKS, type DraftPickError } from '@/lib/draft';
 import { getPokemon } from '@/lib/pokemon-dex';
 import { typeBattleWinner } from '@/lib/type-battle';
 import { DEFAULT_BATTLE_SIZE, DEFAULT_DRAFT_TYPE } from '@/lib/types';
-import { GRACE_MS, type BattleResult, type BattleStage, type EndReason } from '@/lib/battle-types';
+import type { BattleResult, BattleStage, EndReason } from '@/lib/battle-types';
 import type {
   BattleSize,
   DraftPick,
@@ -556,55 +556,6 @@ export async function closeRoom(db: Db, code: string, secret: string | null, now
       if (battle?.stage !== 'ended') return { kind: 'not-ended' };
       // Only a still-live room is closed, so a racing second QUIT changes nothing.
       return (await expireRoom(tx, code, now)) ? { kind: 'closed' } : { kind: 'not-found' };
-    }),
-  );
-}
-
-export type RematchResult =
-  | { kind: 'requested'; slot: Slot }
-  | { kind: 'already-requested' }
-  | { kind: 'restarted'; game: number }
-  | { kind: 'closed' }
-  | { kind: 'not-ended' }
-  | { kind: 'not-found' };
-
-/**
- * REMATCH after the battle. The first player to ask is recorded; when the other asks
- * too, the room goes back to the type battle as a new game: the type picks, draft
- * picks and battle are deleted, and the battle size and draft type are kept. Asking
- * after the end screen's time is up closes the room instead, as the timeout would.
- */
-export async function requestRematch(db: Db, code: string, secret: string | null, now: number): Promise<RematchResult> {
-  if (!secret) return { kind: 'not-found' };
-  return withBusyRetry(() =>
-    db.transaction(async (tx): Promise<RematchResult> => {
-      const room = await findLiveRoom(tx, code, now);
-      const me = room && (await findMember(tx, code, secret));
-      if (!room || !me) return { kind: 'not-found' };
-      if (room.phase !== 'battle') return { kind: 'not-ended' };
-      const [battle] = await tx
-        .select({ stage: battles.stage, deadline: battles.deadline, rematchBy: battles.rematchBy })
-        .from(battles)
-        .where(eq(battles.roomCode, code));
-      if (battle?.stage !== 'ended') return { kind: 'not-ended' };
-      if (battle.deadline !== null && now >= battle.deadline + GRACE_MS) {
-        return (await expireRoom(tx, code, now)) ? { kind: 'closed' } : { kind: 'not-found' };
-      }
-      if (battle.rematchBy === me.slot) return { kind: 'already-requested' };
-      if (battle.rematchBy === null) {
-        await tx.update(battles).set({ rematchBy: me.slot }).where(eq(battles.roomCode, code));
-        return { kind: 'requested', slot: me.slot };
-      }
-      // The other player asked first: start the next game.
-      await tx.delete(battles).where(eq(battles.roomCode, code));
-      await tx.delete(draftPicks).where(eq(draftPicks.roomCode, code));
-      await tx.delete(typePicks).where(eq(typePicks.roomCode, code));
-      const game = room.game + 1;
-      await tx
-        .update(rooms)
-        .set({ phase: 'type-battle', typeRound: 1, typeWinner: null, firstDrafter: null, game })
-        .where(eq(rooms.code, code));
-      return { kind: 'restarted', game };
     }),
   );
 }

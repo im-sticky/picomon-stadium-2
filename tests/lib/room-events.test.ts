@@ -203,14 +203,19 @@ describe("rematch-started", () => {
   const ended = battling("ended", { winner: 1, reason: "normal" });
   const rematch: SyncEvent = { kind: "rematch-started", game: 2 };
 
-  it("sends an ended battle back to a fresh type battle, keeping the settings", () => {
+  it("sends an ended battle back to a fresh Battle order, keeping the draft", () => {
     expect(applyEvent(ended, rematch)).toEqual({
-      next: { ...ended, game: 2, phase: "type-battle", typeBattle: round(1).typeBattle, draft: null, battle: null },
+      next: { ...ended, game: 2, battle: { stage: "team-order", result: null } },
     });
   });
 
+  it("puts the next game's Battle order ahead of the ended battle", () => {
+    const next = applyEvent(ended, rematch);
+    expect("next" in next && progress(next.next)).toBeGreaterThan(progress(ended));
+  });
+
   it("is a duplicate once applied, and a conflict if a whole game was missed", () => {
-    expect(applyEvent({ ...round(1), game: 2 }, rematch)).toEqual({ same: true });
+    expect(applyEvent({ ...battling("team-order", null), game: 2 }, rematch)).toEqual({ same: true });
     expect(applyEvent(ended, { kind: "rematch-started", game: 3 })).toEqual({ refetch: "conflict" });
     expect(applyEvent(drafting(), rematch)).toEqual({ refetch: "conflict" });
   });

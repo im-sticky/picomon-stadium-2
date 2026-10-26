@@ -94,7 +94,7 @@ export function BattleScreen({
   subscribeBattle: SubscribeBattle;
   /** For REMATCH: its result (a new game) updates the room state. */
   onAction: RoomAction;
-  /** The battle is gone but the room isn't (a rematch started): fetch the room state. */
+  /** The battle was replaced (a rematch started) or is gone: fetch the room state. */
   onRoomChanged: () => void;
   /** The room is closed (QUIT, or the end screen's time ran out): go to Home. */
   onClosed: () => void;
@@ -205,6 +205,9 @@ export function BattleScreen({
   /** Takes a view of yours: queues its new steps and keeps its request, deadline and result. */
   const applyView = useCallback(
     (incoming: BattleView) => {
+      // This screen comes after the Battle order, so a view back at it is a rematch's
+      // new battle (same draft, next game): the room state moves to it.
+      if (incoming.stage === "team-order") return void roomChangedRef.current();
       let next = incoming;
       const current = viewRef.current;
       // An older step's view (a slow response) has nothing new.
@@ -243,7 +246,7 @@ export function BattleScreen({
           try {
             const res = await fetch(`/api/rooms/${code}/battle?from=${from}`);
             if (res.status === 404) return closedRef.current();
-            // No battle any more (a rematch started): the room state says what's next.
+            // No battle any more: the room state says what's next.
             if (res.status === 409) return roomChangedRef.current();
             if (res.ok) {
               if (live.current) applyView((await res.json()) as BattleView);
