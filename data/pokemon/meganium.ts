@@ -8,7 +8,7 @@ export default {
   types: ["Grass", "Fairy"],
   set: {
     moves: ["Giga Drain", "Moonblast", "Leech Seed", "Synthesis"],
-    item: "Leftovers",
+    item: "Big Root",
     nature: "Calm",
     evs: { hp: 252, def: 4, spd: 252 },
   },

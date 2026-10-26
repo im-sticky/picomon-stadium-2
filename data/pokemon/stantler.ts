@@ -8,7 +8,7 @@ export default {
   baseStats: { hp: 73, atk: 100, def: 62, spa: 85, spd: 65, spe: 85 },
   set: {
     moves: ["Return", "Zen Headbutt", "Megahorn", "Earthquake"],
-    item: "Life Orb",
+    item: "Choice Scarf",
     nature: "Jolly",
     evs: { hp: 4, atk: 252, spe: 252 },
   },

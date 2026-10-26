@@ -8,7 +8,7 @@ export default {
   baseStats: { hp: 90, atk: 95, def: 100, spa: 70, spd: 90, spe: 70 },
   set: {
     moves: ["Bulk Up", "Waterfall", "Brick Break", "Ice Punch"],
-    item: "Leftovers",
+    item: "Lum Berry",
     nature: "Adamant",
     evs: { hp: 252, atk: 252, spd: 4 },
   },

@@ -7,7 +7,7 @@ export default {
   ability: "Sturdy",
   set: {
     moves: ["Stealth Rock", "Earthquake", "Stone Edge", "Explosion"],
-    item: "Leftovers",
+    item: "Hard Stone",
     nature: "Adamant",
     evs: { hp: 252, atk: 252, spd: 4 },
   },

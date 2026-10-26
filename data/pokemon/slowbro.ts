@@ -8,7 +8,7 @@ export default {
   baseStats: { hp: 95, atk: 75, def: 120, spa: 100, spd: 80, spe: 30 },
   set: {
     moves: ["Calm Mind", "Scald", "Psyshock", "Slack Off"],
-    item: "Leftovers",
+    item: "Rocky Helmet",
     nature: "Bold",
     evs: { hp: 252, def: 252, spd: 4 },
   },

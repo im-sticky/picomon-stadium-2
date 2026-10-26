@@ -6,7 +6,7 @@ export default {
   ability: "Water Absorb",
   set: {
     moves: ["Scald", "Air Slash", "Toxic", "Rest"],
-    item: "Leftovers",
+    item: "Chesto Berry",
     nature: "Bold",
     evs: { hp: 252, def: 252, spd: 4 },
   },

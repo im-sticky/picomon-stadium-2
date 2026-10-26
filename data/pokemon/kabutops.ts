@@ -7,7 +7,7 @@ export default {
   ability: "Battle Armor",
   set: {
     moves: ["Swords Dance", "Waterfall", "Stone Edge", "Aqua Jet"],
-    item: "Life Orb",
+    item: "Mystic Water",
     nature: "Adamant",
     evs: { hp: 4, atk: 252, spe: 252 },
   },

@@ -7,7 +7,7 @@ export default {
   baseStats: { hp: 60, atk: 115, def: 100, spa: 60, spd: 80, spe: 30 },
   set: {
     moves: ["Spore", "Seed Bomb", "X-Scissor", "Knock Off"],
-    item: "Life Orb",
+    item: "Miracle Seed",
     nature: "Adamant",
     evs: { hp: 252, atk: 252, spd: 4 },
   },

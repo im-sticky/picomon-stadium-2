@@ -9,7 +9,7 @@ export default {
   baseStats: { hp: 75, atk: 55, def: 75, spa: 105, spd: 85, spe: 85 },
   set: {
     moves: ["Flamethrower", "Earth Power", "Sludge Bomb", "Solar Beam"],
-    item: "Life Orb",
+    item: "Wise Glasses",
     nature: "Timid",
     evs: { hp: 4, spa: 252, spd: 252 },
   },

@@ -8,7 +8,7 @@ export default {
   baseStats: { hp: 70, atk: 60, def: 40, spa: 120, spd: 100, spe: 95 },
   set: {
     moves: ["Lovely Kiss", "Ice Beam", "Psyshock", "Nasty Plot"],
-    item: "Life Orb",
+    item: "Wide Lens",
     nature: "Timid",
     evs: { hp: 4, spa: 252, spe: 252 },
   },

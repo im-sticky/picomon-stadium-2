@@ -7,7 +7,7 @@ export default {
   ability: "Volt Absorb",
   set: {
     moves: ["Calm Mind", "Thunderbolt", "Shadow Ball", "Extrasensory"],
-    item: "Leftovers",
+    item: "Magnet",
     nature: "Timid",
     evs: { hp: 4, spa: 252, spe: 252 },
   },

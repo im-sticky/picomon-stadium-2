@@ -8,7 +8,7 @@ export default {
   baseStats: { hp: 75, atk: 90, def: 200, spa: 55, spd: 65, spe: 30 },
   set: {
     moves: ["Stealth Rock", "Earthquake", "Heavy Slam", "Roar"],
-    item: "Leftovers",
+    item: "Custap Berry",
     nature: "Impish",
     evs: { hp: 252, def: 252, spd: 4 },
   },

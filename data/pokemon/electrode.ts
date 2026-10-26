@@ -7,7 +7,7 @@ export default {
   ability: "Static",
   set: {
     moves: ["Volt Switch", "Thunderbolt", "Signal Beam", "Foul Play"],
-    item: "Life Orb",
+    item: "Choice Specs",
     nature: "Timid",
     evs: { hp: 4, spa: 252, spe: 252 },
   },

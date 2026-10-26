@@ -7,7 +7,7 @@ export default {
   types: ["Normal", "Ground"],
   set: {
     moves: ["Coil", "Body Slam", "Earthquake", "Roost"],
-    item: "Leftovers",
+    item: "Quick Claw",
     nature: "Adamant",
     evs: { hp: 252, atk: 252, spd: 4 },
   },

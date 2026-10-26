@@ -8,7 +8,7 @@ export default {
   baseStats: { hp: 80, atk: 102, def: 65, spa: 65, spd: 80, spe: 88 },
   set: {
     moves: ["Waterfall", "Megahorn", "Knock Off", "Drill Run"],
-    item: "Life Orb",
+    item: "Choice Band",
     nature: "Adamant",
     evs: { hp: 4, atk: 252, spe: 252 },
   },

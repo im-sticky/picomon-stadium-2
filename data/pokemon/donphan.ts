@@ -7,7 +7,7 @@ export default {
   ability: "Sturdy",
   set: {
     moves: ["Earthquake", "Ice Shard", "Knock Off", "Rapid Spin"],
-    item: "Leftovers",
+    item: "Rocky Helmet",
     nature: "Impish",
     evs: { hp: 252, def: 252, spd: 4 },
   },

@@ -6,7 +6,7 @@ export default {
   ability: "Sturdy",
   set: {
     moves: ["Stealth Rock", "Rapid Spin", "Volt Switch", "Gyro Ball"],
-    item: "Leftovers",
+    item: "Metal Coat",
     nature: "Relaxed",
     evs: { hp: 252, def: 252, spd: 4 },
     ivs: { spe: 0 },

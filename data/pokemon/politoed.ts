@@ -9,7 +9,7 @@ export default {
   baseStats: { hp: 90, atk: 75, def: 80, spa: 90, spd: 100, spe: 80 },
   set: {
     moves: ["Scald", "Ice Beam", "Toxic", "Encore"],
-    item: "Leftovers",
+    item: "Damp Rock",
     nature: "Bold",
     evs: { hp: 252, def: 252, spd: 4 },
   },
