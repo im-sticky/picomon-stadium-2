@@ -188,7 +188,7 @@ describe("stepBeats: status, faints and switches", () => {
     const beats = stepBeats(["|-weather|RainDance|[from] ability: Drizzle|[of] p2a: Politoed"], host);
     expect(beats).toEqual([
       { hold: HOLD.ability, ability: { side: "opp", name: "POLITOED", ability: "Drizzle" } },
-      { hold: HOLD.message, message: ["It started", "to rain!"] },
+      { hold: HOLD.message, message: ["It started", "to rain!"], weather: "rain" },
     ]);
     const healed = stepBeats(["|-heal|p1a: Gyarados|171/171|[from] ability: Water Absorb|[of] p2a: Arcanine"], host);
     expect(healed[0].ability).toEqual({ side: "me", name: "GYARADOS", ability: "Water Absorb" });
@@ -287,6 +287,50 @@ describe("stepBeats: the opponent's ball row", () => {
     expect(scene).toMatchObject({ oppFainted: 2, oppBalls: "in" });
     // A repeated faint line for the same Pokémon doesn't count twice.
     expect(at(["|faint|p2a: Blissey"], scene).oppFainted).toBe(2);
+  });
+});
+
+describe("stepBeats: weather", () => {
+  const RAIN = ["|move|p1a: Gyarados|Rain Dance|p1a: Gyarados", "|-weather|RainDance"];
+  const UPKEEP = ["|", "|-weather|RainDance|[upkeep]", "|upkeep", "|turn|3"];
+  const CLEAR = ["|", "|-weather|none", "|upkeep", "|turn|4"];
+
+  it("starts clear", () => {
+    expect(initialScene().weather).toBeNull();
+  });
+
+  it("sets the weather on a -weather line, with its message", () => {
+    const beats = stepBeats(RAIN, host);
+    const beat = beats.find((b) => b.weather);
+    expect(beat).toMatchObject({ weather: "rain", message: ["It started", "to rain!"] });
+    expect(beats.reduce(applyBeat, initialScene()).weather).toBe("rain");
+  });
+
+  it("maps each weather id", () => {
+    for (const [id, weather] of [["RainDance", "rain"], ["SunnyDay", "sun"], ["Sandstorm", "sandstorm"], ["Hail", "hail"]]) {
+      expect(play([`|-weather|${id}|[from] ability: Drought|[of] p2a: Arcanine`], host).weather).toBe(weather);
+    }
+  });
+
+  it("keeps the weather on upkeep", () => {
+    const rain = play(RAIN, host);
+    const beats = stepBeats(UPKEEP, host);
+    expect(beats.map((b) => b.message)).toContainEqual(["Rain continues", "to fall."]);
+    expect(beats.reduce(applyBeat, rain).weather).toBe("rain");
+    // A step with no weather line leaves it alone too.
+    expect(play(["|", "|upkeep", "|turn|3"], host, rain).weather).toBe("rain");
+  });
+
+  it("clears on none", () => {
+    const beats = stepBeats(CLEAR, host);
+    expect(beats.find((b) => b.weather)).toMatchObject({ weather: "none", message: ["The weather", "cleared up."] });
+    expect(play(CLEAR, host, play(RAIN, host)).weather).toBeNull();
+  });
+
+  it("is restored by replay after a refresh", () => {
+    const beats = [...stepBeats(RAIN, host), ...stepBeats(UPKEEP, host)];
+    expect(replay(initialScene(), beats)).toMatchObject({ weather: "rain", message: ["", ""], ability: null });
+    expect(replay(initialScene(), [...beats, ...stepBeats(CLEAR, host)]).weather).toBeNull();
   });
 });
 

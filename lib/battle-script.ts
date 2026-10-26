@@ -28,6 +28,9 @@ export type Battler = {
 
 export type AbilityBox = { side: Side; name: string; ability: string };
 
+/** The weather on the field, from `-weather` lines. */
+export type Weather = "rain" | "sun" | "sandstorm" | "hail";
+
 /** The opponent's ball row mid-battle, in their info box's place: sliding in, or sliding back out. */
 export type BallRow = "in" | "leave";
 
@@ -43,6 +46,8 @@ export type Scene = {
   oppBalls: BallRow | null;
   /** How many of the opponent's Pokémon have fainted: their balls show darkened. */
   oppFainted: number;
+  /** The active weather, or null when it's clear. */
+  weather: Weather | null;
 };
 
 /** One moment of the playback. Effects apply together, then it holds for `hold` ms. */
@@ -61,6 +66,8 @@ export type Beat = {
   withdraw?: Side;
   /** The opponent's ball row slides in, slides out, or is gone (`"off"`). */
   oppBalls?: BallRow | "off";
+  /** The weather starts, continues (upkeep) or clears (`"none"`). */
+  weather?: Weather | "none";
 };
 
 export type ScriptContext = {
@@ -114,6 +121,7 @@ export const initialScene = (): Scene => ({
   ability: null,
   oppBalls: null,
   oppFainted: 0,
+  weather: null,
 });
 
 const STATUSES = ["par", "brn", "slp", "frz", "psn", "tox"] as const;
@@ -433,7 +441,8 @@ export function stepBeats(lines: readonly string[], ctx: ScriptContext): Beat[] 
 
       case "-weather": {
         const text = weatherText(args[1] ?? "", "upkeep" in tags);
-        if (text) say(text);
+        const weather = args[1] === "none" ? "none" : WEATHERS[args[1] ?? ""];
+        if (text) say(text, HOLD.message, weather ? { weather } : {});
         break;
       }
 
@@ -666,6 +675,9 @@ function cantText(name: string, reason: string, move: string | undefined): Messa
   }
 }
 
+/** Showdown's weather ids, as the scene's weather. */
+const WEATHERS: Record<string, Weather> = { RainDance: "rain", SunnyDay: "sun", Sandstorm: "sandstorm", Hail: "hail" };
+
 function weatherText(weather: string, upkeep: boolean): Message | null {
   const table: Record<string, [Message, Message]> = {
     RainDance: [msg("It started", "to rain!"), msg("Rain continues", "to fall.")],
@@ -823,6 +835,7 @@ export function applyBeat(scene: Scene, beat: Beat): Scene {
   const entrances = { ...scene.entrances };
   let intro = beat.intro ?? scene.intro;
   let oppFainted = scene.oppFainted;
+  const weather = beat.weather === undefined ? scene.weather : beat.weather === "none" ? null : beat.weather;
   const oppBalls = beat.oppBalls === undefined ? scene.oppBalls : beat.oppBalls === "off" ? null : beat.oppBalls;
   if (beat.withdraw) active[beat.withdraw] = null;
   if (beat.switchIn) {
@@ -868,6 +881,7 @@ export function applyBeat(scene: Scene, beat: Beat): Scene {
     ability: beat.ability ?? null,
     oppBalls,
     oppFainted,
+    weather,
   };
 }
 

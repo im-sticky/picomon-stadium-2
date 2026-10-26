@@ -260,7 +260,8 @@
     }
   }
 
-  /* The moves on the left, the hovered move's info on the right. */
+  /* The moves on the left, the hovered move's info on the right, the weather
+     centred between them. */
   &__moves {
     display: flex;
     flex: 1;
@@ -274,9 +275,22 @@
     flex-direction: column;
   }
 
+  &__moveWeather {
+    display: flex;
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* Keeps its width with nothing hovered, so the weather icon doesn't move. */
   &__moveInfo {
+    flex: none;
     width: 228px;
-    margin-left: auto;
+  }
+
+  /* The active weather's 16px icon at 3×. */
+  &__weather {
+    @include pixelated;
+    flex: none;
   }
 
   &__moveType {

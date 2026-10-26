@@ -25,6 +25,7 @@ import {
   type Beat,
   type Message,
   type Scene,
+  type Weather,
 } from "@/lib/battle-script";
 import type { BattleChoice, BattleResult, BattleView, MoveOption, TeamMember } from "@/lib/battle-types";
 import type { PoolMove, PoolPokemon } from "@/lib/draft-pool";
@@ -502,7 +503,12 @@ export function BattleScreen({
               </MenuItem>
             ))}
           </div>
-          {hovered && <MoveInfo move={hovered} info={movesById.get(hovered.id)} />}
+          <div className={styles.battle__moveWeather}>
+            <WeatherIcon weather={scene.weather} />
+          </div>
+          <div className={styles.battle__moveInfo} aria-live="polite">
+            {hovered && <MoveInfo move={hovered} info={movesById.get(hovered.id)} />}
+          </div>
         </Frame>
         <Frame className={styles.battle__options} role="menu">
           <MenuItem onClick={() => setMode("battle")}>BACK</MenuItem>
@@ -515,7 +521,12 @@ export function BattleScreen({
         <MessageBox
           className={styles.battle__message}
           message={failed ? FAILED : ["What will", `${me ? me.name.toUpperCase() : ""} do?`]}
-          actions={clock && <Countdown clock={clock} />}
+          actions={
+            <>
+              <WeatherIcon weather={scene.weather} />
+              {clock && <Countdown clock={clock} />}
+            </>
+          }
         />
         <Frame className={styles.battle__options} role="menu">
           <MenuItem
@@ -691,7 +702,7 @@ function MoveInfo({ move, info }: { move: MoveOption; info: PoolMove | undefined
   const power = info?.power ? `${info.power}P` : "---";
   const accuracy = info?.accuracy ? `${info.accuracy}%` : "---";
   return (
-    <div className={styles.battle__moveInfo} aria-live="polite">
+    <>
       <div className={styles.battle__moveType}>
         {info && (
           <>
@@ -713,6 +724,30 @@ function MoveInfo({ move, info }: { move: MoveOption; info: PoolMove | undefined
       <p className={styles.battle__moveLine}>
         {move.pp === null ? "PP --" : `PP ${move.pp}/${move.maxpp}`}
       </p>
-    </div>
+    </>
+  );
+}
+
+const WEATHER_LABELS: Record<Weather, string> = {
+  rain: "Rain",
+  sun: "Harsh sunlight",
+  sandstorm: "Sandstorm",
+  hail: "Hail",
+};
+
+/** The active weather's icon; nothing when it's clear. */
+function WeatherIcon({ weather }: { weather: Weather | null }) {
+  if (!weather) return null;
+  const label = WEATHER_LABELS[weather];
+  return (
+    <Image
+      className={styles.battle__weather}
+      src={`/sprites/misc/weather-${weather}.png`}
+      alt={label}
+      title={label}
+      width={48}
+      height={48}
+      unoptimized
+    />
   );
 }
