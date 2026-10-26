@@ -8,7 +8,7 @@ export const rooms = sqliteTable('rooms', {
   battleSize: integer('battle_size').notNull().default(6),
   // The draft's rules, chosen by the host: 'standard' | 'unlimited' | 'pokeball'.
   draftType: text('draft_type').notNull().default('standard'),
-  // 'lobby' until the host starts the battle, then 'type-battle', then 'draft' once
+  // 'lobby' until both players are READY and the countdown ends, then 'type-battle', then 'draft' once
   // the type battle winner has chosen the draft order.
   phase: text('phase').notNull().default('lobby'),
   // Current type battle round (0 in the lobby, 1 once started, +1 after each draw).
@@ -20,6 +20,16 @@ export const rooms = sqliteTable('rooms', {
   // Which game this is: 1, then +1 for each rematch. Room state only moves forward
   // within a game, so clients compare this first.
   game: integer('game').notNull().default(1),
+  // Lobby only. Each player's READY; cleared by a host option change.
+  p1Ready: integer('p1_ready', { mode: 'boolean' }).notNull().default(false),
+  p2Ready: integer('p2_ready', { mode: 'boolean' }).notNull().default(false),
+  // Unix ms (server time) when the type battle starts: set when the second player readies,
+  // cleared by an un-ready or an option change. Null otherwise.
+  startAt: integer('start_at'),
+  // Whether the host's last option change cleared someone's READY ("Battle options changed.").
+  optionsChanged: integer('options_changed', { mode: 'boolean' }).notNull().default(false),
+  // Bumped by every lobby change (options, ready): orders lobby-updated events.
+  lobbyVersion: integer('lobby_version').notNull().default(0),
 });
 
 export const players = sqliteTable(

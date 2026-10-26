@@ -26,6 +26,9 @@ import { POST as joinRoute } from '@/app/api/rooms/[code]/join/route';
 import { GET as stateRoute } from '@/app/api/rooms/[code]/route';
 import { GET as tokenRoute } from '@/app/api/ably-token/route';
 import { POST as startRoute } from '@/app/api/rooms/[code]/start/route';
+import { POST as readyRoute } from '@/app/api/rooms/[code]/ready/route';
+import { POST as optionsRoute } from '@/app/api/rooms/[code]/options/route';
+import { START_COUNTDOWN_MS } from '@/lib/types';
 import { POST as pickRoute } from '@/app/api/rooms/[code]/type-pick/route';
 import { POST as againRoute } from '@/app/api/rooms/[code]/again/route';
 import { POST as orderRoute } from '@/app/api/rooms/[code]/order/route';
@@ -241,36 +244,140 @@ describe('rooms API', () => {
   });
 });
 
+const ready = (code: string, cookie: string, value: unknown) =>
+  readyRoute(req(`/api/rooms/${code}/ready`, 'POST', { ready: value }, cookie), ctx(code));
+const options = (code: string, cookie: string, body: object) =>
+  optionsRoute(req(`/api/rooms/${code}/options`, 'POST', body, cookie), ctx(code));
+const start = (code: string, cookie: string) => startRoute(req(`/api/rooms/${code}/start`, 'POST', {}, cookie), ctx(code));
+const getState = async (code: string, cookie: string) =>
+  (await stateRoute(req(`/api/rooms/${code}`, 'GET', undefined, cookie), ctx(code))).json();
+
+/** POSTs `/start` once the countdown is over: the server's clock moved past `startAt`. */
+async function startLater(code: string, cookie: string) {
+  const later = Date.now() + START_COUNTDOWN_MS;
+  const spy = vi.spyOn(Date, 'now').mockReturnValue(later);
+  try {
+    return await start(code, cookie);
+  } finally {
+    spy.mockRestore();
+  }
+}
+
+/** A full room: the host is gold, the guest misty. */
+async function fullRoom(settings: object = {}) {
+  const h = await host('gold', settings);
+  const joined = await joinRoute(req(`/api/rooms/${h.code}/join`, 'POST', { trainer: 'misty' }), ctx(h.code));
+  return { code: h.code, host: h.cookie, guest: cookieOf(joined) };
+}
+
+/** Both players READY, then the type battle starts once the countdown is over. */
+async function readyAndStart(code: string, hostCookie: string, guest: string) {
+  await ready(code, hostCookie, true);
+  await ready(code, guest, true);
+  return startLater(code, hostCookie);
+}
+
+describe('lobby API', () => {
+  it('the host changes the options; the guest is told', async () => {
+    const { code, host: hostCookie, guest } = await fullRoom();
+    const res = await options(code, hostCookie, { battleSize: 3, draftType: 'pokeball' });
+    expect(res.status).toBe(200);
+    const { event } = await res.json();
+    expect(event).toMatchObject({
+      kind: 'lobby-updated',
+      version: 1,
+      battleSize: 3,
+      draftType: 'pokeball',
+      ready: { 1: false, 2: false },
+      startAt: null,
+      optionsChanged: false,
+    });
+    expect(notifyRoomEvent).toHaveBeenCalledWith(code, event);
+    const state = await getState(code, guest);
+    expect([state.battleSize, state.draftType]).toEqual([3, 'pokeball']);
+    expect(state.lobby).toMatchObject({ version: 1, ready: { 1: false, 2: false } });
+  });
+
+  it('options: the same options publish nothing; bad values are 400, the guest 403', async () => {
+    const { code, host: hostCookie, guest } = await fullRoom();
+    const same = await options(code, hostCookie, { battleSize: 6, draftType: 'standard' });
+    expect(same.status).toBe(200);
+    expect(await same.json()).toEqual({ ok: true });
+    expect(notifyRoomEvent).not.toHaveBeenCalled();
+
+    const badSize = await options(code, hostCookie, { battleSize: 5, draftType: 'standard' });
+    expect(badSize.status).toBe(400);
+    expect(await badSize.json()).toEqual({ error: 'invalid-battle-size' });
+    const badType = await options(code, hostCookie, { battleSize: 6, draftType: 'Standard' });
+    expect(badType.status).toBe(400);
+    expect(await badType.json()).toEqual({ error: 'invalid-draft-type' });
+    const asGuest = await options(code, guest, { battleSize: 3, draftType: 'standard' });
+    expect(asGuest.status).toBe(403);
+    expect(await asGuest.json()).toEqual({ error: 'Only the host can change the options.' });
+    expect((await options('ZZZZ', hostCookie, { battleSize: 3, draftType: 'standard' })).status).toBe(404);
+    expect(notifyRoomEvent).not.toHaveBeenCalled();
+  });
+
+  it('ready: publishes each change; 400 for a non-boolean, 409 before the guest joins', async () => {
+    const alone = await host('gold');
+    const early = await ready(alone.code, alone.cookie, true);
+    expect(early.status).toBe(409);
+    expect(await early.json()).toEqual({ error: 'Waiting for an opponent.' });
+
+    const { code, host: hostCookie, guest } = await fullRoom();
+    expect((await ready(code, hostCookie, 'yes')).status).toBe(400);
+    const res = await ready(code, guest, true);
+    expect(res.status).toBe(200);
+    const { event } = await res.json();
+    expect(event).toMatchObject({ kind: 'lobby-updated', version: 1, ready: { 1: false, 2: true }, startAt: null });
+    expect(notifyRoomEvent).toHaveBeenCalledWith(code, event);
+
+    vi.mocked(notifyRoomEvent).mockClear();
+    expect(await (await ready(code, guest, true)).json()).toEqual({ ok: true });
+    expect(notifyRoomEvent).not.toHaveBeenCalled();
+
+    const both = await (await ready(code, hostCookie, true)).json();
+    expect(both.event.startAt).toBe(both.event.at + START_COUNTDOWN_MS);
+  });
+
+  it('start: 409 before both are ready and before the countdown ends; then either player starts it', async () => {
+    const { code, host: hostCookie, guest } = await fullRoom({ battleSize: 4, draftType: 'unlimited' });
+    const notReady = await start(code, hostCookie);
+    expect(notReady.status).toBe(409);
+    expect(await notReady.json()).toEqual({ error: 'Not everyone is ready.' });
+
+    await ready(code, hostCookie, true);
+    const { event: readied } = await (await ready(code, guest, true)).json();
+    const early = await start(code, guest);
+    expect(early.status).toBe(409);
+    expect(await early.json()).toEqual({ error: 'Too early.', startAt: readied.startAt });
+    vi.mocked(notifyRoomEvent).mockClear();
+
+    const res = await startLater(code, guest);
+    expect(res.status).toBe(200);
+    const event = { kind: 'type-battle-started', round: 1, battleSize: 4, draftType: 'unlimited' };
+    expect(notifyRoomEvent).toHaveBeenCalledWith(code, event);
+    expect(await res.json()).toEqual({ ok: true, event });
+    expect((await getState(code, hostCookie)).phase).toBe('type-battle');
+
+    // The other client's start finds it started: no event.
+    expect(await (await startLater(code, hostCookie)).json()).toEqual({ ok: true });
+    // The lobby can't change any more.
+    expect((await ready(code, guest, false)).status).toBe(409);
+    expect((await options(code, hostCookie, { battleSize: 6, draftType: 'standard' })).status).toBe(409);
+  });
+});
+
 describe('type battle API', () => {
   async function started() {
-    const h = await host('gold');
-    const joined = await joinRoute(req(`/api/rooms/${h.code}/join`, 'POST', { trainer: 'misty' }), ctx(h.code));
-    const guest = cookieOf(joined);
-    const res = await startRoute(req(`/api/rooms/${h.code}/start`, 'POST', {}, h.cookie), ctx(h.code));
+    const room = await fullRoom();
+    const res = await readyAndStart(room.code, room.host, room.guest);
     expect(res.status).toBe(200);
     vi.mocked(notifyRoomEvent).mockClear();
-    return { code: h.code, host: h.cookie, guest };
+    return room;
   }
   const pick = (code: string, cookie: string, type: unknown) =>
     pickRoute(req(`/api/rooms/${code}/type-pick`, 'POST', { type }, cookie), ctx(code));
-  const getState = async (code: string, cookie: string) =>
-    (await stateRoute(req(`/api/rooms/${code}`, 'GET', undefined, cookie), ctx(code))).json();
-
-  it('only the host can start; starting tells both players', async () => {
-    const h = await host('gold');
-    const joined = await joinRoute(req(`/api/rooms/${h.code}/join`, 'POST', { trainer: 'misty' }), ctx(h.code));
-    const guest = cookieOf(joined);
-    const asGuest = await startRoute(req(`/api/rooms/${h.code}/start`, 'POST', {}, guest), ctx(h.code));
-    expect(asGuest.status).toBe(403);
-    expect(notifyRoomEvent).not.toHaveBeenCalled();
-
-    const res = await startRoute(req(`/api/rooms/${h.code}/start`, 'POST', {}, h.cookie), ctx(h.code));
-    expect(res.status).toBe(200);
-    const event = { kind: 'type-battle-started', round: 1 };
-    expect(notifyRoomEvent).toHaveBeenCalledWith(h.code, event);
-    expect(await res.json()).toEqual({ ok: true, event });
-    expect((await getState(h.code, guest)).phase).toBe('type-battle');
-  });
 
   it("GET never includes the opponent's pick before both have picked", async () => {
     const { code, host: hostCookie, guest } = await started();
@@ -370,7 +477,7 @@ describe('type battle API', () => {
     const h = await host('gold', { draftType: 'pokeball' });
     const joined = await joinRoute(req(`/api/rooms/${h.code}/join`, 'POST', { trainer: 'gold' }), ctx(h.code));
     const guest = cookieOf(joined);
-    await startRoute(req(`/api/rooms/${h.code}/start`, 'POST', {}, h.cookie), ctx(h.code));
+    await readyAndStart(h.code, h.cookie, guest);
     await pick(h.code, h.cookie, 'grass');
     await pick(h.code, guest, 'water');
     await orderRoute(req(`/api/rooms/${h.code}/order`, 'POST', { order: 'first' }, h.cookie), ctx(h.code));

@@ -42,10 +42,11 @@ restyling from scratch.
 | `Button` | Crystal button with the ▶ cursor. `primary` gives the dark version. Defaults to `type="button"`. |
 | `MessageBox` | The two-line message box. Takes a `Message` (`[line1, line2]`) and a `role` (`status` by default, `alert` for errors). |
 | `Field`, `SectionLabel` | Framed text input, and the 16px grey section label. `SectionLabel` with `htmlFor` renders a real `<label>`. |
+| `RadioGroup` | Pixel-square radios in a row, or stacked with `vertical`. `titled` shows the group's name as a section label above them (the waiting room's options). |
 | `VisuallyHidden` | Text for screen readers only (e.g. "Waiting" for the empty P2 slot's dashes). |
 
 The colours are CSS variables in `app/globals.scss` (`--bg`, `--ink`, `--text-2`,
-`--placeholder`, `--hover`, `--p1`, `--p2`). Press Start 2P is loaded with
+`--placeholder`, `--hover`, `--p1`, `--p2`, `--ready`). Press Start 2P is loaded with
 `next/font/google` in `app/layout.tsx`.
 
 Styles are SCSS (`*.module.scss` for components), so rules can be nested.
@@ -60,7 +61,7 @@ use `styles["draft__cell--active"]`. In SCSS, nest them with `&__element` and
 `room-notice.module.scss`).
 
 When a screen overrides a shared component's styles (e.g. a wider `Button`), the
-override is tag-qualified (`button.lobby__copy`) so it outranks the component's own
+override is tag-qualified (`button.lobby__readyButton`) so it outranks the component's own
 class whatever order the stylesheets load in.
 
 Shared building blocks live in `app/styles/_mixins.scss`; pull them in with
@@ -90,7 +91,7 @@ Gotchas:
 ## Screens and flow
 
 ```
-Home ──HOST──▶ Lobby (waiting) ──P2 joins──▶ Lobby (full) ──START BATTLE──▶
+Home ──HOST──▶ Lobby (waiting) ──P2 joins──▶ Lobby (full) ──both READY, 2s──▶
 Type select ──winner picks FIRST/SECOND──▶ Draft ──click a Pokémon──▶ Detail
 Detail ──RENT──▶ Draft (with the rental) · Detail ──BACK──▶ Draft
 Draft complete ──host clicks START BATTLE──▶ Battle order ──both locked in, 2s──▶ Battle
@@ -99,12 +100,14 @@ Home ──JOIN──▶ Lobby (full)
 
 | Board | File | What it shows |
 |---|---|---|
-| 0a Host or join | `Home.dc.html` | HOST, battle size; room code field, JOIN, RULES; your trainer and CHANGE; message box |
-| 0e Draft rules | `Rules.dc.html` | The draft rules as a bulleted list, BACK |
+| 0a Host or join | `Home.dc.html` | HOST; room code field, JOIN; your trainer (the sprite links to Choose a trainer); message box |
+| 0e Draft rules | `Rules.dc.html` | The draft rules as a bulleted list, BACK to the waiting room |
 | 0f Choose a trainer | `Trainers.dc.html` | 4-column scrolling grid of trainers; picking one returns to Home |
 | 0b Join error | `HomeError.dc.html` | `Home` with `error="not-found"` |
-| 0c Waiting room | `Lobby.dc.html` | Room code cells, COPY, players list with empty P2 |
-| 0d Both players in | `LobbyFull.dc.html` | `Lobby` with `full`: both players, START BATTLE |
+| 0c Waiting room | `Lobby.dc.html` | Room code, the host's BATTLE TYPE / DRAFT TYPE radios, players list with empty P2, READY (disabled), DRAFT RULES |
+| 0d Both players in | `LobbyFull.dc.html` | `Lobby` with `full`: both players, READY |
+| 0g Guest view | `LobbyGuest.dc.html` | `Lobby` with `full guest`: the options as read-only text |
+| 0h Getting ready | `LobbyReady.dc.html` | `Lobby` with `full play`: READY, checkmarks, the 2s countdown (loops) |
 | 1a Type select | `Main.dc.html` | Grass/Water/Fire rock-paper-scissors, VS, message box |
 | 1b Type result | `Result.dc.html` | `Main` with `p1="fire" p2="grass"`: the host wins, FIRST/SECOND |
 | 2a Draft | `Draft.dc.html` | Scrolling 9-column Pokémon grid, team slots, hover info box |
@@ -146,33 +149,19 @@ beside the names.
   three equal columns 48px apart, with 30px/42px padding. The controls inside keep
   their sizes (buttons 240×108, code field 240px).
   1. NEW ROOM: label and "Host a room and share its code." (16px, wraps to two
-     lines), HOST (dark primary), the battle size radios, then the draft type
-     radios.
-  2. ROOM CODE: the code field, JOIN, then RULES at the bottom of the column, level
-     with CHANGE.
-  3. TRAINER: label, the trainer's name (24px, title case, e.g. "Lt Surge"), a
-     240×204 Crystal frame with the trainer sprite at 168px centred in it, then
-     CHANGE.
+     lines), then HOST (dark primary).
+  2. ROOM CODE: the code field, then JOIN.
+  3. TRAINER: label, the trainer's name (24px, title case, e.g. "Lt Surge"), then a
+     240×204 Crystal frame with the trainer sprite at 168px centred in it.
+- The box is as tall as its contents.
 - Trainer: a random one the first time; after that whoever you last chose on
-  Choose a Trainer. CHANGE opens Choose a Trainer.
-- RULES opens Draft Rules.
+  Choose a Trainer. The sprite's frame is the link to Choose a Trainer ("Change
+  trainer (<Name>)"): on hover or focus it fills grey and shows the ▶ cursor 9px
+  from its left edge.
 - Room code field: 4 characters from `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (matches
   `lib/codes.ts`).
-- HOST creates a room; there's no name to validate any more.
-- Battle size: three radio options under HOST: 3V3, 4V4 and 6V6 (6V6 selected
-  by default). They sit on one 32px row, 24px apart, grouped as "Battle size" for
-  screen readers.
-  - Each radio is a 24px pixel square with a 3px ink border. Checked fills it
-    with ink inside a 3px light inset.
-  - The host's choice sets how many Pokémon each player sends into battle, which
-    is the number of slots on the Battle order screen. It doesn't change the
-    draft: each player always drafts 6.
-- Draft type: three radios stacked vertically under the battle size: "Standard
-  Draft" (selected by default), "Unlimited Draft" and "Poké Ball Draft". Same 24px
-  pixel radios and 16px labels as the battle size, each row 32px tall and 8px
-  apart, 24px below the battle size row, grouped as "Draft type" for screen
-  readers. The host's choice is stored on the room. What each type changes about
-  the draft isn't designed yet.
+- HOST creates a room at 6V6 and Standard Draft; the host changes them in the
+  waiting room.
 - JOIN (submit, so Enter joins) validates the code, then joins.
 - The message box at the bottom shows the hint or the error:
   - default: "Host a room, or enter a / room code to join one."
@@ -185,7 +174,8 @@ beside the names.
 
 ### Draft rules (`Rules.dc.html`)
 - Title "DRAFT RULES", a Crystal frame filling the space below it (30px/42px
-  padding), then BACK centred underneath, which returns to Home. The page padding
+  padding), then BACK centred underneath, which returns to the waiting room
+  (`/room/<code>/rules`; the standalone `/rules` returns Home). The page padding
   is 36px top and bottom, with 24px gaps.
 - The rules are bulleted lists, 24px text on 36px lines, 12px between rules. Each
   bullet is a 12px ink square, 24px left of the text. Rules for every draft come
@@ -203,7 +193,7 @@ beside the names.
     - Only [Poké Ball icon] Poké Ball POKéMON allowed.
 - The ball icons are `icon-ultraball.png`, `icon-masterball.png` and
   `icon-pokeballball.png` at 32px, inline before the ball's name.
-- The draft types match the Home radios (Standard, Unlimited, Poké Ball).
+- The draft types match the waiting room's DRAFT TYPE radios (Standard, Unlimited, Poké Ball).
 - The second rule says "the first player", not "Player 1", following the player
   names rule.
 
@@ -229,27 +219,39 @@ beside the names.
   stored on the room. The prototype hands it between boards in `localStorage` key
   `picomon.trainer`; only the lobby reads it, the later boards still show GOLD.
 
-### Lobby (`Lobby.dc.html`)
-- Waiting: title "WAITING ROOM", the code as one unframed 64px string (on a 120px row), and a
-  COPY button that copies the code and shows "COPIED!" for 1.5s. The app shows
-  "COPIED!" only once the copy succeeds. COPY is 300px wide so it fits "COPIED!"
-  without resizing. It sits right after the code, 24px from it
-  (not pushed to the right edge).
-- On the right of the room code box, right-aligned and vertically centred on the
-  code: the host's battle size ("6V6", 32px on a 48px line) over their
-  draft type ("Standard Draft", 16px on a 32px line, one line). Both lobby states
-  show it, so the guest sees the host's choices too.
-- Players list: a red `P1` label (`#C03028`, 48px wide) then the host's name with a
-  HOST tag, and a blue `P2` label (`#2860B8`) then the guest's name, shown as
-  `- - - - - -` until someone joins. The labels appear only in this list (0c and
-  0d), nowhere else.
-- Message: "Send this code to a friend. / Waiting for an opponent..."
-- Full: title "ROOM <code>", the COPY button is hidden, and the guest's name is shown.
-  - Host: the message reads "Both players connected! / Ready to battle?" and a
-    dark START BATTLE button (420px) sits centred below the message box. It has no
-    action yet because the type battle screen doesn't exist.
-  - Guest: no START BATTLE button. The message reads "Both players connected! /
-    Waiting for <host name>..." (app copy; the design only shows the host's view).
+### Lobby (`Lobby.dc.html`, `LobbyFull`, `LobbyGuest`, `LobbyReady`)
+- Title "WAITING ROOM" until the guest joins, then "ROOM <code>".
+- Room code box: two columns with their tops aligned, so every title sits on one
+  32px line. On the left, ROOM CODE then the code as one unframed 64px string (on a
+  120px row). No COPY. On the right (pushed to the edge):
+  - Host: two radio lists side by side, 48px apart: BATTLE TYPE (6V6, 4V4, 3V3)
+    and DRAFT TYPE (Standard, Unlimited, Poké Ball). Each has a visible title that
+    names its fieldset, 12px above three touching 32px rows. The host can change
+    them until the battle starts; the server tells the guest (`lobby-updated`).
+  - Guest (0g): read-only and right-aligned, centred on the code's row: the battle
+    size ("6V6", 32px) over the draft type ("Standard Draft", 16px), 48px rows.
+  - The battle size is how many Pokémon each player sends into battle (the slots
+    on Battle order). Each player always drafts 6.
+- Players list: a red `P1` label (48px wide) then the host's name, a blue `P2`
+  label then the guest's name, shown as `- - - - - -` until someone joins. A ready
+  player gets a green pixel checkmark (`--ready`) right after the name; the HOST
+  tag sits at the row's right edge. The labels appear only in this list.
+- Below the message box, for both players: READY (384px, primary) and DRAFT RULES.
+  READY is disabled until the room is full, and once pressed reads CANCEL READY
+  (not primary). DRAFT RULES opens `/room/<code>/rules`, whose BACK returns here.
+- When both are ready the server sets a start time 2s later; both clients count
+  down to it and then ask the server to start the type battle (0h). CANCEL READY
+  or a host option change stops the countdown. An option change clears both
+  players' READY.
+- Messages, first match wins (names uppercase):
+  - not full: "Send this code to a friend. / Waiting for an opponent..."
+  - counting down: "Both players ready! / Starting in 2..." then "1..."
+  - an option change cleared someone's READY, until you ready again: "Battle
+    options changed. / Ready up again."
+  - you're ready: "Waiting for <OPPONENT> / to get ready..."
+  - the opponent is ready: "<OPPONENT> is ready! / Ready to battle?"
+  - otherwise: "Both players connected! / Ready to battle?"
+  - a failed request: "Something went wrong. / Try again."
 
 ### Type select (`Main.dc.html`)
 - Each column is headed with that player's name. Your column (the host's, with a

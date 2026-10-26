@@ -65,6 +65,7 @@ describe('rooms', () => {
       game: 1,
       battleSize: 6,
       draftType: 'standard',
+      lobby: { version: 0, ready: { 1: false, 2: false }, startAt: null, optionsChanged: false, serverNow: T0 },
       typeBattle: null,
       draft: null,
       battle: null,

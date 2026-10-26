@@ -14,6 +14,7 @@ const state: RoomState = {
   ],
   phase: "type-battle",
   battleSize: 6, draftType: "standard",
+  lobby: null,
   typeBattle: draw,
   draft: null,
   battle: null,

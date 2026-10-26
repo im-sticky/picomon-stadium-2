@@ -49,7 +49,6 @@
   align-self: stretch;
   box-sizing: border-box;
   padding: 30px 42px;
-
   &__column {
     display: flex;
     flex-direction: column;
@@ -70,11 +69,6 @@
     text-align: center;
   }
 
-  /* Pushed to the bottom of its column, level with CHANGE. */
-  @at-root a#{&}__rules {
-    margin-top: auto;
-  }
-
   &__trainerName {
     /* Keeps its line before the browser's choice is known. */
     min-height: 32px;
@@ -83,13 +77,37 @@
     line-height: 32px;
   }
 
-  @at-root div#{&}__trainerFrame {
+  /* The sprite in a Crystal frame: a link to Choose a Trainer, with the ▶ cursor and
+     grey fill on hover/focus like a button. */
+  &__trainerPick {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     width: 240px;
     height: 204px;
     box-sizing: border-box;
+    @include crystal-frame;
+
+    &:hover,
+    &:focus-visible {
+      outline: none;
+      background-color: var(--hover);
+    }
+  }
+
+  &__trainerCursor {
+    position: absolute;
+    left: 9px;
+    top: 50%;
+    margin-top: -12px;
+    visibility: hidden;
+    fill: var(--ink);
+  }
+
+  &__trainerPick:hover &__trainerCursor,
+  &__trainerPick:focus-visible &__trainerCursor {
+    visibility: visible;
   }
 
   &__trainerSprite {
