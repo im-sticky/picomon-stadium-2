@@ -44,7 +44,7 @@
 **Interfaces:**
 - Produces: `npm test` (Vitest, jsdom env, `@/` path alias → repo root), `npm run dev`, `npm run build`.
 
-- [ ] **Step 1: Initialise git** — `git init -b main` in `/Users/alex/Documents/Development/picomon-stadium-2`.
+- [ ] **Step 1: Initialise git** — `git init -b main` in the project folder.
 - [ ] **Step 2: Scaffold Next.js** — the folder is not empty, so scaffold in a sibling temp dir and move it in:
   ```bash
   cd .. && npx create-next-app@latest picomon-scaffold --ts --app --eslint --no-tailwind --no-src-dir --import-alias "@/*" --use-npm --yes

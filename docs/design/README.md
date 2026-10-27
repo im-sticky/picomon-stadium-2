@@ -2,8 +2,7 @@
 
 Reference for building the app's screens. The designs are a Pokémon Crystal–style
 mockup canvas. Its source lives in `design/canvas/project/` (one `.dc.html` file per
-screen) and the live canvas is https://claude.ai/artifact/QDjonW53pXDkLC9z2h2WRo
-(needs the owner's claude.ai sign-in).
+screen).
 
 ## How to read the design files
 
